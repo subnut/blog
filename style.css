@@ -1,0 +1,89 @@
+@font-face {
+  font-family: 'RecVar';
+  src: url('https://raw.githubusercontent.com/arrowtype/recursive/main/fonts/ArrowType-Recursive-1.077/Recursive_Web/woff2_variable_subsets/fonts/Recursive_VF_1.077--subset_range_english_basic.woff2') format('woff2');
+  unicode-range: U+0020-007F,U+00A9,U+2190-2193,U+2018,U+2019,U+201C,U+201D,U+2022;
+}
+
+body {
+  background: #FFF;
+  color: #000;
+  font-family: RecVar, sans-serif;
+  font-variation-settings: 'CASL' 0.7;
+  font-size: 1em;
+  max-width: 25em;
+  margin: 1em auto;
+}
+
+:target { background: #FF06; }
+::selection {
+  color: inherit;
+  background: #BFDFFF;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #000;
+    color: #FFF;
+  }
+  :target { background: #440; }
+  ::selection { background: #445; }
+}
+
+table { border: 1px solid; }
+th, td { padding: 0.5em; }
+
+h1 { letter-spacing: -1px; }
+h2 { letter-spacing: -0.5px; }
+
+pre { margin: 1.5em; }
+pre, code {
+  font-family: RecVar, monospace;
+  font-variation-settings: 'MONO' 1, 'CASL' 1;
+}
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  animation-name: a-mouse-out;
+  animation-duration: 0.15s;
+}
+
+a:hover {
+  font-weight: bolder;
+  font-variation-settings: 'CASL' 1, 'slnt' -5;
+  animation-name: a-mouse-in;
+}
+
+@keyframes a-mouse-in {
+  from {font-weight: inherit;}
+  to {
+    font-weight: bolder;
+    font-variation-settings: 'CASL' 1, 'slnt' -5;
+  }
+}
+
+@keyframes a-mouse-out {
+  from {
+    font-weight: bolder;
+    font-variation-settings: 'CASL' 1;
+  }
+  to {
+    font-weight: inherit;
+    font-variation-settings: inherit;
+  }
+}
+
+/* Blog */
+table.blog-date {
+  margin-left: auto;
+  margin-right: 0;
+  border: none;
+  padding: 0;
+  color: #888;
+}
+td.blog-date { padding: 0 0.5em; }
+h1.title { margin: 0.5em 0; }
+
+/*
+vim:et:ts=2:sw=2
+*/
