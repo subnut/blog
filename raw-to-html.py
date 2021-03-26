@@ -160,6 +160,21 @@ def htmlize(lines) -> str:
             print(line)
             continue
 
+        # NOTE: Since we don't check indented tags, a clever hack to support
+        # nested lists is to simply use proper indentation!
+        # e.g. -
+        # |<ul>
+        # |- Item 1
+        # |- Item 2
+        # |  <ul>
+        # |  - Item 2.1
+        # |  - Item 2.2
+        # |  - Item 2.3
+        # |  </ul>
+        # |- Item 3
+        # |- Item 4
+        # |</ul>
+
         # Blank lines
         if line == "\n" and not CODEBLOCK_OPEN:
             if lines[linenr - 1] != "\n":
