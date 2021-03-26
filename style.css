@@ -86,11 +86,13 @@ a:hover {
 
 /* Blog */
 table.blog-date {
-  margin-left: auto;
-  margin-right: 0;
-  border: none;
   padding: 0;
   color: #888;
+  border: none;
+  margin-right: 0;
+  margin-left: auto;
+  font-size: 0.8em;
+  letter-spacing: -0.5;
 }
 td.blog-date {
   border: none;

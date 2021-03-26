@@ -11,7 +11,7 @@ def main():
         global print
         print(*x, **y, end="")
 
-    for filename in os.listdir(SOURCE_DIR):
+    for filename in [x for x in os.listdir(SOURCE_DIR) if x.endswith(".raw")]:
         os.chdir(SOURCE_DIR)
         with open(filename) as file:
             raw_lines = file.readlines()
@@ -41,6 +41,48 @@ def main():
         print(filename, "\n")
 
 
+def date_to_text(date: str) -> str:
+    OUTPUT = []
+    YYYY, MM, DD = date.split("/")
+
+    # Date
+    DD = int(DD)
+    if DD in (1, 2, 3):
+        DD = {
+            1: "1st",
+            2: "2nd",
+            3: "3rd",
+        }[DD]
+    else:
+        DD = f"{DD}th"
+    OUTPUT.append(DD)
+
+    # Month
+    MM = int(MM)
+    MM = {
+        1: "Jan",
+        2: "Feb",
+        3: "Mar",
+        4: "Apr",
+        5: "May",
+        6: "June",
+        7: "July",
+        8: "Aug",
+        9: "Sept",
+        10: "Oct",
+        11: "Nov",
+        12: "Dec",
+    }[MM]
+    OUTPUT.append(MM)
+
+    # Year
+    OUTPUT.append(YYYY)
+
+    # OUTPUT
+    OUTPUT = " ".join(OUTPUT)
+    return OUTPUT
+
+
 def final_html():
     return """\
 <!-- Blog content ends here -->
@@ -63,10 +105,10 @@ def initial_html(TITLE, SUBTITLE, DATE_CREATED, DATE_MODIFIED):
         </span>
         <table class="blog-date"><tr>
                 <td class="blog-date">Date created</td>
-                <td class="blog-date">{DATE_CREATED}</td>
+                <td class="blog-date">{date_to_text(DATE_CREATED)}</td>
             </tr><tr>
                 <td class="blog-date">Last modified</td>
-                <td class="blog-date">{DATE_MODIFIED}</td>
+                <td class="blog-date">{date_to_text(DATE_MODIFIED)}</td>
         </tr></table>
         <br>
 <!-- Blog content starts here -->
