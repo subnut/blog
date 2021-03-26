@@ -10,12 +10,15 @@ blog post.
 import html
 import os
 import sys
+import urllib.parse
 
 DIR = "docs"
 
 
 def main():
     filenames = os.listdir(DIR)
+    filenames.count("index.html") and filenames.remove("index.html")
+    filenames.count("style.css") and filenames.remove("style.css")
     files = {int(file.split("-")[0]): file for file in filenames}
     filenumbers = list(files)
     filenumbers.sort(reverse=True)
@@ -27,7 +30,9 @@ def main():
 
     for filenumber in filenumbers:
         filename = files[filenumber]
-        print(f'<li><a href="{html.escape(filename)}">{html.escape(filename)}</a></li>')
+        print(
+            f'<li><a href="{urllib.parse.quote(filename)}">{html.escape(filename)}</a></li>'
+        )
 
     print(FINAL_TEXT)
 
