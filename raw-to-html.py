@@ -7,21 +7,23 @@ DEST_DIR = "docs"
 
 
 def main():
-    files = os.listdir(SOURCE_DIR)
-    files.remove("0-format.raw")
-    for filename in files:
+    def print(*x, **y):
+        global print
+        print(*x, **y, end="")
+
+    for filename in os.listdir(SOURCE_DIR):
         os.chdir(SOURCE_DIR)
         with open(filename) as file:
             raw_lines = file.readlines()
         os.chdir("..")
-        print(filename, "->", end=" ")
+        print(filename, "-> ")
 
-        TITLE = raw_lines[1][:-1]
-        DATE_CREATED = raw_lines[2][:-1]
-        DATE_MODIFIED = raw_lines[3][:-1]
+        TITLE = raw_lines[1].rstrip("\n")
+        DATE_CREATED = raw_lines[2].rstrip("\n")
+        DATE_MODIFIED = raw_lines[3].rstrip("\n")
 
         raw_lines = raw_lines[5:]
-        SUBTITLE = "".join(raw_lines[: raw_lines.index("---\n")])
+        SUBTITLE = "".join(raw_lines[: raw_lines.index("---\n")]).rstrip("\n")
         raw_lines = raw_lines[raw_lines.index("---\n") + 1 :]
         raw_lines = raw_lines[: raw_lines.index("---\n")]
 
@@ -36,25 +38,29 @@ def main():
         with open(filename, "w") as file:
             file.write(final_text)
         os.chdir("..")
-        print(filename)
+        print(filename, "\n")
 
 
 def final_html():
     return """\
+<!-- Blog content ends here -->
     </body>
 </html>
 """
 
 
 def initial_html(TITLE, SUBTITLE, DATE_CREATED, DATE_MODIFIED):
-    return f"""<html>
+    return f"""\
+<html>
     <head>
         <title>{html.escape(TITLE)}</title>
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
         <h1 class="title">{html.escape(TITLE)}</h1>
-        <span class="subtitle">{html.escape(SUBTITLE)}</span>
+        <span class="subtitle">
+{html.escape(SUBTITLE)}
+        </span>
         <table class="blog-date"><tr>
                 <td class="blog-date">Date created</td>
                 <td class="blog-date">{DATE_CREATED}</td>
@@ -62,7 +68,9 @@ def initial_html(TITLE, SUBTITLE, DATE_CREATED, DATE_MODIFIED):
                 <td class="blog-date">Last modified</td>
                 <td class="blog-date">{DATE_MODIFIED}</td>
         </tr></table>
-        <br>"""
+        <br>
+<!-- Blog content starts here -->
+"""
 
 
 def htmlize(lines) -> str:
@@ -112,7 +120,9 @@ def htmlize(lines) -> str:
                 H_LEVEL = 3
                 if line[2] == "#":
                     H_LEVEL = 4
-            line = f"<h{H_LEVEL}>{line[H_LEVEL-1:].strip()}</h{H_LEVEL}>"
+                    if line[3] == "#":
+                        H_LEVEL = 5
+            line = f"<h{H_LEVEL}>{line[H_LEVEL-1:].strip()}</h{H_LEVEL}>\n"
 
         for index, char in enumerate(line):
             if not CODEBLOCK_OPEN:
@@ -169,12 +179,22 @@ def htmlize(lines) -> str:
                             print("<code>")
                         continue
 
+                    # Support for tables
                     if TABLE_MODE:
-                        if char == "|" and line[index - 1] != "\\":
+                        if (
+                            char == "|"
+                            and not (CODE_OPEN or BOLD_OPEN or ITALIC_OPEN)
+                            and line[index - 1] != "\\"
+                        ):
                             print("</td><td>")
 
-            # It fit neither of the above. Let it escape.
-            print(html.escape(char) if not HTML_TAG_OPEN else char)
+                # We're inside an HTML_TAG. Don't escape.
+                else:
+                    print(char)
+                    continue
+
+            # It's a normal character. Escape it.
+            print(html.escape(char))
 
     return "".join(OUTPUT)
 
