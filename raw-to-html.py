@@ -1,5 +1,26 @@
 #!/usr/bin/python3
 
+# Some speed tips -
+# (taken using the `timeit` builtin module)
+#
+# ```
+# import timeit
+# x1=timeit.Timer('y,m,d = c.split("/")', "c='yyyy/mm/dd'")
+# x2=timeit.Timer('y=x[:4];m=x[5:7];d=x[8:10]','x="YYYY/MM/DD\\n"')
+# ```
+#
+# - Slicing is faster that "".startswith()
+#     e.g. (x[2:] == "- ") is better than x.startswith("- ")
+#   The same applies for .endswith()
+#
+# - `del list[index]` is faster than `list.pop(index)`
+#   But, `list.pop()` is faster than `del list[-1]`
+#
+# - list.append(object) is faster than list + [object]
+#   (Which is what we do. So that's good!)
+#
+# -
+
 import html
 import os
 import sys
@@ -13,18 +34,19 @@ def main():
         global print
         print(*x, **y, end="")
 
-    for filename in [x for x in os.listdir(SOURCE_DIR) if x.endswith(".raw")]:
+    for filename in [x for x in os.listdir(SOURCE_DIR) if x[-4:] == ".raw"]:
         os.chdir(SOURCE_DIR)
         with open(filename) as file:
             raw_lines = file.readlines()
         os.chdir("..")
         print(filename, "-> ")
 
-        TITLE = raw_lines[1].rstrip("\n")
-        DATE_CREATED = raw_lines[2].rstrip("\n")
-        DATE_MODIFIED = raw_lines[3].rstrip("\n")
+        del raw_lines[0]  # "---\n"
+        TITLE = raw_lines.pop(0).rstrip("\n")
+        DATE_CREATED = raw_lines.pop(0).rstrip("\n")
+        DATE_MODIFIED = raw_lines.pop(0).rstrip("\n")
+        del raw_lines[0]  # "---\n"
 
-        raw_lines = raw_lines[5:]
         SUBTITLE = "".join(raw_lines[: raw_lines.index("---\n")]).rstrip("\n")
         raw_lines = raw_lines[raw_lines.index("---\n") + 1 :]
         raw_lines = raw_lines[: raw_lines.index("---\n")]
@@ -45,6 +67,8 @@ def main():
 
 def date_to_text(date: str) -> str:
     OUTPUT = []
+
+    # date.split() is faster than
     YYYY, MM, DD = date.split("/")
 
     # Date
@@ -135,7 +159,7 @@ def htmlize(lines) -> str:
     for linenr, line in enumerate(lines):
 
         # Table
-        if line.startswith("<table") and not TABLE_MODE:
+        if line[:6] == "<table" and not TABLE_MODE:
             TABLE_MODE = True
             print(line)
             continue
@@ -147,13 +171,13 @@ def htmlize(lines) -> str:
             continue
 
         # List
-        if line.startswith("<ul") or line.startswith("<ol") and not LIST_MODE:
+        if line[:3] in ("<ul", "<ol") and not LIST_MODE:
             LIST_MODE = True
             print(line)
             continue
 
         # List item
-        if LIST_MODE and line.lstrip().startswith("- "):
+        if LIST_MODE and line.lstrip()[:2] == "- ":
             line = line.replace("- ", "<li>", 1)
 
         # List end
