@@ -112,10 +112,10 @@ def htmlize(lines) -> str:
         if line == "```\n":
             if CODEBLOCK_OPEN:
                 CODEBLOCK_OPEN = False
-                print("</code></pre>\n")
+                print("</pre>\n")
             else:
                 CODEBLOCK_OPEN = True
-                print("<pre><code>\n")
+                print("<pre>\n")
             continue
 
         # Headings using '#'

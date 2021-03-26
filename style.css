@@ -20,6 +20,20 @@ body {
   background: #BFDFFF;
 }
 
+table { border: 1px solid; }
+th, td { padding: 0.5em; }
+
+h1 { letter-spacing: -1px; }
+h2 { letter-spacing: -0.5px; }
+
+pre { padding: 1em; }
+code { padding: 0 0.4em; }
+pre, code {
+  font-family: RecVar, monospace;
+  font-variation-settings: 'MONO' 1, 'CASL' 1;
+  background: #eee;
+}
+
 @media (prefers-color-scheme: dark) {
   body {
     background: #000;
@@ -27,18 +41,7 @@ body {
   }
   :target { background: #440; }
   ::selection { background: #445; }
-}
-
-table { border: 1px solid; }
-th, td { padding: 0.5em; }
-
-h1 { letter-spacing: -1px; }
-h2 { letter-spacing: -0.5px; }
-
-pre { margin: 1.5em; }
-pre, code {
-  font-family: RecVar, monospace;
-  font-variation-settings: 'MONO' 1, 'CASL' 1;
+  pre, code { background: #333; }
 }
 
 a {
