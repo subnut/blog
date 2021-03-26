@@ -28,7 +28,7 @@ pre, code {
   background: #eee;
 }
 
-@media screen (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: dark) {
   body {
     background: #000;
     color: #FFF;
@@ -55,6 +55,14 @@ a:hover {
   font-weight: bolder;
   font-variation-settings: 'CASL' 1, 'slnt' -5;
   animation-name: a-mouse-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a {
+    animation-name: none;
+    animation-duration: unset;
+  }
+  a:hover { animation-name: none; }
 }
 
 @keyframes a-mouse-in {
