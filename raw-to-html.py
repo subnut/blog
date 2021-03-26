@@ -163,23 +163,33 @@ def htmlize(lines) -> str:
                         print("<br>\n")
                         continue
 
-                    if char in "*_`":
+                    # *bold* _italic_ `code`,
+                    # or anything else defined in char_DICT
+                    if char in char_DICT:
+                        # If char is preceded with backslash, we shall not
+                        # consider it, no matter what.
                         if line[index - 1] == "\\":
                             OUTPUT.pop()
                             print(char)
                             continue
                         char_dict = char_DICT[char]
                         if char_dict["open"]:
-                            if line[index + 1].isspace():
-                                char_dict["open"] = False
-                                print(f"</{char_dict['tag']}>")
-                                continue
+                            # If we're open _already_, we can close anywhere.
+                            # No conditions needed.  Why this rule exists? See
+                            # first sentence of this comment block!
+                            # (Hint: _already_,)
+                            char_dict["open"] = False
+                            print(f"</{char_dict['tag']}>")
+                        elif index == 0 or line[index - 1].isspace():
+                            # If we're not open yet, then, to open, we mustn't
+                            # be preceded by anything. This is to ensure that
+                            # things like some_variable don't accidentally
+                            # trigger italics.
+                            char_dict["open"] = True
+                            print(f"<{char_dict['tag']}>")
                         else:
-                            if index == 0 or line[index - 1].isspace():
-                                char_dict["open"] = True
-                                print(f"<{char_dict['tag']}>")
-                                continue
-                        print(char)
+                            # It is what it is
+                            print(char)
                         continue
 
                     # Support for tables
