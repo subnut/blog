@@ -91,6 +91,7 @@ table.blog-date {
   border: none;
   margin-right: 0;
   margin-left: auto;
+  margin-top: 0.5em;
   font-size: 0.8em;
   letter-spacing: -0.5;
 }

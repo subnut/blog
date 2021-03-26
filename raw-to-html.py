@@ -119,6 +119,7 @@ def htmlize(lines) -> str:
     OUTPUT = []
     print = lambda x: OUTPUT.append(x)
 
+    LIST_MODE = False
     TABLE_MODE = False
     CODEBLOCK_OPEN = False
     HTML_TAG_OPEN = False
@@ -140,6 +141,22 @@ def htmlize(lines) -> str:
         # Table end
         if line == "</table>\n" and TABLE_MODE:
             TABLE_MODE = False
+            print(line)
+            continue
+
+        # List
+        if line.startswith("<ul") or line.startswith("<ol") and not LIST_MODE:
+            LIST_MODE = True
+            print(line)
+            continue
+
+        # List item
+        if LIST_MODE and line.lstrip().startswith("- "):
+            line = line.replace("- ", "<li>", 1)
+
+        # List end
+        if line in ("</ul>\n", "</ol>\n") and LIST_MODE:
+            LIST_MODE = False
             print(line)
             continue
 
@@ -202,6 +219,8 @@ def htmlize(lines) -> str:
 
                     # Linebreak if two spaces at line end
                     if char == "\n" and index > 1 and line[-3:-1] == "  ":
+                        OUTPUT.pop()
+                        OUTPUT.pop()
                         print("<br>\n")
                         continue
 
