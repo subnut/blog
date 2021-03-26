@@ -5,13 +5,13 @@
 }
 
 body {
-  background: #FFF;
   color: #000;
+  background: #FFF;
+  margin: 1em auto;
+  max-width: 25em;
+  font-size: 1em;
   font-family: RecVar, sans-serif;
   font-variation-settings: 'CASL' 0.7;
-  font-size: 1em;
-  max-width: 25em;
-  margin: 1em auto;
 }
 
 :target { background: #FF06; }
@@ -19,12 +19,6 @@ body {
   color: inherit;
   background: #BFDFFF;
 }
-
-table { border: 1px solid; }
-th, td { padding: 0.5em; }
-
-h1 { letter-spacing: -1px; }
-h2 { letter-spacing: -0.5px; }
 
 pre { padding: 1em; }
 code { padding: 0 0.4em; }
@@ -34,7 +28,7 @@ pre, code {
   background: #eee;
 }
 
-@media (prefers-color-scheme: dark) {
+@media screen (prefers-color-scheme: dark) {
   body {
     background: #000;
     color: #FFF;
@@ -43,6 +37,12 @@ pre, code {
   ::selection { background: #445; }
   pre, code { background: #333; }
 }
+
+th, td { padding: 0.5em; }
+table, th, td { border: 1px solid; }
+
+h1 { letter-spacing: -1px; }
+h2 { letter-spacing: -0.5px; }
 
 a {
   color: inherit;
@@ -84,9 +84,10 @@ table.blog-date {
   padding: 0;
   color: #888;
 }
-td.blog-date { padding: 0 0.5em; }
+td.blog-date {
+  border: none;
+  padding: 0 0.5em; 
+}
 h1.title { margin: 0.5em 0; }
 
-/*
-vim:et:ts=2:sw=2
-*/
+/* vim:set et ts=2 sw=2 nowrap: */
