@@ -1,6 +1,6 @@
 import html
-import sys
 import os
+import sys
 
 SOURCE_DIR = "src"
 DEST_DIR = "docs"
@@ -221,4 +221,5 @@ def htmlize(lines) -> str:
 
 
 if __name__ == "__main__":
+    os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
     main()
