@@ -11,7 +11,7 @@ run mkdir docs
 cp style.css docs
 run python raw-to-html.py
 run python index-page-creator.py
-run git add docs
+run git add -f docs
 run git commit -m PUBLISH
 run trap : INT
 run git push --set-upstream $(git remote) gh-pages --force
