@@ -86,6 +86,7 @@ def check_for_tabs(lines):
 
 def collect_link_definitions(lines) -> dict:
     LINKS = {}
+    index = len(lines)
     while index:
         index -= 1
         if lines[index][:2] == "! ":
@@ -94,10 +95,30 @@ def collect_link_definitions(lines) -> dict:
             ID, HREF = line.split(":", 1)
             LINKS[ID] = HREF.rstrip()
 
-            # To negate the -1 we did before entering the if-block
-            index += 1
-
-            # For convenience
+            # For convenience, if there is a blank line before the link
+            # definition(s), then we shall not treat it as a blank line
+            #
+            # e.g. -
+            # │
+            # │lorem ipsum dolor sit amet.
+            # │
+            # │! 1: https://localhost
+            # │! 2: http://localhost
+            # │
+            # │Lorem Ipsum Dolor sit Amet
+            # │consecteiur blah blah blah
+            # │
+            #
+            # Shall be interpreted as -
+            # │
+            # │lorem ipsum dolor sit amet.
+            # │
+            # │Lorem Ipsum Dolor sit Amet
+            # │consecteiur blah blah blah
+            # │
+            #
+            # Which... is obviously what the original text would have been
+            # if the links weren't there.
             if lines[index - 1] == "\n":
                 del lines[index - 1]
 
@@ -231,17 +252,19 @@ def htmlize(lines, LINKS={}) -> str:
         # NOTE: Since we don't check indented tags, a clever hack to support
         # nested lists is to simply use proper indentation!
         # e.g. -
-        # |<ul>
-        # |- Item 1
-        # |- Item 2
-        # |  <ul>
-        # |  - Item 2.1
-        # |  - Item 2.2
-        # |  - Item 2.3
-        # |  </ul>
-        # |- Item 3
-        # |- Item 4
-        # |</ul>
+        # │
+        # │<ul>
+        # │- Item 1
+        # │- Item 2
+        # │  <ul>
+        # │  - Item 2.1
+        # │  - Item 2.2
+        # │  - Item 2.3
+        # │  </ul>
+        # │- Item 3
+        # │- Item 4
+        # │</ul>
+        # │
 
         # Blank lines
         if line == "\n" and not CODEBLOCK_OPEN:
