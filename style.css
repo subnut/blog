@@ -47,41 +47,16 @@ h2 { letter-spacing: -0.5px; }
 a {
   color: inherit;
   text-decoration: underline;
-  animation-name: a-mouse-out;
-  animation-duration: 0.15s;
+  transition: 150ms linear;
 }
 
 a:hover {
   font-weight: bolder;
   font-variation-settings: 'CASL' 1, 'slnt' -5;
-  animation-name: a-mouse-in;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  a {
-    animation-name: none;
-    animation-duration: unset;
-  }
-  a:hover { animation-name: none; }
-}
-
-@keyframes a-mouse-in {
-  from {font-weight: inherit;}
-  to {
-    font-weight: bolder;
-    font-variation-settings: 'CASL' 1, 'slnt' -5;
-  }
-}
-
-@keyframes a-mouse-out {
-  from {
-    font-weight: bolder;
-    font-variation-settings: 'CASL' 1;
-  }
-  to {
-    font-weight: inherit;
-    font-variation-settings: inherit;
-  }
+  a { transition: none; }
 }
 
 /* Blog */
