@@ -235,14 +235,22 @@ def htmlize(lines) -> str:
             print("<tr><td>")
 
         for index, char in enumerate(line):
+
+            # Slice it once instead of slicing it every time we need it.
+            # Should by faster, right? (Not tested yet)
+            if index:
+                prev_char = line[index - 1]
+            if char != "\n":
+                next_char = line[index + 1]
+
             if not CODEBLOCK_OPEN:
                 # Whether the '<' is start of an HTML tag
                 if (
                     char == "<"
                     and not HTML_TAG_OPEN
-                    and (line[index + 1] == "/" or line[index + 1].isalpha())
+                    and (next_char == "/" or next_char.isalpha())
                 ):
-                    if line[index - 1] != "\\":
+                    if prev_char != "\\":
                         HTML_TAG_OPEN = True
                         print(char)
                     else:
@@ -270,10 +278,11 @@ def htmlize(lines) -> str:
                     if char in char_DICT:
                         # If char is preceded with backslash, we shall not
                         # consider it, no matter what.
-                        if line[index - 1] == "\\":
+                        if prev_char == "\\":
                             OUTPUT.pop()
                             print(char)
                             continue
+
                         char_dict = char_DICT[char]
                         if char_dict["open"]:
                             # If we're open _already_, we can close anywhere.
@@ -282,16 +291,23 @@ def htmlize(lines) -> str:
                             # (Hint: _already_,)
                             char_dict["open"] = False
                             print(f"</{char_dict['tag']}>")
-                        elif index == 0 or line[index - 1].isspace():
+
+                        elif (
+                            index == 0 or prev_char.isspace()
+                        ) and next_char.isspace():
                             # If we're not open yet, then, to open, we mustn't
                             # be preceded by anything. This is to ensure that
                             # things like some_variable don't accidentally
                             # trigger italics.
+                            # But, if the next char is also a space, then the
+                            # char is just a stray. Spare it.
                             char_dict["open"] = True
                             print(f"<{char_dict['tag']}>")
+
                         else:
                             # It is what it is
                             print(char)
+
                         continue
 
                     # Support for tables
@@ -306,7 +322,7 @@ def htmlize(lines) -> str:
                             # char_DICT_any_char_open shall become True
 
                         if char == "|" and not char_DICT_any_char_open:
-                            if line[index - 1] == "\\":
+                            if prev_char == "\\":
                                 OUTPUT.pop()
                                 print(char)
                                 continue
