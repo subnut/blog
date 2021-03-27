@@ -41,6 +41,8 @@ def main():
         os.chdir("..")
         print(filename, "-> ")
 
+        check_tabs(raw_lines)
+
         del raw_lines[0]  # "---\n"
         TITLE = raw_lines.pop(0).rstrip("\n")
         DATE_CREATED = raw_lines.pop(0).rstrip("\n")
@@ -63,6 +65,14 @@ def main():
             file.write(final_text)
         os.chdir("..")
         print(filename, "\n")
+
+
+def check_tabs(line_list):
+    for line in line_list:
+        for char in line:
+            if char == "\t":
+                print("Please change all tabs into spaces")
+                sys.exit("No tabs allowed.")
 
 
 def date_to_text(date: str) -> str:
@@ -147,14 +157,18 @@ def htmlize(lines) -> str:
 
     LIST_MODE = False
     TABLE_MODE = False
+    CODE_OPEN = False
     CODEBLOCK_OPEN = False
     HTML_TAG_OPEN = False
 
     char_DICT = {
         "*": {"open": False, "tag": "b"},
         "_": {"open": False, "tag": "i"},
-        "`": {"open": False, "tag": "code"},
+        # "~": {"open": False, "tag": "strike"},
     }
+
+    # NOTE: Don't include this in char_DICT -
+    #            "`": {"open": False, "tag": "code"},
 
     for linenr, line in enumerate(lines):
 
@@ -238,6 +252,7 @@ def htmlize(lines) -> str:
 
             # Slice it once instead of slicing it every time we need it.
             # Should by faster, right? (Not tested yet)
+            prev_char = next_char = ""
             if index:
                 prev_char = line[index - 1]
             if char != "\n":
@@ -273,65 +288,100 @@ def htmlize(lines) -> str:
                         print("<br>\n")
                         continue
 
-                    # *bold* _italic_ `code`,
-                    # or anything else defined in char_DICT
-                    if char in char_DICT:
-                        # If char is preceded with backslash, we shall not
-                        # consider it, no matter what.
+                    # Inline `code`
+                    if char == "`":
+
+                        # NOTE: Logic is same as that of char_DICT below
+                        # If this code is updated, update that too.
+
                         if prev_char == "\\":
                             OUTPUT.pop()
                             print(char)
                             continue
 
-                        char_dict = char_DICT[char]
-                        if char_dict["open"]:
-                            # If we're open _already_, we can close anywhere.
-                            # No conditions needed.  Why this rule exists? See
-                            # first sentence of this comment block!
-                            # (Hint: _already_,)
-                            char_dict["open"] = False
-                            print(f"</{char_dict['tag']}>")
-
-                        elif (
-                            index == 0 or prev_char.isspace()
-                        ) and next_char.isspace():
-                            # If we're not open yet, then, to open, we mustn't
-                            # be preceded by anything. This is to ensure that
-                            # things like some_variable don't accidentally
-                            # trigger italics.
-                            # But, if the next char is also a space, then the
-                            # char is just a stray. Spare it.
-                            char_dict["open"] = True
-                            print(f"<{char_dict['tag']}>")
-
+                        if CODE_OPEN:
+                            CODE_OPEN = False
+                            print("</code>")
+                        elif index == 0 or prev_char == " ":
+                            CODE_OPEN = True
+                            print("<code>")
                         else:
-                            # It is what it is
                             print(char)
 
                         continue
 
-                    # Support for tables
-                    if TABLE_MODE:
+                    # NOTE: The logic for "`" is exactly the same as for
+                    # "*", "_", and other characters defined in char_DICT.
+                    # The reason for "`" being separately called here is that,
+                    # the characters in char_DICT are NOT considered as special
+                    # when they are inside a <code> </code> block.
 
-                        char_DICT_any_char_open = False
-                        for char_dict in char_DICT.values():
-                            char_DICT_any_char_open = (
-                                char_DICT_any_char_open or char_dict["open"]
-                            )
-                            # i.e. if any char of char_DICT is "open",
-                            # char_DICT_any_char_open shall become True
+                    # So, if we include "`" in char_DICT, then if we ever start
+                    # a "`", we will be unable to stop it.
 
-                        if char == "|" and not char_DICT_any_char_open:
+                    if not CODE_OPEN:
+
+                        # *bold*, _italic_, etc. (things in char_DICT)
+                        if char in char_DICT:
+
+                            # NOTE: logic is same as that of `code` above
+                            # If this code is updated, update that too
+
                             if prev_char == "\\":
+                                # If char is preceded with backslash, we shall
+                                # not consider it, no matter what.
                                 OUTPUT.pop()
                                 print(char)
                                 continue
-                            print("</td><td>")
+
+                            char_dict = char_DICT[char]
+                            if char_dict["open"]:
+                                # If we're open _already_, we can close
+                                # anywhere. No condition needed. Why this rule?
+                                # See first sentence of this comment block!
+                                # (Hint: _already_,)
+                                char_dict["open"] = False
+                                print(f"</{char_dict['tag']}>")
+
+                            # NOTE: to avoid detecting stray chars, uncomment
+                            # the next line and comment out the line below it.
+                            # elif (index == 0 or prev_char == " ") and next_char != " ":
+                            elif index == 0 or prev_char == " ":
+                                # If we're not open yet, then, to open, we
+                                # mustn't be preceded by anything. This is to
+                                # ensure that things like some_variable don't
+                                # accidentally trigger italics.
+                                char_dict["open"] = True
+                                print(f"<{char_dict['tag']}>")
+
+                            else:
+                                # It is what it is
+                                print(char)
+
                             continue
 
-                        if char == "\n":
-                            print("</td></tr>\n")
-                            continue
+                        # Support for tables
+                        if TABLE_MODE:
+
+                            char_DICT_any_char_open = False
+                            for char_dict in char_DICT.values():
+                                char_DICT_any_char_open = (
+                                    char_DICT_any_char_open or char_dict["open"]
+                                )
+                                # i.e. if any char of char_DICT is "open",
+                                # char_DICT_any_char_open shall become True
+
+                            if char == "|" and not char_DICT_any_char_open:
+                                if prev_char == "\\":
+                                    OUTPUT.pop()
+                                    print(char)
+                                    continue
+                                print("</td><td>")
+                                continue
+
+                            if char == "\n":
+                                print("</td></tr>\n")
+                                continue
 
                 # We're inside an HTML_TAG. Don't escape.
                 else:
