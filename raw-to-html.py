@@ -188,14 +188,20 @@ def final_html():
 
 
 def initial_html(TITLE, SUBTITLE, DATE_CREATED, DATE_MODIFIED):
+    TITLE = html.escape(TITLE)
     return f"""\
+<!--
+TITLE:{TITLE}
+CREATED:{DATE_CREATED}
+MODIFIED:{DATE_MODIFIED}
+-->
 <html>
     <head>
-        <title>{html.escape(TITLE)}</title>
+        <title>{TITLE}</title>
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
-        <h1 class="title">{html.escape(TITLE)}</h1>
+        <h1 class="title">{TITLE}</h1>
         <span class="subtitle">
 {html.escape(SUBTITLE)}
         </span>

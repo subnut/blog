@@ -20,9 +20,13 @@ DIR = "docs"
 
 def main():
     filenames = os.listdir(DIR)
-    filenames.count("index.html") and filenames.remove("index.html")
-    filenames.count("style.css") and filenames.remove("style.css")
-    files = {int(file.split("-")[0]): file for file in filenames}
+    index = filenames.__len__()
+    while index:
+        index -= 1
+        filename = filenames[index]
+        if filename in ("index.html", "style.css") or filename[0] == "0":
+            del filenames[index]
+    files = {int(file.split("-", 1)[0]): file for file in filenames}
     filenumbers = list(files)
     filenumbers.sort(reverse=True)
 
@@ -33,11 +37,60 @@ def main():
 
     for filenumber in filenumbers:
         filename = files[filenumber]
+        with open(filename) as file:
+            file.readline()
+            TITLE = file.readline()[6:]
+            CREATED = file.readline()[8:]
         print(
-            f'<li><a href="{urllib.parse.quote(filename)}">{html.escape(filename)}</a></li>'
+            "<tr>"
+            f'<td><a href="{urllib.parse.quote(filename)}">{TITLE}</a></td>'
+            f"<td>{date_to_text(CREATED)}</td>"
+            "</tr>"
         )
 
     print(FINAL_TEXT)
+
+
+def date_to_text(date: str) -> str:
+    OUTPUT = []
+    YYYY, MM, DD = date.split("/")
+
+    # Date
+    DD = int(DD)
+    if DD in (1, 2, 3):
+        DD = {
+            1: "1st",
+            2: "2nd",
+            3: "3rd",
+        }[DD]
+    else:
+        DD = f"{DD}th"
+    OUTPUT.append(DD)
+
+    # Month
+    MM = int(MM)
+    MM = {
+        1: "January",
+        2: "February",
+        3: "March",
+        4: "April",
+        5: "May",
+        6: "June",
+        7: "July",
+        8: "August",
+        9: "September",
+        10: "October",
+        11: "November",
+        12: "December",
+    }[MM]
+    OUTPUT.append(MM)
+
+    # Year
+    OUTPUT.append(YYYY)
+
+    # OUTPUT
+    OUTPUT = " ".join(OUTPUT)
+    return OUTPUT
 
 
 INITIAL_TEXT = f"""\
@@ -48,12 +101,12 @@ INITIAL_TEXT = f"""\
     </head>
     <body>
         <h1 class="title">{html.escape("subnut's blog")}</h1>
-        <ul>
-<!-- Automated links start here -->"""
+        <table>
+<!-- Automation starts here -->"""
 
 FINAL_TEXT = """\
-<!-- Automated links stop here -->
-        </ul>
+<!-- Automation stops here -->
+        </table>
     </body>
 </head>"""
 
