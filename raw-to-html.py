@@ -19,7 +19,14 @@
 # - list.append(object) is faster than list + [object]
 #   (Which is what we do. So that's good!)
 #
-# -
+# - line.split(":", 1)[0] is faster than line[:line.index(":")]
+#   We use this in links.
+#
+# - Avoid eval()
+#   dict.update({'1':'one'}) is 70x faster than dict.update(eval("{1:'one'}"))
+#   For links, just don't use eval. Use slicing! What do you even lose?
+#   Heck, 1 and '1' would be confusing! Even better is the fact that you won't
+#   need to put quotes around words! ItJustWorks™
 
 import html
 import os
@@ -41,7 +48,7 @@ def main():
         os.chdir("..")
         print(filename, "-> ")
 
-        check_tabs(raw_lines)
+        check_for_tabs(raw_lines)
 
         del raw_lines[0]  # "---\n"
         TITLE = raw_lines.pop(0).rstrip("\n")
@@ -53,9 +60,11 @@ def main():
         raw_lines = raw_lines[raw_lines.index("---\n") + 1 :]
         raw_lines = raw_lines[: raw_lines.index("---\n")]
 
+        LINKS = collect_link_definitions(raw_lines)
+
         final_lines = []
         final_lines.append(initial_html(TITLE, SUBTITLE, DATE_CREATED, DATE_MODIFIED))
-        final_lines.append(htmlize(raw_lines))
+        final_lines.append(htmlize(raw_lines, LINKS))
         final_lines.append(final_html())
         final_text = "".join(final_lines)
 
@@ -67,18 +76,36 @@ def main():
         print(filename, "\n")
 
 
-def check_tabs(line_list):
-    for line in line_list:
+def check_for_tabs(lines):
+    for line in lines:
         for char in line:
             if char == "\t":
                 print("Please change all tabs into spaces")
                 sys.exit("No tabs allowed.")
 
 
+def collect_link_definitions(lines) -> dict:
+    LINKS = {}
+    while index:
+        index -= 1
+        if lines[index][:2] == "! ":
+            line = lines.pop(index)
+            line = line[2:-1]  # -1 to eliminate trailing \n
+            ID, HREF = line.split(":", 1)
+            LINKS[ID] = HREF.rstrip()
+
+            # To negate the -1 we did before entering the if-block
+            index += 1
+
+            # For convenience
+            if lines[index - 1] == "\n":
+                del lines[index - 1]
+
+    return LINKS
+
+
 def date_to_text(date: str) -> str:
     OUTPUT = []
-
-    # date.split() is faster than
     YYYY, MM, DD = date.split("/")
 
     # Date
@@ -151,15 +178,16 @@ def initial_html(TITLE, SUBTITLE, DATE_CREATED, DATE_MODIFIED):
 """
 
 
-def htmlize(lines) -> str:
+def htmlize(lines, LINKS={}) -> str:
     OUTPUT = []
     print = lambda x: OUTPUT.append(x)
 
-    LIST_MODE = False
-    TABLE_MODE = False
+    LINK_OPEN = False
     CODE_OPEN = False
     CODEBLOCK_OPEN = False
     HTML_TAG_OPEN = False
+    LIST_MODE = False
+    TABLE_MODE = False
 
     char_DICT = {
         "*": {"open": False, "tag": "b"},
@@ -249,6 +277,11 @@ def htmlize(lines) -> str:
             print("<tr><td>")
 
         for index, char in enumerate(line):
+
+            # Support for links
+            if LINK_OPEN and skip:
+                skip -= 1
+                continue
 
             # Slice it once instead of slicing it every time we need it.
             # Should by faster, right? (Not tested yet)
@@ -365,6 +398,29 @@ def htmlize(lines) -> str:
                                 # It is what it is
                                 print(char)
 
+                            continue
+
+                        # Link start
+                        if not LINK_OPEN and char == "!" and next_char == "[":
+                            if prev_char == "\\":
+                                OUTPUT.pop()
+                                print(char)
+                            else:
+                                _line = line[index + 2 :]  # +2 for ![
+                                ID = _line.split(":", 1)[0]
+                                print(f'<a href="{LINKS[ID]}">')
+                                LINK_OPEN = True
+                                skip = len(ID) + 2
+                            continue
+
+                        # Link stop
+                        if LINK_OPEN and char == "]":
+                            if prev_char == "\\":
+                                OUTPUT.pop()
+                                print(char)
+                            else:
+                                LINK_OPEN = False
+                                print("</a>")
                             continue
 
                         # Support for tables
