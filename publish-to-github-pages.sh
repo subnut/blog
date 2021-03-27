@@ -9,9 +9,12 @@ run test -d src || (echo "src directory not found" >&2 && exit 1)
 run git branch -D gh-pages
 run git checkout -b gh-pages
 run mkdir docs || rm docs -rv && mkdir docs
-cp style.css docs
 run python raw-to-html.py
 run python index-page-creator.py
+run cd docs
+run ln -sfv ../style.css .
+run ln -sfv ../src/* .
+run cd ..
 run git add -f docs
 run git commit -m PUBLISH
 run trap : INT
