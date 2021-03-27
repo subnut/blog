@@ -343,8 +343,15 @@ def htmlize(lines) -> str:
                                 char_dict["open"] = False
                                 print(f"</{char_dict['tag']}>")
 
-                            # NOTE: to avoid detecting stray chars, uncomment
+                            # INFO: The following NOTE shows how to enable a
+                            # feature that is disabled by default (YAGNI)
+                            #
+                            # The same feature could be applied for `code` too,
+                            # but I don't think it should be.
+
+                            # NOTE: to detect and avoid stray chars, uncomment
                             # the next line and comment out the line below it.
+
                             # elif (index == 0 or prev_char == " ") and next_char != " ":
                             elif index == 0 or prev_char == " ":
                                 # If we're not open yet, then, to open, we
