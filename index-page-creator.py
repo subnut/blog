@@ -32,20 +32,21 @@ def main():
 
     os.chdir(DIR)
     out_file = open("index.html", "w")
-    print = lambda x: out_file.write(x + "\n")
+    print = lambda x: out_file.writelines([x, "\n"])
     print(INITIAL_TEXT)
 
     for filenumber in filenumbers:
         filename = files[filenumber]
         with open(filename) as file:
             file.readline()
-            TITLE = file.readline()[6:]
-            CREATED = file.readline()[8:]
+            TITLE = file.readline()[6:-1]
+            CREATED = file.readline()[8:-1]
         print(
-            "<tr>"
-            f'<td><a href="{urllib.parse.quote(filename)}">{TITLE}</a></td>'
-            f"<td>{date_to_text(CREATED)}</td>"
-            "</tr>"
+            f"""\
+<tr>
+    <td class="blog-index-name"><a href="{urllib.parse.quote(filename)}">{TITLE}</a></td>
+    <td class="blog-index-date">{date_to_text(CREATED)}</td>
+</tr>"""
         )
 
     print(FINAL_TEXT)
@@ -101,7 +102,7 @@ INITIAL_TEXT = f"""\
     </head>
     <body>
         <h1 class="title">{html.escape("subnut's blog")}</h1>
-        <table>
+        <table class="blog-index-table">
 <!-- Automation starts here -->"""
 
 FINAL_TEXT = """\
