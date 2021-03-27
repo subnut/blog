@@ -72,8 +72,26 @@ table.blog-date {
 }
 td.blog-date {
   border: none;
-  padding: 0 0.5em; 
+  padding: 0 0.5em;
 }
 h1.title { margin: 0.5em 0; }
+
+/* Blog index */
+table.blog-index {
+  border: none;
+  width: 100%;
+}
+td.blog-index-name {
+  text-align: left;
+  padding: 0;
+  border: none;
+}
+td.blog-index-date {
+  text-align: right;
+  padding: 0;
+  border: none;
+  color: #888;
+  font-size: smaller;
+}
 
 /* vim:set et ts=2 sw=2 nowrap: */

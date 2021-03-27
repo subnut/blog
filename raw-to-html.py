@@ -212,7 +212,6 @@ MODIFIED:{DATE_MODIFIED}
                 <td class="blog-date">Last modified</td>
                 <td class="blog-date">{date_to_text(DATE_MODIFIED)}</td>
         </tr></table>
-        <br>
 <!-- Blog content starts here -->
 """
 

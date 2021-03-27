@@ -100,9 +100,9 @@ INITIAL_TEXT = f"""\
         <title>{html.escape("subnut's blog")}</title>
         <link rel="stylesheet" href="style.css">
     </head>
-    <body>
-        <h1 class="title">{html.escape("subnut's blog")}</h1>
-        <table class="blog-index-table">
+    <body class="blog-index">
+        <h1 class="title">subnut{html.escape("'")}s blog</h1>
+        <table class="blog-index">
 <!-- Automation starts here -->"""
 
 FINAL_TEXT = """\
