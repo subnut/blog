@@ -8,7 +8,7 @@ body {
   color: #000;
   background: #FFF;
   margin: 1em auto;
-  max-width: 25em;
+  width: 35em;
   font-size: 1em;
   font-family: RecVar, sans-serif;
   font-variation-settings: 'CASL' 0.7;
