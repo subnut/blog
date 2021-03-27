@@ -41,11 +41,12 @@ def main():
         global print
         print(*x, **y, end="")
 
+    files = [x for x in os.listdir(SOURCE_DIR) if x[-4:] == ".raw"]
+
     # NOTE: The following feature is disabled by default.
     # If needed, enable it by removing all the leading "# "s
 
     # # If given, only convert the file names specified as command line arguments
-    # files = [x for x in os.listdir(SOURCE_DIR) if x[-4:] == ".raw"]
     # if sys.argv.__len__() > 1:
     #    for file in sys.argv[1:]:
     #        if file not in files:
