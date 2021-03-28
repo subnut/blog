@@ -8,11 +8,11 @@ run() { echo "> \"$@\""; "$@"; }
 run test -d src || (echo "src directory not found" >&2 && exit 1)
 run git branch -D gh-pages
 run git checkout -b gh-pages
-run mkdir docs || rm docs -rv && mkdir docs
+run mkdir docs || (run rm docs -rv && run mkdir docs)
 run python raw-to-html.py
 run python index-page-creator.py
-run cp style.css docs
-run cp src/* docs
+run cp -v style.css docs
+# run cp -v src/* docs
 run git add -f docs
 run git commit -m PUBLISH
 run trap : INT
