@@ -65,11 +65,12 @@ a {
 
 a:hover {
   font-weight: bolder;
-  font-variation-settings: 'CASL' 1, 'slnt' -5;
+  font-variation-settings: 'CASL' 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
   a { transition: none; }
+  a:hover { font-weight: inherit; }
 }
 
 /* Blog */
