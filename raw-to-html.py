@@ -232,6 +232,7 @@ def htmlize(lines, LINKS={}) -> str:
     CODE_OPEN = False
     CODEBLOCK_OPEN = False
     HTML_TAG_OPEN = False
+    NUMERIC_CHARREF_OPEN = False
     LIST_MODE = False
     TABLE_MODE = False
 
@@ -326,6 +327,12 @@ def htmlize(lines, LINKS={}) -> str:
 
         for index, char in enumerate(line):
 
+            if NUMERIC_CHARREF_OPEN:
+                if char == ";":
+                    NUMERIC_CHARREF_OPEN = False
+                print(char)
+                continue
+
             # Support for links
             if LINK_OPEN and skip:
                 skip -= 1
@@ -401,6 +408,13 @@ def htmlize(lines, LINKS={}) -> str:
                     # a "`", we will be unable to stop it.
 
                     if not CODE_OPEN:
+
+                        # Numeric character references
+                        if char == "&" and next_char == "#":
+                            if prev_char == "//":
+                                print("&amp;")
+                                continue
+                            NUMERIC_CHARREF_OPEN = True
 
                         # *bold*, _italic_, etc. (things in char_DICT)
                         if char in char_DICT:
