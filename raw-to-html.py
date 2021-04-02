@@ -207,10 +207,18 @@ MODIFIED:{DATE_MODIFIED}
         </span>
         <table class="blog-date"><tr>
                 <td class="blog-date">Date created</td>
-                <td class="blog-date">{date_to_text(DATE_CREATED)}</td>
+                <td class="blog-date">
+                    <time datetime="{DATE_CREATED.replace('/', '-')}">
+                        {date_to_text(DATE_CREATED)}
+                    </time>
+                </td>
             </tr><tr>
                 <td class="blog-date">Last modified</td>
-                <td class="blog-date">{date_to_text(DATE_MODIFIED)}</td>
+                <td class="blog-date">
+                    <time datetime="{DATE_MODIFIED.replace('/', '-')}">
+                        {date_to_text(DATE_MODIFIED)}
+                    </time>
+                </td>
         </tr></table>
 <!-- Blog content starts here -->
 """
