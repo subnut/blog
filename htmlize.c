@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MAX_LENGTH 500
+#define MAX_LINE_LENGTH 500
 
 void fputc_escaped(char c, FILE *stream)
 {
@@ -15,9 +15,33 @@ void fputc_escaped(char c, FILE *stream)
     }
 }
 
+
 void htmlize(FILE *in, FILE *out)
+/*
+ * TODO: Remove the redundant '\'s that are used to escape something
+ * for e.g, right now,
+ *       \<tag> -> \&lt;tag&gt;
+ * but it should have been,
+ *      \<tag> -> &lt;tag&gt;
+ *
+ * Things implemented -
+ *  - ```
+ *  - `code`
+ *  - *bold*
+ *  - _italic_
+ *  - <table>
+ *  - HTML <tags>
+ *
+ * Yet to be implemented -
+ *  - Linebreak if two spaces at line end
+ *  - <br> at blank lines
+ *  - # Headings
+ *  - <ul> <ol> lists
+ *  - &#...;  numeric character references
+ *  - Links
+ */
 {
-    char line[MAX_LENGTH];
+    char line[MAX_LINE_LENGTH];
 
 	char BOLD_OPEN = 0;
 	char ITALIC_OPEN = 0;
@@ -36,7 +60,7 @@ void htmlize(FILE *in, FILE *out)
          * Read and store a line from *in into line[]
          * Break loop if we've reached EOF (i.e. fgets() == NULL)
          */
-        if (fgets(line, MAX_LENGTH, in) == NULL)
+        if (fgets(line, MAX_LINE_LENGTH, in) == NULL)
             break;
 
 
@@ -81,7 +105,7 @@ void htmlize(FILE *in, FILE *out)
         pch = &line[0];
         cch = &line[0];
         nch = &line[0];
-        for (int index = 1; index < MAX_LENGTH; index++)
+        for (int index = 1; index < MAX_LINE_LENGTH; index++)
         {
             pch = cch;
             cch = nch;
@@ -167,6 +191,7 @@ void htmlize(FILE *in, FILE *out)
         }
     }
 }
+
 
 int main(void)
 {
