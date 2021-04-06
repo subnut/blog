@@ -412,6 +412,7 @@ def htmlize(lines, LINKS={}) -> str:
                         # Numeric character references
                         if char == "&" and next_char == "#":
                             if prev_char == "\\":
+                                OUTPUT.pop()
                                 print("&amp;")
                                 continue
                             NUMERIC_CHARREF_OPEN = True
