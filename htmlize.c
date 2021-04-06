@@ -26,7 +26,6 @@ void htmlize(FILE *in, FILE *out)
  */
 /*
  * Yet to be implemented -
- *  - <ul> <ol> lists
  *  - &#...;  numeric character references
  *  - Links
  */
@@ -38,6 +37,7 @@ void htmlize(FILE *in, FILE *out)
  *  - _italic_
  *  - <table>
  *  - # Headings
+ *  - Lists
  *  - HTML <tags>
  *  - Linebreak if two spaces at line end
  *  - <br> at blank lines
@@ -52,6 +52,7 @@ void htmlize(FILE *in, FILE *out)
     unsigned char CODEBLOCK_OPEN = 0;
     unsigned char HTML_TAG_OPEN = 0;
     unsigned char TABLE_MODE = 0;
+    unsigned char LIST_MODE = 0;
 
     unsigned int H_LEVEL = 0;
 
@@ -100,7 +101,44 @@ void htmlize(FILE *in, FILE *out)
         }
 
 
-        // For <table>
+        // Lists
+        if (!memcmp(line, "<ul", 3) || !memcmp(line, "<ol", 3))
+        {
+            LIST_MODE = 1;
+            fputs(line, out);
+            continue;
+        }
+        if (!memcmp(line, "</ul", 4) || !memcmp(line, "</ol", 4))
+        {
+            LIST_MODE = 0;
+            fputs(line, out);
+            continue;
+        }
+        if (LIST_MODE)
+        {
+            char *p;
+            if ((p = memchr(line, '-', MAX_LINE_LENGTH)) != NULL)
+            {
+                /* Check if the found '-' is the first char of the line */
+                char *i = p;
+                while (i > line)
+                    if (!isblank(*--i))
+                        break;
+                if (i == line)
+                {
+                    memmove(&p[3], p, MAX_LINE_LENGTH-(p-line)-3);
+                    *p++ = '<';
+                    *p++ = 'l';
+                    *p++ = 'i';
+                    *p++ = '>';
+                    while (*p == ' ')
+                        memmove(p, &p[1], MAX_LINE_LENGTH-(p-line));
+                }
+            }
+        }
+
+
+        // Tables
         if (!memcmp(line, "<table", 6))
         {
             TABLE_MODE = 1;
@@ -115,7 +153,7 @@ void htmlize(FILE *in, FILE *out)
         }
 
 
-        // # Headings (starts from h2)
+        // Headings (NOTE: starts from h2)
         if (line[0] == '#')
         {
             H_LEVEL = 1;
@@ -124,7 +162,7 @@ void htmlize(FILE *in, FILE *out)
             // Remove leading #'s and spaces
             memmove(&line[0], &line[H_LEVEL - 1], MAX_LINE_LENGTH);  // #'s
             while (line[0] == ' ')                                   // spaces
-                memmove(&line[-1], &line[0], MAX_LINE_LENGTH);
+                memmove(&line[0], &line[1], MAX_LINE_LENGTH);
 
             // Create an ID for the heading
             char h_id[MAX_LINE_LENGTH] = "";
