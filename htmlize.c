@@ -46,12 +46,12 @@ void htmlize(FILE *in, FILE *out)
     char line[MAX_LINE_LENGTH];
     char last_line[MAX_LINE_LENGTH];
 
-    char BOLD_OPEN = 0;
-    char ITALIC_OPEN = 0;
-    char CODE_OPEN = 0;
-    char CODEBLOCK_OPEN = 0;
-    char HTML_TAG_OPEN = 0;
-    char TABLE_MODE = 0;
+    unsigned char BOLD_OPEN = 0;
+    unsigned char ITALIC_OPEN = 0;
+    unsigned char CODE_OPEN = 0;
+    unsigned char CODEBLOCK_OPEN = 0;
+    unsigned char HTML_TAG_OPEN = 0;
+    unsigned char TABLE_MODE = 0;
 
     unsigned int H_LEVEL = 0;
 
