@@ -31,10 +31,10 @@ void htmlize(FILE *in, FILE *out)
  *  - \_italic\_
  *  - \<HTML>
  *  - Table \| cells
+ *  - &#...; HTML Numeric char ref
  */
 /*
  * Yet to be implemented -
- *  - &#...;  numeric character references
  *  - Links
  */
 /*
@@ -48,6 +48,7 @@ void htmlize(FILE *in, FILE *out)
  *  - Lists
  *  - HTML <tags>
  *  - Linebreak if two spaces at line end
+ *  - &#...;  numeric character references
  *  - <br> at blank lines
  */
 {
@@ -215,6 +216,7 @@ void htmlize(FILE *in, FILE *out)
                 continue;
             }
 
+
             // Linebreak if two spaces at line end
             if (*cch == '\n' && *pch == ' ' && line[index - 2] == ' ')
                 fputs("<br>\n", out);
@@ -250,6 +252,17 @@ void htmlize(FILE *in, FILE *out)
                 {
                     // Nothing needs escaping, fputc() and move on
                     fputc(*cch, out);
+                    continue;
+                }
+
+
+                // HTML Numeric Character references
+                if (*cch == '&' && *nch == '#')
+                {
+                    if (*pch == '\\')
+                        fputs("&amp;", out);
+                    else
+                        fputc('&', out);
                     continue;
                 }
 
