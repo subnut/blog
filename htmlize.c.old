@@ -1,0 +1,120 @@
+#include <ctype.h>
+#include <stdio.h>
+
+#define MAX_LENGTH 500
+#define SOURCE_DIR "src"
+#define DEST_DIR "docs"
+
+void fputc_escaped(char c, FILE *stream)
+{
+	switch (c)
+	{
+		case '<': fputs("&lt;",  stream); break;
+		case '>': fputs("&gt;",  stream); break;
+		case '&': fputs("&amp;", stream); break;
+		default:  fputc(c, stream);
+	}
+}
+
+int main(void)
+{
+	char line[MAX_LENGTH];
+
+	char BOLD_OPEN = 0;
+	char ITALIC_OPEN = 0;
+	char CODE_OPEN = 0;
+	char CODEBLOCK_OPEN = 0;
+	char HTML_TAG_OPEN = 0;
+
+	char *chr;
+	char *prev_chr;
+	char *next_chr;
+
+	chr      = NULL;
+	prev_chr = NULL;
+	next_chr = NULL;
+
+	for (;;)
+	{
+		/* Exit on EOF (or errors) */
+		if (fgets(line, MAX_LENGTH, stdin) == NULL)
+			break;
+
+		if (line[0] == '`' && line[1] == '`' && line[2] == '`' && line[3] == '\n')
+		{
+			if (CODEBLOCK_OPEN) { fputs("</pre>\n", stdout); }
+			else { fputs("<pre>\n", stdout); }
+			continue;
+		}
+
+		next_chr = &line[0];
+		for (int index = 1; index < MAX_LENGTH; index++)
+		{
+			/* We don't want \0 in our prev_chr, chr variables */
+			if (*next_chr == '\0')
+				break;
+
+			prev_chr = chr;
+			chr = next_chr;
+			next_chr = &line[index];
+
+			if (CODEBLOCK_OPEN)
+			{
+				fputc_escaped(*chr, stdout);
+				continue;
+			}
+
+			if (*chr == '\\')
+			{
+				switch (*next_chr)
+				{
+					case '<':
+					case '*':
+					case '_':
+					case '&'
+
+			}
+
+			if (*chr == '<' && *prev_chr != '\\' && (*next_chr))
+ 			{
+				/* if (HTML_TAG_OPEN &&) */
+			}
+
+			if (HTML_TAG_OPEN)
+				fputc(*chr, stdout); continue;
+
+			fputc_escaped(*chr, stdout);
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* This makes no sense! -
+ *
+ *   int main(void)
+ *   {
+ *   	char str[] = "A";
+ *   	printf("%zu\n", sizeof 'A');
+ *   	printf("%zu\n", sizeof str);
+ *   	printf("%zu\n", sizeof str[0]);
+ *   }
+ *
+ * Gives the output -
+ *   4
+ *   2
+ *   1
+ *
+ * So, a single char ('A') is bigger than an array of two chars {'A', '\0'},
+ * and also, the char of the array is of size 1, but the chars outsize are of
+ * size 4 ??
+ */
