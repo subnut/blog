@@ -23,15 +23,8 @@ void htmlize(FILE *in, FILE *out)
  *       \<tag> -> \&lt;tag&gt;
  * but it should have been,
  *      \<tag> -> &lt;tag&gt;
- *
- * Things implemented -
- *  - ```
- *  - `code`
- *  - *bold*
- *  - _italic_
- *  - <table>
- *  - HTML <tags>
- *
+ */
+/*
  * Yet to be implemented -
  *  - Linebreak if two spaces at line end
  *  - <br> at blank lines
@@ -40,12 +33,21 @@ void htmlize(FILE *in, FILE *out)
  *  - &#...;  numeric character references
  *  - Links
  */
+/*
+ * Things implemented -
+ *  - ```
+ *  - `code`
+ *  - *bold*
+ *  - _italic_
+ *  - <table>
+ *  - HTML <tags>
+ */
 {
     char line[MAX_LINE_LENGTH];
 
-	char BOLD_OPEN = 0;
-	char ITALIC_OPEN = 0;
-	char CODE_OPEN = 0;
+    char BOLD_OPEN = 0;
+    char ITALIC_OPEN = 0;
+    char CODE_OPEN = 0;
     char CODEBLOCK_OPEN = 0;
     char HTML_TAG_OPEN = 0;
     char TABLE_MODE = 0;
@@ -195,9 +197,11 @@ void htmlize(FILE *in, FILE *out)
 
 int main(void)
 {
-    int i = 0;
+    /*
+     * Right now, it htmlize()'s stdin, and prints it to stdout
+     * In the future, we shall htmlize() files from src/ to docs/
+     */
     htmlize(stdin, stdout);
-    printf("%i", ++i%2);
 }
 
-// vim:et:ts=4:sts=0:sw=0
+// vim:et:ts=4:sts=0:sw=0:fdm=syntax
