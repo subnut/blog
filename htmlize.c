@@ -25,6 +25,14 @@ void htmlize(FILE *in, FILE *out)
  *       \<tag> -> &lt;tag&gt;
  */
 /*
+ * Things that are escaped using '\\' -
+ *  - \`code\`
+ *  - \*bold\*
+ *  - \_italic\_
+ *  - \<HTML>
+ *  - Table \| cells
+ */
+/*
  * Yet to be implemented -
  *  - &#...;  numeric character references
  *  - Links
