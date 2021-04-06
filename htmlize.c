@@ -22,13 +22,10 @@ void htmlize(FILE *in, FILE *out)
  * for e.g, right now,
  *       \<tag> -> \&lt;tag&gt;
  * but it should have been,
- *      \<tag> -> &lt;tag&gt;
+ *       \<tag> -> &lt;tag&gt;
  */
 /*
  * Yet to be implemented -
- *  - Linebreak if two spaces at line end
- *  - <br> at blank lines
- *  - # Headings
  *  - <ul> <ol> lists
  *  - &#...;  numeric character references
  *  - Links
@@ -40,10 +37,14 @@ void htmlize(FILE *in, FILE *out)
  *  - *bold*
  *  - _italic_
  *  - <table>
+ *  - # Headings
  *  - HTML <tags>
+ *  - Linebreak if two spaces at line end
+ *  - <br> at blank lines
  */
 {
     char line[MAX_LINE_LENGTH];
+    char last_line[MAX_LINE_LENGTH];
 
     char BOLD_OPEN = 0;
     char ITALIC_OPEN = 0;
@@ -52,18 +53,34 @@ void htmlize(FILE *in, FILE *out)
     char HTML_TAG_OPEN = 0;
     char TABLE_MODE = 0;
 
+    unsigned int H_LEVEL = 0;
+
     char *pch;  // Previous char
     char *cch;  // Current char
     char *nch;  // Next char
 
     for (;;)
     {
+        // Save current line in last_line
+        strcpy(last_line, line);
+
         /*
          * Read and store a line from *in into line[]
          * Break loop if we've reached EOF (i.e. fgets() == NULL)
          */
         if (fgets(line, MAX_LINE_LENGTH, in) == NULL)
             break;
+
+
+        // Blank lines
+        if (!memcmp(line, "\n", 2))
+        {
+            if (!memcmp(last_line, "\n", 2))    // Previous line was blank
+                fputs("<br>\n", out);
+            else
+                fputs("<br><br>\n", out);
+            continue;
+        }
 
 
         // For <pre> blocks
@@ -98,6 +115,33 @@ void htmlize(FILE *in, FILE *out)
         }
 
 
+        // # Headings (starts from h2)
+        if (line[0] == '#')
+        {
+            H_LEVEL = 1;
+            while (line[H_LEVEL++] == '#') {;}
+
+            // Remove leading #'s and spaces
+            memmove(&line[0], &line[H_LEVEL - 1], MAX_LINE_LENGTH);  // #'s
+            while (line[0] == ' ')                                   // spaces
+                memmove(&line[-1], &line[0], MAX_LINE_LENGTH);
+
+            // Create an ID for the heading
+            char h_id[MAX_LINE_LENGTH] = "";
+            for (int i=0,j=0; i < MAX_LINE_LENGTH; i++)
+                if (line[i] == '\0')
+                    break;
+                else
+                    if (line[i] == ' ')
+                        h_id[j++] = '-';
+                    else
+                        if (isalnum(line[i]))
+                            h_id[j++] = line[i];
+
+            fprintf(out, "<h%i id=\"%s\">", H_LEVEL, h_id);
+        }
+
+
         // Line prefix for tables
         if (TABLE_MODE)
             fputs("<tr><td>", out);
@@ -117,6 +161,19 @@ void htmlize(FILE *in, FILE *out)
                 break;          // stop iterating
 
 
+            // Heading tag close
+            if (H_LEVEL && *cch == '\n')
+            {
+                fprintf(out, "</h%u>\n", H_LEVEL);
+                H_LEVEL = 0;
+                continue;
+            }
+
+            // Linebreak if two spaces at line end
+            if (*cch == '\n' && *pch == ' ' && line[index - 2] == ' ')
+                fputs("<br>\n", out);
+
+
             // `code`
             if (*cch == '`' && !(isalnum(*pch) && isalnum(*nch)) && *pch != '\\')
             {
@@ -126,6 +183,7 @@ void htmlize(FILE *in, FILE *out)
                     fputs("</code>", out);
                 continue;
             }
+
 
             if (!CODE_OPEN)
             {
