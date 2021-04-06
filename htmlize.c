@@ -65,9 +65,9 @@ void htmlize(FILE *in, FILE *out)
 
     unsigned int H_LEVEL = 0;
 
-    char *pch;  // Previous char
-    char *cch;  // Current char
-    char *nch;  // Next char
+    char pch;  // Previous char
+    char cch;  // Current char
+    char nch;  // Next char
 
     for (;;)
     {
@@ -105,7 +105,7 @@ void htmlize(FILE *in, FILE *out)
         if (CODEBLOCK_OPEN)
         {
             // Blindly escape everything and move on
-            fputc_escaped(*cch, out);
+            fputc_escaped(cch, out);
             continue;
         }
 
@@ -195,21 +195,21 @@ void htmlize(FILE *in, FILE *out)
 
 
         /* iterate over the stored line[] */
-        pch = &line[0];
-        cch = &line[0];
-        nch = &line[0];
+        pch = *line;
+        cch = *line;
+        nch = *line;
         for (int index = 1; index < MAX_LINE_LENGTH; index++)
         {
             pch = cch;
             cch = nch;
-            nch = &line[index];
+            nch = *(line + index);
 
-            if (*cch == '\0')   // we've reached end of string
+            if (cch == '\0')   // we've reached end of string
                 break;          // stop iterating
 
 
             // Heading tag close
-            if (H_LEVEL && *cch == '\n')
+            if (H_LEVEL && cch == '\n')
             {
                 fprintf(out, "</h%u>\n", H_LEVEL);
                 H_LEVEL = 0;
@@ -218,12 +218,12 @@ void htmlize(FILE *in, FILE *out)
 
 
             // Linebreak if two spaces at line end
-            if (*cch == '\n' && *pch == ' ' && line[index - 2] == ' ')
+            if (cch == '\n' && pch == ' ' && line[index - 2] == ' ')
                 fputs("<br>\n", out);
 
 
             // `code`
-            if (*cch == '`' && !(isalnum(*pch) && isalnum(*nch)) && *pch != '\\')
+            if (cch == '`' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
             {
                 if (CODE_OPEN = ++CODE_OPEN % 2)
                     fputs("<code>", out);
@@ -236,13 +236,13 @@ void htmlize(FILE *in, FILE *out)
             if (!CODE_OPEN)
             {
                 // HTML <tags>
-                if ((*cch == '<') && (*nch == '/' || isalpha(*nch)) && *pch != '\\')
+                if ((cch == '<') && (nch == '/' || isalpha(nch)) && pch != '\\')
                 {
                     HTML_TAG_OPEN = 1;
                     fputc('<', out);
                     continue;
                 }
-                if (HTML_TAG_OPEN && *cch == '>')
+                if (HTML_TAG_OPEN && cch == '>')
                 {
                     HTML_TAG_OPEN = 0;
                     fputc('>', out);
@@ -251,15 +251,15 @@ void htmlize(FILE *in, FILE *out)
                 if (HTML_TAG_OPEN)
                 {
                     // Nothing needs escaping, fputc() and move on
-                    fputc(*cch, out);
+                    fputc(cch, out);
                     continue;
                 }
 
 
                 // HTML Numeric Character references
-                if (*cch == '&' && *nch == '#')
+                if (cch == '&' && nch == '#')
                 {
-                    if (*pch == '\\')
+                    if (pch == '\\')
                         fputs("&amp;", out);
                     else
                         fputc('&', out);
@@ -268,7 +268,7 @@ void htmlize(FILE *in, FILE *out)
 
 
                 // *bold*
-                if (*cch == '*' && !(isalnum(*pch) && isalnum(*nch)) && *pch != '\\')
+                if (cch == '*' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
                 {
                     if (BOLD_OPEN = ++BOLD_OPEN % 2)
                         fputs("<b>", out);
@@ -279,7 +279,7 @@ void htmlize(FILE *in, FILE *out)
 
 
                 // _italic_
-                if (*cch == '_' && !(isalnum(*pch) && isalnum(*nch)) && *pch != '\\')
+                if (cch == '_' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
                 {
                     if (ITALIC_OPEN = ++ITALIC_OPEN % 2)
                         fputs("<i>", out);
@@ -292,12 +292,12 @@ void htmlize(FILE *in, FILE *out)
                 // Table cells
                 if (TABLE_MODE)
                 {
-                    if (*cch == '|' && *pch != '\\')
+                    if (cch == '|' && pch != '\\')
                     {
                         fputs("</td><td>", out);
                         continue;
                     }
-                    if (*cch == '\n')
+                    if (cch == '\n')
                     {
                         fputs("</td></tr>\n", out);
                         continue;
@@ -306,7 +306,7 @@ void htmlize(FILE *in, FILE *out)
             }
 
 
-            fputc_escaped(*cch, out);
+            fputc_escaped(cch, out);
         }
     }
 }
