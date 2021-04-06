@@ -1,23 +1,33 @@
-@font-face {
-  font-family: 'RecVar';
-  src: url('https://raw.githubusercontent.com/arrowtype/recursive/main/fonts/ArrowType-Recursive-1.078/Recursive_Web/woff2_variable_subsets/fonts/Recursive_VF_1.078--subset_range_english_basic.woff2') format('woff2');
-  unicode-range: U+0020-007F,U+00A9,U+2190-2193,U+2018,U+2019,U+201C,U+201D,U+2022;
-}
-
 body {
   color: #000;
   background: #FFF;
-  margin: 1em auto;
-  width: 35em;
-  font-size: 1em;
-  font-family: RecVar, sans-serif;
-  font-variation-settings: 'CASL' 0.7;
 }
-
 :target { background: #FF06; }
 ::selection {
   color: inherit;
   background: #BFDFFF;
+}
+pre, code { background: #eee; }
+hr { color: #CCC; background: #CCC; }
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #000;
+    color: #FFF;
+  }
+  :target { background: #440; }
+  ::selection { background: #445; }
+  pre, code { background: #333; }
+  hr { color: #333; background: #333; }
+}
+
+body {
+  margin: 1rem auto;
+  padding: 0 1rem;
+  max-width: 35rem;
+  font-size: 1rem;
+  font-family: RecVar, sans-serif;
+  font-variation-settings: 'CASL' 0.7;
 }
 
 pre { padding: 1em; }
@@ -25,44 +35,26 @@ code { padding: 0 0.4em; }
 pre, code {
   font-family: RecVar, monospace;
   font-variation-settings: 'MONO' 1, 'CASL' 1;
-  background: #eee;
 }
 
 hr {
-  width: 20em;
   border: none;
-  margin: 1em auto;
   height: 1px;
-  color: #CCC;
-  background: #CCC;
+  max-width: 20rem;
+  margin: 1rem auto;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #000;
-    color: #FFF;
-  }
-  hr {
-    color: #333;
-    background: #333;
-  }
-  :target { background: #440; }
-  ::selection { background: #445; }
-  pre, code { background: #333; }
-}
-
-th, td { padding: 0.5em; }
+th, td { padding: 0.5rem; }
 table, th, td { border: 1px solid; }
-
 h1 { letter-spacing: -1px; }
 h2 { letter-spacing: -0.5px; }
+u { text-decoration: underline wavy; }
 
 a {
   color: inherit;
   text-decoration: underline;
   transition: 150ms linear;
 }
-
 a:hover {
   font-weight: bolder;
   font-variation-settings: 'CASL' 1;
@@ -80,15 +72,15 @@ table.blog-date {
   border: none;
   margin-right: 0;
   margin-left: auto;
-  margin-top: 0.5em;
-  font-size: 0.8em;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
   letter-spacing: -0.5;
 }
 td.blog-date {
   border: none;
-  padding: 0 0.5em;
+  padding: 0 0.5rem;
 }
-h1.title { margin: 0.5em 0; }
+h1.title { margin: 0.5rem 0; }
 
 /* Blog index */
 table.blog-index {
@@ -106,6 +98,13 @@ td.blog-index-date {
   border: none;
   color: #888;
   font-size: smaller;
+}
+
+/* Fonts */
+@font-face {
+  font-family: 'RecVar';
+  src: url('https://raw.githubusercontent.com/arrowtype/recursive/main/fonts/ArrowType-Recursive-1.078/Recursive_Web/woff2_variable_subsets/fonts/Recursive_VF_1.078--subset_range_english_basic.woff2') format('woff2');
+  unicode-range: U+0020-007F,U+00A9,U+2190-2193,U+2018,U+2019,U+201C,U+201D,U+2022;
 }
 
 /* vim:set et ts=2 sw=2 nowrap: */
