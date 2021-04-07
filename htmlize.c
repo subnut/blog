@@ -334,7 +334,8 @@ void htmlize(FILE *in, FILE *out)
             // `code`
             if (cch == '`' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
             {
-                if (CODE_OPEN = ++CODE_OPEN % 2)
+                ++CODE_OPEN;
+                if (CODE_OPEN %= 2)
                     fputs("<code>", out);
                 else
                     fputs("</code>", out);
@@ -379,7 +380,8 @@ void htmlize(FILE *in, FILE *out)
                 // *bold*
                 if (cch == '*' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
                 {
-                    if (BOLD_OPEN = ++BOLD_OPEN % 2)
+                    ++BOLD_OPEN;
+                    if (BOLD_OPEN %= 2)
                         fputs("<b>", out);
                     else
                         fputs("</b>", out);
@@ -390,7 +392,8 @@ void htmlize(FILE *in, FILE *out)
                 // _italic_
                 if (cch == '_' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
                 {
-                    if (ITALIC_OPEN = ++ITALIC_OPEN % 2)
+                    ++ITALIC_OPEN;
+                    if (ITALIC_OPEN %= 2)
                         fputs("<i>", out);
                     else
                         fputs("</i>", out);
