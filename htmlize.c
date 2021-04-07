@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <dirent.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -462,9 +463,28 @@ void htmlize(FILE *in, FILE *out)
 
 int main(void)
 {
-    DIR *sdir_p = opendir(SOURCE_DIR);
+    DIR *dir;
     struct dirent *dirent;
-    while ((dirent = readdir(sdir_p)) != NULL)
+    if ((dir = opendir(SOURCE_DIR)) == NULL)
+    {
+        switch (errno)
+        {
+            case ENOENT:
+                fprintf(stderr, "htmlize: directory not found: %s\n", DEST_DIR);
+                break;
+            case ENOTDIR:
+                fprintf(stderr, "htmlize: not a directory: %s\n", DEST_DIR);
+                break;
+            case EACCES:
+                fprintf(stderr, "htmlize: permission denied: %s\n", DEST_DIR);
+                break;
+            default:
+                fprintf(stderr, "htmlize: chdir error: %s\n", DEST_DIR);
+                break;
+        }
+        return 1;
+    }
+    while ((dirent = readdir(dir)) != NULL)
     {
         char *name = &(*dirent->d_name);
         if (!memcmp(strrchr(name, '.'), SOURCE_EXT, strlen(SOURCE_EXT)))
@@ -479,11 +499,47 @@ int main(void)
             4[p] = 'l';
             5[p] = '\0';
 
-            chdir(SOURCE_DIR);
+            if (chdir(SOURCE_DIR))
+            {
+                switch (errno)
+                {
+                    case ENOENT:
+                        fprintf(stderr, "htmlize: directory not found: %s\n", DEST_DIR);
+                        break;
+                    case ENOTDIR:
+                        fprintf(stderr, "htmlize: not a directory: %s\n", DEST_DIR);
+                        break;
+                    case EACCES:
+                        fprintf(stderr, "htmlize: permission denied: %s\n", DEST_DIR);
+                        break;
+                    default:
+                        fprintf(stderr, "htmlize: chdir error: %s\n", DEST_DIR);
+                        break;
+                }
+                return 1;
+            }
             FILE *sfp = fopen(name, "r");
             chdir("..");
 
-            chdir(DEST_DIR);
+            if (chdir(DEST_DIR))
+            {
+                switch (errno)
+                {
+                    case ENOENT:
+                        fprintf(stderr, "htmlize: directory not found: %s\n", DEST_DIR);
+                        break;
+                    case ENOTDIR:
+                        fprintf(stderr, "htmlize: not a directory: %s\n", DEST_DIR);
+                        break;
+                    case EACCES:
+                        fprintf(stderr, "htmlize: permission denied: %s\n", DEST_DIR);
+                        break;
+                    default:
+                        fprintf(stderr, "htmlize: chdir error: %s\n", DEST_DIR);
+                        break;
+                }
+                return 1;
+            }
             FILE *dfp = fopen(new_name, "w");
             chdir("..");
 
@@ -493,7 +549,7 @@ int main(void)
             printf("%s -> %s\n", name, new_name);
         }
     }
-    closedir(sdir_p);
+    closedir(dir);
 }
 
 // vim:et:ts=4:sts=0:sw=0:fdm=syntax
