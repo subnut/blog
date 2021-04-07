@@ -12,6 +12,7 @@
  * unistd.h - chdir()
  */
 
+#define SOURCE_EXT ".raw"
 #define SOURCE_DIR "src"
 #define DEST_DIR   "docs"
 #define MAX_LINE_LENGTH 500
@@ -460,34 +461,14 @@ void htmlize(FILE *in, FILE *out)
 
 int main(void)
 {
-    /*
-     * Right now, it htmlize()'s stdin, and prints it to stdout
-     * In the future, we shall htmlize() files from src/ to docs/
-     */
-    /* htmlize(stdin, stdout); */
-
-
-    // char line[MAX_LINE_LENGTH];
-    // static char *arr[400000000];  // i.e. max upto Zzzzz (NOTE: A<Z<a<z, acc. to. ASCII)
-    // static char  amd[] = "AMD";
-    // arr[1] = amd;
-    // for (;;)
-    // {
-    //     if (fgets(line, MAX_LINE_LENGTH, stdin) == NULL)
-    //         break;
-    //     line[strlen(line) - 1] = '\0';
-    //     printf("%i\t%s\n", hash(line), hash(line) < 1047653 ? "Allowed" : "Not allowed");
-    // }
-
-
     DIR *sdir_p = opendir(SOURCE_DIR);
     struct dirent *dirent;
     while ((dirent = readdir(sdir_p)) != NULL)
     {
         char *name = &(*dirent->d_name);
-        if (!memcmp(strrchr(name, '.'), ".raw", 4))
+        if (!memcmp(strrchr(name, '.'), SOURCE_EXT, strlen(SOURCE_EXT)))
         {
-            int mem_needed = strlen(name) + 1;
+            int mem_needed = strlen(name) + 1 + (5-strlen(SOURCE_EXT));  // 5 for ".html"
             char new_name[mem_needed];
             memmove(new_name, name, mem_needed);
             char *p = strrchr(new_name, '.');
