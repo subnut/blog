@@ -416,18 +416,23 @@ void htmlize(FILE *in, FILE *out)
                     fputs(links[link_id], out);
 
                     *p = ')';
+                    nch = ')';
+                    index = p - line;
                     continue;
                 }
                 if (LINK_OPEN)
                 {
-                    if (cch == ')')
-                        fputc('"', out);
-                    if (cch == '[')
-                    {
-                        fputc('>', out);
-                        LINK_OPEN = 0;
-                        LINK_TEXT_OPEN = 1;
-                    }
+                    if (cch == ')' || cch == '[')
+                        if (cch == ')')
+                            fputc('"', out);
+                        else /* cch == '[' */
+                        {
+                            fputc('>', out);
+                            LINK_OPEN = 0;
+                            LINK_TEXT_OPEN = 1;
+                        }
+                    else
+                        fputc(cch, out);
                     continue;
                 }
                 if (LINK_TEXT_OPEN && cch == ']' && nch != '\\')
