@@ -1,7 +1,19 @@
 #include <ctype.h>
+#include <dirent.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
+/*
+ * ctype.h  - isalnum(), isalpha(), etc.
+ * dirent.h - opendir(), readdir()
+ * stdio.h  - printf(), fopen(), fprintf(), etc
+ * string.h - str*(), mem*()
+ * unistd.h - chdir()
+ */
+
+#define SOURCE_DIR "src"
+#define DEST_DIR   "docs"
 #define MAX_LINE_LENGTH 500
 
 char char_to_val(char c)
@@ -356,7 +368,51 @@ int main(void)
      * Right now, it htmlize()'s stdin, and prints it to stdout
      * In the future, we shall htmlize() files from src/ to docs/
      */
-    htmlize(stdin, stdout);
+    /* htmlize(stdin, stdout); */
+
+
+    // char line[MAX_LINE_LENGTH];
+    // static char *arr[400000000];  // i.e. max upto Zzzzz (NOTE: A<Z<a<z, acc. to. ASCII)
+    // static char  amd[] = "AMD";
+    // arr[1] = amd;
+    // for (;;)
+    // {
+    //     if (fgets(line, MAX_LINE_LENGTH, stdin) == NULL)
+    //         break;
+    //     line[strlen(line) - 1] = '\0';
+    //     printf("%i\t%s\n", hash(line), hash(line) < 1047653 ? "Allowed" : "Not allowed");
+    // }
+
+
+    DIR *sdir_p = opendir(SOURCE_DIR);
+    struct dirent *dirent;
+    while ((dirent = readdir(sdir_p)) != NULL)
+    {
+        char *name = &(*dirent->d_name);
+        if (!memcmp(strrchr(name, '.'), ".raw", 4))
+        {
+            int mem_needed = strlen(name) + 1;
+            char new_name[mem_needed];
+            memmove(new_name, name, mem_needed);
+            char *p = strrchr(new_name, '.');
+            1[p] = 'h';
+            2[p] = 't';
+            3[p] = 'm';
+            4[p] = 'l';
+            5[p] = '\0';
+
+            chdir(SOURCE_DIR);
+            FILE *sfp = fopen(name, "r");
+            chdir("..");
+
+            chdir(DEST_DIR);
+            FILE *dfp = fopen(new_name, "w");
+            chdir("..");
+
+            htmlize(sfp, dfp);
+            printf("%s -> %s\n", name, new_name);
+        }
+    }
 }
 
 // vim:et:ts=4:sts=0:sw=0:fdm=syntax
