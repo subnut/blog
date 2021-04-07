@@ -3,14 +3,14 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
+
+#include "cd.h"
 
 /*
  * ctype.h  - isalnum(), isalpha(), etc.
  * dirent.h - opendir(), readdir()
  * stdio.h  - printf(), fopen(), fprintf(), etc
  * string.h - str*(), mem*()
- * unistd.h - chdir()
  */
 
 #define SOURCE_EXT ".raw"
@@ -504,49 +504,15 @@ int main(void)
             4[p] = 'l';
             5[p] = '\0';
 
-            if (chdir(SOURCE_DIR))
-            {
-                switch (errno)
-                {
-                    case ENOENT:
-                        fprintf(stderr, "htmlize: directory not found: %s\n", DEST_DIR);
-                        break;
-                    case ENOTDIR:
-                        fprintf(stderr, "htmlize: not a directory: %s\n", DEST_DIR);
-                        break;
-                    case EACCES:
-                        fprintf(stderr, "htmlize: permission denied: %s\n", DEST_DIR);
-                        break;
-                    default:
-                        fprintf(stderr, "htmlize: chdir error: %s\n", DEST_DIR);
-                        break;
-                }
+            if (cd(SOURCE_DIR))
                 return 1;
-            }
             FILE *sfp = fopen(name, "r");
-            chdir("..");
+            cd("..");
 
-            if (chdir(DEST_DIR))
-            {
-                switch (errno)
-                {
-                    case ENOENT:
-                        fprintf(stderr, "htmlize: directory not found: %s\n", DEST_DIR);
-                        break;
-                    case ENOTDIR:
-                        fprintf(stderr, "htmlize: not a directory: %s\n", DEST_DIR);
-                        break;
-                    case EACCES:
-                        fprintf(stderr, "htmlize: permission denied: %s\n", DEST_DIR);
-                        break;
-                    default:
-                        fprintf(stderr, "htmlize: chdir error: %s\n", DEST_DIR);
-                        break;
-                }
+            if (cd(DEST_DIR))
                 return 1;
-            }
             FILE *dfp = fopen(new_name, "w");
-            chdir("..");
+            cd("..");
 
             htmlize(sfp, dfp);
             fclose(sfp);
