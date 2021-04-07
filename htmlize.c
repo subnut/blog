@@ -122,7 +122,7 @@ void htmlize(FILE *in, FILE *out)
     for (;;)
     {
         // Save current line in last_line
-        strcpy(last_line, line);
+        memmove(last_line, line, MAX_LINE_LENGTH);
 
         /*
          * Read and store a line from *in into line[]
