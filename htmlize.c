@@ -467,6 +467,10 @@ void htmlize(FILE *in, FILE *out)
 
 
 int main(void)
+    /*
+     * TODO: Include beginning HTML and ending HTML in
+     * destination files.
+     */
 {
     DIR *dir;
     struct dirent *dirent;
