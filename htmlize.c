@@ -418,20 +418,17 @@ void htmlize(FILE *in, FILE *out)
                     continue;
                 }
                 if (LINK_OPEN)
-                    if (cch != ')' && cch != '[')
-                        continue;
-                    else
+                {
+                    if (cch == ')')
+                        fputc('"', out);
+                    if (cch == '[')
                     {
-                        if (cch == ')')
-                            fputc('"', out);
-                        else  // cch == '['
-                        {
-                            fputc('>', out);
-                            LINK_OPEN = 0;
-                            LINK_TEXT_OPEN = 1;
-                        }
-                        continue;
+                        fputc('>', out);
+                        LINK_OPEN = 0;
+                        LINK_TEXT_OPEN = 1;
                     }
+                    continue;
+                }
                 if (LINK_TEXT_OPEN && cch == ']' && nch != '\\')
                 {
                     LINK_TEXT_OPEN = 0;
