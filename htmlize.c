@@ -488,9 +488,12 @@ int main(void)
             chdir("..");
 
             htmlize(sfp, dfp);
+            fclose(sfp);
+            fclose(dfp);
             printf("%s -> %s\n", name, new_name);
         }
     }
+    closedir(sdir_p);
 }
 
 // vim:et:ts=4:sts=0:sw=0:fdm=syntax
