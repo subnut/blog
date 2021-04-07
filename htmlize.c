@@ -475,16 +475,16 @@ int main(void)
         switch (errno)
         {
             case ENOENT:
-                fprintf(stderr, "htmlize: directory not found: %s\n", DEST_DIR);
+                fprintf(stderr, "htmlize: directory not found: %s\n", SOURCE_DIR);
                 break;
             case ENOTDIR:
-                fprintf(stderr, "htmlize: not a directory: %s\n", DEST_DIR);
+                fprintf(stderr, "htmlize: not a directory: %s\n", SOURCE_DIR);
                 break;
             case EACCES:
-                fprintf(stderr, "htmlize: permission denied: %s\n", DEST_DIR);
+                fprintf(stderr, "htmlize: permission denied: %s\n", SOURCE_DIR);
                 break;
             default:
-                fprintf(stderr, "htmlize: chdir error: %s\n", DEST_DIR);
+                fprintf(stderr, "htmlize: opendir error: %s\n", SOURCE_DIR);
                 break;
         }
         return 1;
