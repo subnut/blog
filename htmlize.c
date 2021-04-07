@@ -15,6 +15,7 @@
 #define SOURCE_DIR "src"
 #define DEST_DIR   "docs"
 #define MAX_LINE_LENGTH 500
+#define MAX_LINKS       100
 
 char char_to_val(char c)
 {
@@ -81,11 +82,8 @@ void htmlize(FILE *in, FILE *out)
  *  - \_italic\_
  *  - \<HTML>
  *  - Table \| cells
- *  - &#...; HTML Numeric char ref
- */
-/*
- * Yet to be implemented -
- *  - Links
+ *  - \&#...; HTML Numeric char ref
+ *  - \!(ID)[Link text\]
  */
 /*
  * Things implemented -
@@ -100,16 +98,45 @@ void htmlize(FILE *in, FILE *out)
  *  - Linebreak if two spaces at line end
  *  - &#...;  numeric character references
  *  - <br> at blank lines
+ *  - Links
  */
 {
     char line[MAX_LINE_LENGTH];
     char last_line[MAX_LINE_LENGTH];
+    char links[MAX_LINKS][MAX_LINE_LENGTH];
+
+    /* Collect links */
+    while (fgets(line, MAX_LINE_LENGTH, in) != NULL)
+    {
+        if (!memcmp(line, "![", 2))     // i.e. line starts with ![
+        {
+            char *p = memchr(line, ']', MAX_LINE_LENGTH);
+            *p = '\0';
+
+            int i = 2;
+            while (p[i] == ' ')
+                i++;
+
+            char link[MAX_LINE_LENGTH];
+            memmove(link, p + i, MAX_LINE_LENGTH - (p-line + i));
+            *(strrchr(link, '\n')) = '\0';
+
+            int link_id = stoi(line + 2);
+            memmove(links[link_id], link, strlen(link)+1);  // +1 for '\0'
+        }
+    }
+
+    /* Reset line[] and *in */
+    memmove(line, last_line, MAX_LINE_LENGTH);
+    rewind(in);
 
     unsigned char BOLD_OPEN = 0;
     unsigned char ITALIC_OPEN = 0;
     unsigned char CODE_OPEN = 0;
     unsigned char CODEBLOCK_OPEN = 0;
     unsigned char HTML_TAG_OPEN = 0;
+    unsigned char LINK_OPEN = 0;
+    unsigned char LINK_TEXT_OPEN = 0;
     unsigned char TABLE_MODE = 0;
     unsigned char LIST_MODE = 0;
 
@@ -131,15 +158,46 @@ void htmlize(FILE *in, FILE *out)
         if (fgets(line, MAX_LINE_LENGTH, in) == NULL)
             break;
 
+        // Link definitions
+        if (!memcmp(line, "![", 2))
+            continue;
 
         // Blank lines
         if (!memcmp(line, "\n", 2))
         {
-            if (!memcmp(last_line, "\n", 2))    // Previous line was blank
+            if (!memcmp(last_line, "\n", 2))     // Previous line was blank
                 fputs("<br>\n", out);
             else
-                fputs("<br><br>\n", out);
+                if (memcmp(last_line, "![", 2))  // Prev line wasn't link defn
+                    fputs("<br><br>\n", out);
             continue;
+
+            /*
+             * For convenience, if there is a blank line after the link
+             * definition(s), then we shall not treat it as a blank line
+             *
+             * e.g. -
+             * │
+             * │lorem ipsum dolor sit amet.
+             * │
+             * │![1]: https://localhost
+             * │![2]: http://localhost
+             * │
+             * │Lorem Ipsum Dolor sit Amet
+             * │consecteiur blah blah blah
+             * │
+             *
+             * Shall be interpreted as -
+             * │
+             * │lorem ipsum dolor sit amet.
+             * │
+             * │Lorem Ipsum Dolor sit Amet
+             * │consecteiur blah blah blah
+             * │
+             *
+             * Which... is obviously what the original text would have been
+             * if the links weren't there.
+             */
         }
 
 
@@ -335,6 +393,44 @@ void htmlize(FILE *in, FILE *out)
                         fputs("<i>", out);
                     else
                         fputs("</i>", out);
+                    continue;
+                }
+
+
+                // Links    !(ID) attribute="value" [text]
+                if (cch == '!' && nch == '(' && pch != '\\' && !LINK_OPEN)
+                {
+                    LINK_OPEN = 1;
+                    fputs("<a href=\"", out);
+
+                    char *p = memchr(line+index, ')', MAX_LINE_LENGTH - index);
+                    *p = '\0';
+
+                    int link_id = stoi(line + index + 1);
+                    fputs(links[link_id], out);
+
+                    *p = ')';
+                    continue;
+                }
+                if (LINK_OPEN)
+                    if (cch != ')' && cch != '[')
+                        continue;
+                    else
+                    {
+                        if (cch == ')')
+                            fputc('"', out);
+                        else  // cch == '['
+                        {
+                            fputc('>', out);
+                            LINK_OPEN = 0;
+                            LINK_TEXT_OPEN = 1;
+                        }
+                        continue;
+                    }
+                if (LINK_TEXT_OPEN && cch == ']' && nch != '\\')
+                {
+                    LINK_TEXT_OPEN = 0;
+                    fputs("</a>", out);
                     continue;
                 }
 
