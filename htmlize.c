@@ -61,13 +61,6 @@ void fputs_escaped(const char *s, FILE *stream)
 
 void htmlize(FILE *in, FILE *out)
 /*
- * TODO: Remove the redundant '\'s that are used to escape something
- * for e.g, right now,
- *       \<tag> -> \&lt;tag&gt;
- * but it should have been,
- *       \<tag> -> &lt;tag&gt;
- */
-/*
  * Things that are escaped using '\\' -
  *  - \`code\`
  *  - \*bold\*
@@ -348,6 +341,22 @@ void htmlize(FILE *in, FILE *out)
             if (cch == '\0')   // we've reached end of string
                 break;          // stop iterating
 
+
+            if (cch == '\\')
+            {
+                if (
+                        (nch == '`' || nch == '*' || nch == '_')
+                        || (!HTML_TAG_OPEN && nch == '<')
+                        || (TABLE_MODE && nch == '|')
+                        || (nch == '&' && line[index + 1] == '#')
+                        || (!LINK_OPEN && nch == '!' && line[index + 1] == '(')
+                   )
+                    if (pch == '\\')    // The escaper itself has been escaped
+                        fputc('\\', out);
+                else
+                    fputc('\\', out);
+                continue;
+            }
 
             // Heading tag close
             if (H_LEVEL && cch == '\n')
