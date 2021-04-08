@@ -18,10 +18,10 @@ int ctoi(int c)
 int stoi(const char *s)
 {
     int retval = 0;
-    for (int shift = 0; s[shift] != '\0'; shift++)
+    for (int i = 0; s[i] != '\0'; i++)
     {
         retval *= 10;
-        retval += ctoi(s[shift]);
+        retval += ctoi(s[i]);
     }
     return retval;
 }
