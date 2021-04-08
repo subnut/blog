@@ -46,16 +46,6 @@ int stoi(char *s)
     }
     return retval;
 }
-int hash(char *s)
-{
-    int retval = 0;
-    for (int shift = 0; s[shift] != '\0'; shift++)
-    {
-        retval *= 10;
-        retval += s[shift];
-    }
-    return retval;
-}
 
 
 void fputc_escaped(char c, FILE *stream)
