@@ -186,6 +186,10 @@ void htmlize(FILE *in, FILE *out)
         if (fgets(line, MAX_LINE_LENGTH, in) == NULL)
             break;
 
+        // End of blog
+        if (!memcmp(line, "---\n", 4))
+            break;
+
         // Link definitions
         if (!memcmp(line, "![", 2))
             continue;
@@ -196,8 +200,9 @@ void htmlize(FILE *in, FILE *out)
             if (!memcmp(last_line, "\n", 2))     // Previous line was blank
                 fputs("<br>\n", out);
             else
-                if (memcmp(last_line, "![", 2))  // Prev line wasn't link defn
-                    fputs("<br><br>\n", out);
+                if (memcmp(last_line, "![", 2))     // Prev line wasn't link defn
+                    if (memcmp(last_line, "<", 1))  // Prev line (hopefully) wasn't HTML tag
+                        fputs("<br><br>\n", out);
             continue;
 
             /*

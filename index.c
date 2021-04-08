@@ -15,6 +15,8 @@
 #include "include/stoi.h"
 #include "constants.h"
 
+#define date_to_text(x) \
+        date_to_text(x, 1)
 
 const char INITIAL_TEXT[] = "\
 <html>\n\
@@ -160,7 +162,7 @@ int main(void)
                 "</tr>\n",
                 url,
                 TITLE,
-                date_to_text(DATE_CREATED, 1)
+                date_to_text(DATE_CREATED)
              );
     }
 
