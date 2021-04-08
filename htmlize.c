@@ -69,7 +69,7 @@ void htmlize(FILE *in, FILE *out)
 {
     char line[MAX_LINE_LENGTH];
     char last_line[MAX_LINE_LENGTH];
-    char links[MAX_LINKS][MAX_LINE_LENGTH];
+    char links[MAX_LINKS + 1][MAX_LINE_LENGTH];  // +1 because indexing starts at 0
 
     /* Collect links */
     while (fgets(line, MAX_LINE_LENGTH, in) != NULL)
