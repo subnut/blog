@@ -11,6 +11,7 @@
  */
 
 #include "include/cd.h"
+#include "include/date.h"
 #include "include/stoi.h"
 
 #define MAX_FILES 100
@@ -110,16 +111,41 @@ int main(void)
     for (int i=1; filenames[i] != '\0'; i++)
     {
 
-        fputs(
-"<tr>
-    <td class=\"blog-index-name\"><a href=\"", outfile);
+        char TITLE[MAX_LINE_LENGTH];
+        char DATE_CREATED[MAX_LINE_LENGTH];
+        char DATE_MODIFIED[MAX_LINE_LENGTH];
 
+        FILE *fp;
+        char line[MAX_LINE_LENGTH];
+
+        fp = fopen(filenames[i]);
+        fgets(line, MAX_LINE_LENGTH, in);                   // <!--\n
+
+        memmove(TITLE, fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
+        memmove(TITLE, TITLE + 6, MAX_LINE_LENGTH);         // TITLE:
+        while (*TITLE == ' ')
+            memmove(TITLE, TITLE + 1, MAX_LINE_LENGTH);
+
+        memmove(DATE_CREATED, fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
+        memmove(DATE_CREATED, TITLE + 13, MAX_LINE_LENGTH);  // DATE_CREATED:
+        while (*DATE_CREATED == ' ')
+            memmove(DATE_CREATED, TITLE + 1, MAX_LINE_LENGTH);
+
+        fclose(fp);
+
+
+        /* TODO: Increase readablity of this section */
+        fputs("<tr>\n"
+                "    <td class=\"blog-index-name\">\n"
+                "        <a href=\"",
+                outfile
+             );
         fputs_urlencoded(filenames[i], outfile);
-
-        fputs(                              "\">{TITLE}</a></td>
-    <td class=\"blog-index-date\">{date_to_text(CREATED)}</td>
-</tr>
-", outfile);
+        fprintf(outfile, "\">%s</a></td>\n", TITLE);
+        fprintf(outfile,
+                "    <td class=\"blog-index-date\">%s</td>\n<tr>",
+                date_to_text(CREATED, 1)
+               );
 
     }
 

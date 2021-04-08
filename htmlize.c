@@ -20,6 +20,32 @@
 #define MAX_LINE_LENGTH 500
 #define MAX_LINKS       100
 
+const char INITIAL_HTML_PRE_SUBTITLE[] = "\
+<html>\n\
+    <head>\n\
+        <title>%s</title>\n\
+        <link rel=\"stylesheet\" href=\"style.css\">\n\
+    </head>\n\
+    <body>\n\
+        <h1 class=\"title\">%s</h1>\n\
+        <span class=\"subtitle\">\n\
+";
+const char INITIAL_HTML_POST_SUBTITLE[] = "\
+        </span>\n\
+        <table class=\"blog-date\"><tr>\n\
+                <td class=\"blog-date\">Date created</td>\n\
+                <td class=\"blog-date\">\n\
+					{date_to_text(DATE_CREATED)}\n\
+                </td>\n\
+            </tr><tr>\n\
+                <td class=\"blog-date\">Last modified</td>\n\
+                <td class=\"blog-date\">\n\
+					{date_to_text(DATE_MODIFIED)}\n\
+                </td>\n\
+        </tr></table>\n\
+<!-- Blog content starts here -->\n\
+";
+
 
 void fputc_escaped(char c, FILE *stream)
 {
@@ -30,6 +56,11 @@ void fputc_escaped(char c, FILE *stream)
         case '&': fputs("&amp;", stream); break;
         default:  fputc(c,       stream); break;
     }
+}
+void fputs_escaped(const char *s, FILE *stream)
+{
+    for (int i=0; s[i] != '\0'; i++)
+        fputc_escaped(s[i], stream);
 }
 
 
@@ -67,6 +98,10 @@ void htmlize(FILE *in, FILE *out)
  *  - Links
  */
 {
+    char TITLE[MAX_LINE_LENGTH];
+    char DATE_CREATED[MAX_LINE_LENGTH];
+    char DATE_MODIFIED[MAX_LINE_LENGTH];
+
     char line[MAX_LINE_LENGTH];
     char last_line[MAX_LINE_LENGTH];
     char links[MAX_LINKS + 1][MAX_LINE_LENGTH];  // +1 because indexing starts at 0
@@ -95,6 +130,37 @@ void htmlize(FILE *in, FILE *out)
     /* Reset line[] and *in */
     memmove(line, last_line, MAX_LINE_LENGTH);
     rewind(in);
+
+
+    /* ---- BEGIN initial HTML ---- */
+    fgets(line, MAX_LINE_LENGTH, in);   // ---\n
+    memmove(TITLE,         fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
+    memmove(DATE_CREATED,  fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
+    memmove(DATE_MODIFIED, fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
+    fgets(line, MAX_LINE_LENGTH, in);   // ---\n
+
+    fputs("<!--\n", out);
+    fprintf(out, "TITLE: %s", TITLE);
+    fprintf(out, "CREATED: %s", DATE_CREATED);
+    fprintf(out, "MODIFIED: %s", DATE_MODIFIED);
+    fputs("-->\n", out);
+
+    // Remove trailing '\n'
+    char *p;
+    *(p = memchr(TITLE,         '\n', MAX_LINE_LENGTH)) = '\0';
+    *(p = memchr(DATE_CREATED,  '\n', MAX_LINE_LENGTH)) = '\0';
+    *(p = memchr(DATE_MODIFIED, '\n', MAX_LINE_LENGTH)) = '\0';
+
+    fprintf(out, INITIAL_HTML_PRE_SUBTITLE, TITLE, TITLE);
+    while (strcmp(fgets(line, MAX_LINE_LENGTH, in), "---\n"))  // ie. line != "---\n"
+        fputs_escaped(line, out);
+    fprintf(out, INITIAL_HTML_POST_SUBTITLE);
+    /* ---- END initial HTML ---- */
+
+
+    /* Reset line[] */
+    /* NOTE: DO NOT rewind(in); */
+    memmove(line, last_line, MAX_LINE_LENGTH);
 
     unsigned char BOLD_OPEN = 0;
     unsigned char ITALIC_OPEN = 0;
