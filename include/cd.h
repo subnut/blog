@@ -1,3 +1,6 @@
+#ifndef CD_H
+#define CD_H
+
 #include <unistd.h>
 #include <errno.h>
 
@@ -25,4 +28,5 @@ int cd(const char *path)
     return 0;
 }
 
+#endif
 // vim:et:ts=4:sts=0:sw=0:fdm=syntax

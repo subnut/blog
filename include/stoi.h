@@ -1,3 +1,6 @@
+#ifndef STOI_H
+#define STOI_H
+
 int ctoi(int c)
 {
     switch (c)
@@ -26,4 +29,5 @@ int stoi(const char *s)
     return retval;
 }
 
+#endif
 // vim:et:ts=4:sts=0:sw=0:fdm=syntax

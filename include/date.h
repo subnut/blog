@@ -1,3 +1,6 @@
+#ifndef DATE_H
+#define DATE_H
+
 #include <string.h>
 #include "stoi.h"
 
@@ -174,4 +177,5 @@ char *date_to_text(const char *date_str, const int long_month)
     return final_str;
 }
 
+#endif
 // vim:et:ts=4:sts=0:sw=0:fdm=syntax
