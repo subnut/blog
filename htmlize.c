@@ -351,8 +351,10 @@ void htmlize(FILE *in, FILE *out)
                         || (nch == '&' && line[index + 1] == '#')
                         || (!LINK_OPEN && nch == '!' && line[index + 1] == '(')
                    )
+                {
                     if (pch == '\\')    // The escaper itself has been escaped
                         fputc('\\', out);
+                }
                 else
                     fputc('\\', out);
                 continue;
