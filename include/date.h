@@ -4,14 +4,19 @@
 #include <string.h>
 #include "stoi.h"
 
+char DATE_STR[20];
+
 char *date_to_text(const char *date_str, const int long_month)
 {
-    char *output;
     char final_str[20];
+    for (int i=0; i<20; i++)
+        final_str[i] = '\0';
+
+    char *output;
     output = final_str;
 
-    char working_copy[10];
-    memmove(working_copy, date_str, 10);
+    char working_copy[11];
+    memmove(working_copy, date_str, 11);
 
     char *year  = working_copy;
     char *month = working_copy + 4;
@@ -173,8 +178,8 @@ char *date_to_text(const char *date_str, const int long_month)
     output += 4;
     *output++ = '\0';
 
-
-    return final_str;
+    memmove(DATE_STR, final_str, 20);
+    return DATE_STR;
 }
 
 #endif

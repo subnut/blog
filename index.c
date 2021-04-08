@@ -67,13 +67,14 @@ void fputs_urlencoded(const char *s, FILE *stream)
 int main(void)
 {
     DIR *dir;
-    struct dirent *dirent;
-    char *filenames[MAX_FILES + 1];  // +1 because indexing starts at 0
     FILE *outfile;
+    struct dirent *dirent;
+    const char empty[] = {'\0'};
+    const char *filenames[MAX_FILES + 1];  // +1 because indexing starts at 0
 
-    // Mark empty records as '\0'
+    // Mark all records as empty
     for (int i=1; i <= MAX_FILES; i++)
-        filenames[i] = '\0';
+        filenames[i] = empty;
 
     if (cd(DEST_DIR))
         return 1;
@@ -107,28 +108,36 @@ int main(void)
     }
     closedir(dir);
 
-    for (int i=1; filenames[i] != '\0'; i++)
+    for (int i=1; memcmp(filenames[i],"", 1) ; i++)
     {
-
         char TITLE[MAX_LINE_LENGTH];
         char DATE_CREATED[MAX_LINE_LENGTH];
-        char DATE_MODIFIED[MAX_LINE_LENGTH];
 
         FILE *fp;
         char line[MAX_LINE_LENGTH];
 
-        fp = fopen(filenames[i]);
-        fgets(line, MAX_LINE_LENGTH, in);                   // <!--\n
+        /*
+         * Since filenames[i] is a shared variable, we should not give it directly to fopen
+         * It has been seen that doing so causes undefined behaviour.
+         *
+         * Notably, it seems that doing so causes fopen() to try and open " ", i.e. a file
+         * whose name consists of a single space.
+         *
+         * TODO: Investigate further.
+         */
+        printf("%s\n", filenames[i]);
+        fp = fopen(filenames[i], "r");
+        fgets(line, MAX_LINE_LENGTH, fp);                   // <!--\n
 
-        memmove(TITLE, fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
-        memmove(TITLE, TITLE + 6, MAX_LINE_LENGTH);         // TITLE:
+        memmove(TITLE, fgets(line, MAX_LINE_LENGTH, fp), MAX_LINE_LENGTH);
+        memmove(TITLE, TITLE + 6, MAX_LINE_LENGTH - 6);         // TITLE:
         while (*TITLE == ' ')
-            memmove(TITLE, TITLE + 1, MAX_LINE_LENGTH);
+            memmove(TITLE, TITLE + 1, MAX_LINE_LENGTH - 1);
 
-        memmove(DATE_CREATED, fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
-        memmove(DATE_CREATED, TITLE + 13, MAX_LINE_LENGTH);  // DATE_CREATED:
+        memmove(DATE_CREATED, fgets(line, MAX_LINE_LENGTH, fp), MAX_LINE_LENGTH);
+        memmove(DATE_CREATED, DATE_CREATED + 9, MAX_LINE_LENGTH - 9);  // DATE_CREATED:
         while (*DATE_CREATED == ' ')
-            memmove(DATE_CREATED, TITLE + 1, MAX_LINE_LENGTH);
+            memmove(DATE_CREATED, TITLE + 1, MAX_LINE_LENGTH - 1);
 
         fclose(fp);
 
@@ -143,7 +152,7 @@ int main(void)
         fprintf(outfile, "\">%s</a></td>\n", TITLE);
         fprintf(outfile,
                 "    <td class=\"blog-index-date\">%s</td>\n<tr>",
-                date_to_text(CREATED, 1)
+                date_to_text(DATE_CREATED, 1)
                );
 
     }

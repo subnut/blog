@@ -12,9 +12,12 @@
  */
 
 #include "include/cd.h"
+#include "include/date.h"
 #include "include/stoi.h"
 #include "constants.h"
 
+#define date_to_text(x) \
+        date_to_text(x, 0)
 
 const char INITIAL_HTML_PRE_SUBTITLE[] = "\
 <html>\n\
@@ -31,12 +34,12 @@ const char INITIAL_HTML_POST_SUBTITLE[] = "\
         <table class=\"blog-date\"><tr>\n\
                 <td class=\"blog-date\">Date created</td>\n\
                 <td class=\"blog-date\">\n\
-					{date_to_text(DATE_CREATED)}\n\
+					%s\n\
                 </td>\n\
             </tr><tr>\n\
                 <td class=\"blog-date\">Last modified</td>\n\
                 <td class=\"blog-date\">\n\
-					{date_to_text(DATE_MODIFIED)}\n\
+					%s\n\
                 </td>\n\
         </tr></table>\n\
 <!-- Blog content starts here -->\n\
@@ -102,6 +105,7 @@ void htmlize(FILE *in, FILE *out)
     char last_line[MAX_LINE_LENGTH];
     char links[MAX_LINKS + 1][MAX_LINE_LENGTH];  // +1 because indexing starts at 0
 
+
     /* Collect links */
     while (fgets(line, MAX_LINE_LENGTH, in) != NULL)
     {
@@ -122,9 +126,6 @@ void htmlize(FILE *in, FILE *out)
             memmove(links[link_id], link, strlen(link)+1);  // +1 for '\0'
         }
     }
-
-    /* Reset line[] and *in */
-    memmove(line, last_line, MAX_LINE_LENGTH);
     rewind(in);
 
 
@@ -141,7 +142,6 @@ void htmlize(FILE *in, FILE *out)
     fprintf(out, "MODIFIED: %s", DATE_MODIFIED);
     fputs("-->\n", out);
 
-    // Remove trailing '\n'
     char *p;
     *(p = memchr(TITLE,         '\n', MAX_LINE_LENGTH)) = '\0';
     *(p = memchr(DATE_CREATED,  '\n', MAX_LINE_LENGTH)) = '\0';
@@ -150,13 +150,12 @@ void htmlize(FILE *in, FILE *out)
     fprintf(out, INITIAL_HTML_PRE_SUBTITLE, TITLE, TITLE);
     while (strcmp(fgets(line, MAX_LINE_LENGTH, in), "---\n"))  // ie. line != "---\n"
         fputs_escaped(line, out);
-    fprintf(out, INITIAL_HTML_POST_SUBTITLE);
+    fprintf(out, INITIAL_HTML_POST_SUBTITLE,
+            date_to_text(DATE_CREATED),
+            date_to_text(DATE_MODIFIED)
+           );
     /* ---- END initial HTML ---- */
 
-
-    /* Reset line[] */
-    /* NOTE: DO NOT rewind(in); */
-    memmove(line, last_line, MAX_LINE_LENGTH);
 
     unsigned char BOLD_OPEN = 0;
     unsigned char ITALIC_OPEN = 0;
@@ -173,6 +172,11 @@ void htmlize(FILE *in, FILE *out)
     char pch;  // Previous char
     char cch;  // Current char
     char nch;  // Next char
+
+    // Initialize them now to avoid undefined behaviour
+    pch = '\0';
+    cch = '\0';
+    nch = '\0';
 
     for (;;)
     {
@@ -305,9 +309,9 @@ void htmlize(FILE *in, FILE *out)
             while (line[H_LEVEL++] == '#') {;}
 
             // Remove leading #'s and spaces
-            memmove(&line[0], &line[H_LEVEL - 1], MAX_LINE_LENGTH);  // #'s
+            memmove(&line[0], &line[H_LEVEL - 1], MAX_LINE_LENGTH - (H_LEVEL - 1));  // #'s
             while (line[0] == ' ')                                   // spaces
-                memmove(&line[0], &line[1], MAX_LINE_LENGTH);
+                memmove(line, line + 1, MAX_LINE_LENGTH - 1);
 
             // Create an ID for the heading
             char h_id[MAX_LINE_LENGTH] = "";
