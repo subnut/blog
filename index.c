@@ -13,9 +13,8 @@
 #include "include/cd.h"
 #include "include/date.h"
 #include "include/stoi.h"
+#include "constants.h"
 
-#define MAX_FILES 100
-#define DIRECTORY "docs"
 
 const char INITIAL_TEXT[] = "\
 <html>\n\
@@ -76,7 +75,7 @@ int main(void)
     for (int i=1; i <= MAX_FILES; i++)
         filenames[i] = '\0';
 
-    if (cd(DIRECTORY))
+    if (cd(DEST_DIR))
         return 1;
 
     outfile = fopen("index.html", "w");

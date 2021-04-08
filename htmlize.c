@@ -4,9 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "include/cd.h"
-#include "include/stoi.h"
-
 /*
  * ctype.h  - isalnum(), isalpha(), etc.
  * dirent.h - opendir(), readdir()
@@ -14,11 +11,10 @@
  * string.h - str*(), mem*()
  */
 
-#define SOURCE_EXT ".raw"
-#define SOURCE_DIR "src"
-#define DEST_DIR   "docs"
-#define MAX_LINE_LENGTH 500
-#define MAX_LINKS       100
+#include "include/cd.h"
+#include "include/stoi.h"
+#include "constants.h"
+
 
 const char INITIAL_HTML_PRE_SUBTITLE[] = "\
 <html>\n\
