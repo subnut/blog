@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cd.h"
-#include "stoi.h"
+#include "include/cd.h"
+#include "include/stoi.h"
 
 /*
  * ctype.h  - isalnum(), isalpha(), etc.
