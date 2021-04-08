@@ -66,7 +66,8 @@ char *urlencode_s(const char *s, char *storage)
     pointer = storage;
     for (int i=0; s[i]!='\0' && i<=FILENAME_MAX*4; i++)
     {
-        memmove(pointer, urlencode_c(s[i], str), strlen(str));
+        urlencode_c(s[i], str);
+        memmove(pointer, str, strlen(str));
         pointer += strlen(str);
     }
     *pointer = '\0';
@@ -125,12 +126,10 @@ int main(void)
     char DATE_CREATED[MAX_LINE_LENGTH];
     for (int i=1; filenames[i]!=empty && i<=MAX_FILES ; i++)
     {
-        /*
-         * NOTE: Looks like removing the next printf() line breaks the program
-         * TODO: Investigate further
-         */
-        printf("%i: %s\n", i, filenames[i]);
-        if ((fp=fopen(filenames[i],"r")) == NULL)
+        char filename[FILENAME_MAX + 1];
+        memcpy(filename, filenames[i], FILENAME_MAX + 1);
+        fp = fopen(filename, "r");
+        if (fp == NULL)
             continue;
         fgets(line, MAX_LINE_LENGTH, fp);                   // <!--\n
 
@@ -148,7 +147,8 @@ int main(void)
         fclose(fp);
 
 
-        char storage[FILENAME_MAX*3 + 1];
+        char url[FILENAME_MAX*3 + 1];
+        urlencode_s(filenames[i], url);
         fprintf(outfile,
                 "<tr>\n"
                 "    <td class=\"blog-index-name\">\n"
@@ -158,7 +158,7 @@ int main(void)
                 "        %s\n"
                 "    </td>\n"
                 "</tr>\n",
-                urlencode_s(filenames[i], storage),
+                url,
                 TITLE,
                 date_to_text(DATE_CREATED, 1)
              );
