@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <errno.h>
 
 int cd(const char *path)
 {
