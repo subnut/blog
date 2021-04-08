@@ -10,7 +10,7 @@ run git branch -D gh-pages
 run git checkout -b gh-pages
 run mkdir docs || (run rm docs -rv && run mkdir docs)
 run htmlize
-run python index-page-creator.py
+run index
 run cp -v style.css docs
 # run cp -v src/* docs
 run git add -f docs
