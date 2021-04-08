@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "cd.h"
+#include "stoi.h"
 
 /*
  * ctype.h  - isalnum(), isalpha(), etc.
@@ -18,34 +19,6 @@
 #define DEST_DIR   "docs"
 #define MAX_LINE_LENGTH 500
 #define MAX_LINKS       100
-
-char char_to_val(char c)
-{
-    switch (c)
-    {
-        case '0': return 0;
-        case '1': return 1;
-        case '2': return 2;
-        case '3': return 3;
-        case '4': return 4;
-        case '5': return 5;
-        case '6': return 6;
-        case '7': return 7;
-        case '8': return 8;
-        case '9': return 9;
-        default:  return c;
-    }
-}
-int stoi(char *s)
-{
-    int retval = 0;
-    for (int shift = 0; s[shift] != '\0'; shift++)
-    {
-        retval *= 10;
-        retval += char_to_val(s[shift]);
-    }
-    return retval;
-}
 
 
 void fputc_escaped(char c, FILE *stream)
