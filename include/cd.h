@@ -11,16 +11,16 @@ int cd(const char *path)
         switch (errno)
         {
             case ENOENT:
-                fprintf(stderr, "htmlize: directory not found: %s\n", path);
+                fprintf(stderr, "cd: directory not found: %s\n", path);
                 break;
             case ENOTDIR:
-                fprintf(stderr, "htmlize: not a directory: %s\n", path);
+                fprintf(stderr, "cd: not a directory: %s\n", path);
                 break;
             case EACCES:
-                fprintf(stderr, "htmlize: permission denied: %s\n", path);
+                fprintf(stderr, "cd: permission denied: %s\n", path);
                 break;
             default:
-                fprintf(stderr, "htmlize: chdir error: %s\n", path);
+                fprintf(stderr, "cd: chdir error: %s\n", path);
                 break;
         }
         return 1;

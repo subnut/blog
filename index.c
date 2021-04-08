@@ -157,7 +157,7 @@ int main(void)
                 "    <td class=\"blog-index-date\">\n"
                 "        %s\n"
                 "    </td>\n"
-                "<tr>\n",
+                "</tr>\n",
                 urlencode_s(filenames[i], storage),
                 TITLE,
                 date_to_text(DATE_CREATED, 1)
