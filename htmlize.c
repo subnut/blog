@@ -33,14 +33,10 @@ const char INITIAL_HTML_POST_SUBTITLE[] = "\
         </span>\n\
         <table class=\"blog-date\"><tr>\n\
                 <td class=\"blog-date\">Date created</td>\n\
-                <td class=\"blog-date\">\n\
-					%s\n\
-                </td>\n\
+                <td class=\"blog-date\">%s</td>\n\
             </tr><tr>\n\
                 <td class=\"blog-date\">Last modified</td>\n\
-                <td class=\"blog-date\">\n\
-					%s\n\
-                </td>\n\
+                <td class=\"blog-date\">%s</td>\n\
         </tr></table>\n\
 <!-- Blog content starts here -->\n\
 ";

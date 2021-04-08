@@ -35,13 +35,13 @@ const char FINAL_TEXT[] = "\
 ";
 
 
-void fputc_urlencoded(int c, FILE *stream)
+char *urlencode_c(const char c, char *str_size_4)
 {
     /* unreserved */
     if (isalnum(c))
     {
-        fputc(c, stream);
-        return;
+        sprintf(str_size_4, "%c", c);
+        return str_size_4;
     }
     switch (c)
     {
@@ -49,18 +49,28 @@ void fputc_urlencoded(int c, FILE *stream)
         case '.':
         case '_':
         case '~':
-            fputc(c, stream);
-            return;
+            sprintf(str_size_4, "%c", c);
+            return str_size_4;
+        default:
+            break;
     }
 
     /* reserved */
-    fprintf(stream, "%%%0X", c);
-    return;
+    sprintf(str_size_4, "%%%0X", c);
+    return str_size_4;
 }
-void fputs_urlencoded(const char *s, FILE *stream)
+char *urlencode_s(const char *s, char *storage)
 {
-    for (int i=0; s[i] != '\0'; i++)
-        fputc_urlencoded(s[i], stream);
+    char str[4];
+    char *pointer;
+    pointer = storage;
+    for (int i=0; s[i]!='\0' && i<=FILENAME_MAX*4; i++)
+    {
+        memmove(pointer, urlencode_c(s[i], str), strlen(str));
+        pointer += strlen(str);
+    }
+    *pointer = '\0';
+    return storage;
 }
 
 
@@ -108,31 +118,27 @@ int main(void)
     }
     closedir(dir);
 
-    for (int i=1; memcmp(filenames[i],"", 1) ; i++)
+
+    FILE *fp;
+    char line[MAX_LINE_LENGTH];
+    char TITLE[MAX_LINE_LENGTH];
+    char DATE_CREATED[MAX_LINE_LENGTH];
+    for (int i=1; filenames[i]!=empty && i<=MAX_FILES ; i++)
     {
-        char TITLE[MAX_LINE_LENGTH];
-        char DATE_CREATED[MAX_LINE_LENGTH];
-
-        FILE *fp;
-        char line[MAX_LINE_LENGTH];
-
         /*
-         * Since filenames[i] is a shared variable, we should not give it directly to fopen
-         * It has been seen that doing so causes undefined behaviour.
-         *
-         * Notably, it seems that doing so causes fopen() to try and open " ", i.e. a file
-         * whose name consists of a single space.
-         *
-         * TODO: Investigate further.
+         * NOTE: Looks like removing the next printf() line breaks the program
+         * TODO: Investigate further
          */
-        printf("%s\n", filenames[i]);
-        fp = fopen(filenames[i], "r");
+        printf("%i: %s\n", i, filenames[i]);
+        if ((fp=fopen(filenames[i],"r")) == NULL)
+            continue;
         fgets(line, MAX_LINE_LENGTH, fp);                   // <!--\n
 
         memmove(TITLE, fgets(line, MAX_LINE_LENGTH, fp), MAX_LINE_LENGTH);
         memmove(TITLE, TITLE + 6, MAX_LINE_LENGTH - 6);         // TITLE:
         while (*TITLE == ' ')
             memmove(TITLE, TITLE + 1, MAX_LINE_LENGTH - 1);
+        *(strrchr(TITLE, '\n')) = '\0';
 
         memmove(DATE_CREATED, fgets(line, MAX_LINE_LENGTH, fp), MAX_LINE_LENGTH);
         memmove(DATE_CREATED, DATE_CREATED + 9, MAX_LINE_LENGTH - 9);  // DATE_CREATED:
@@ -142,19 +148,20 @@ int main(void)
         fclose(fp);
 
 
-        /* TODO: Increase readablity of this section */
-        fputs("<tr>\n"
-                "    <td class=\"blog-index-name\">\n"
-                "        <a href=\"",
-                outfile
-             );
-        fputs_urlencoded(filenames[i], outfile);
-        fprintf(outfile, "\">%s</a></td>\n", TITLE);
+        char storage[FILENAME_MAX*3 + 1];
         fprintf(outfile,
-                "    <td class=\"blog-index-date\">%s</td>\n<tr>",
+                "<tr>\n"
+                "    <td class=\"blog-index-name\">\n"
+                "        <a href=\"%s\">%s</a>\n"
+                "    </td>\n"
+                "    <td class=\"blog-index-date\">\n"
+                "        %s\n"
+                "    </td>\n"
+                "<tr>\n",
+                urlencode_s(filenames[i], storage),
+                TITLE,
                 date_to_text(DATE_CREATED, 1)
-               );
-
+             );
     }
 
     fputs(FINAL_TEXT, outfile);
