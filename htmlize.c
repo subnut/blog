@@ -16,8 +16,8 @@
 #include "include/stoi.h"
 #include "constants.h"
 
-#define date_to_text(x) \
-        date_to_text(x, 0)
+#define date_to_text(x)     date_to_text(x, 0)
+#define cd(x)               cd(x, argv)
 
 const char INITIAL_HTML_PRE_SUBTITLE[] = "\
 <html>\n\
@@ -507,7 +507,7 @@ void htmlize(FILE *in, FILE *out)
 }
 
 
-int main(void)
+int main(int argc, const char **argv)
 {
     DIR *dir;
     struct dirent *dirent;

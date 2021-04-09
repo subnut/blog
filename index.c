@@ -15,8 +15,8 @@
 #include "include/stoi.h"
 #include "constants.h"
 
-#define date_to_text(x) \
-        date_to_text(x, 1)
+#define date_to_text(x)     date_to_text(x, 1)
+#define cd(x)               cd(x, argv)
 
 const char INITIAL_TEXT[] = "\
 <html>\n\
@@ -77,7 +77,7 @@ char *urlencode_s(const char *s, char *storage)
 }
 
 
-int main(void)
+int main(int argc, const char **argv)
 {
     DIR *dir;
     FILE *outfile;
