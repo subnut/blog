@@ -82,12 +82,11 @@ int main(int argc, const char **argv)
     DIR *dir;
     FILE *outfile;
     struct dirent *dirent;
-    const char empty[] = {'\0'};
-    const char *filenames[MAX_FILES + 1];  // +1 because indexing starts at 0
+    char filenames[MAX_FILES + 1][FILENAME_MAX + 1];  // +1 because index starts at 0
 
     // Mark all records as empty
     for (int i=1; i <= MAX_FILES; i++)
-        filenames[i] = empty;
+        *filenames[i] = '\0';
 
     if (cd(DEST_DIR))
         return 1;
@@ -102,7 +101,7 @@ int main(int argc, const char **argv)
     }
     while ((dirent = readdir(dir)) != NULL)
     {
-        char *name = &(*dirent->d_name);
+        char *name = dirent->d_name;
         if (
                 name[0] == '.'      // ie. ., .., and hidden files
                 || name[0] == '0'   // ie. 0-draft, 0-format, etc.
@@ -117,7 +116,7 @@ int main(int argc, const char **argv)
         int num = stoi(name);
         *p = '-';
 
-        filenames[num] = name;
+        strcpy(filenames[num], name);
     }
     closedir(dir);
 
@@ -126,12 +125,9 @@ int main(int argc, const char **argv)
     char line[MAX_LINE_LENGTH];
     char TITLE[MAX_LINE_LENGTH];
     char DATE_CREATED[MAX_LINE_LENGTH];
-    for (int i=1; filenames[i]!=empty && i<=MAX_FILES ; i++)
+    for (int i=1; *filenames[i]!='\0' && i<=MAX_FILES ; i++)
     {
-        char filename[FILENAME_MAX + 1];
-        memcpy(filename, filenames[i], FILENAME_MAX + 1);
-        fp = fopen(filename, "r");
-        if (fp == NULL)
+        if ((fp = fopen(filenames[i], "r")) == NULL)
             continue;
         fgets(line, MAX_LINE_LENGTH, fp);                   // <!--\n
 
