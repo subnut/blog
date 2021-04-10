@@ -179,6 +179,27 @@ void htmlize(FILE *in, FILE *out)
         if (fgets(line, MAX_LINE_LENGTH, in) == NULL)
             break;
 
+        /*
+         * NOTE: Always remember, CODEBLOCKs take precedence over anything else
+         */
+
+        // For <pre> blocks
+        if (!memcmp(line, "```", 3))
+        {
+            if (++CODEBLOCK_OPEN % 2)
+                fputs("<pre>\n", out);
+            else
+                fputs("</pre>\n", out);
+            continue;
+        }
+        if (CODEBLOCK_OPEN)
+        {
+            // Blindly escape everything and move on
+            fputc_escaped(cch, out);
+            continue;
+        }
+
+
         // End of blog
         if (!memcmp(line, "---\n", 4))
             break;
@@ -224,23 +245,6 @@ void htmlize(FILE *in, FILE *out)
              * Which... is obviously what the original text would have been
              * if the links weren't there.
              */
-        }
-
-
-        // For <pre> blocks
-        if (!memcmp(line, "```", 3))
-        {
-            if (++CODEBLOCK_OPEN % 2)
-                fputs("<pre>\n", out);
-            else
-                fputs("</pre>\n", out);
-            continue;
-        }
-        if (CODEBLOCK_OPEN)
-        {
-            // Blindly escape everything and move on
-            fputc_escaped(cch, out);
-            continue;
         }
 
 
@@ -357,6 +361,7 @@ void htmlize(FILE *in, FILE *out)
                 continue;
             }
 
+
             // Heading tag close
             if (H_LEVEL && cch == '\n')
             {
@@ -366,141 +371,160 @@ void htmlize(FILE *in, FILE *out)
             }
 
 
+            /*
+             * NOTE: As I NOTE'd above, CODE shall always come first
+             */
+
+            // `code`
+            if (!CODE_OPEN && cch == '`' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
+            {
+                CODE_OPEN = 1;
+                fputs("<code>", out);
+                continue;
+            }
+            if (CODE_OPEN && cch == '`' && pch != '\\')
+            {
+                CODE_OPEN = 0;
+                fputs("<code>", out);
+                continue;
+            }
+            if (CODE_OPEN)
+            {
+                // Nothing to see here, just escape and move along
+                fputc_escaped(cch, out);
+                continue;
+            }
+
+
             // Linebreak if two spaces at line end
             if (cch == '\n' && pch == ' ' && line[index - 2] == ' ')
                 fputs("<br>\n", out);
 
 
-            // `code`
-            if (cch == '`' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
+            // HTML <tags>
+            if ((cch == '<') && (nch == '/' || isalpha(nch)) && pch != '\\')
             {
-                ++CODE_OPEN;
-                if (CODE_OPEN %= 2)
-                    fputs("<code>", out);
-                else
-                    fputs("</code>", out);
+                HTML_TAG_OPEN = 1;
+                fputc('<', out);
+                continue;
+            }
+            if (HTML_TAG_OPEN && cch == '>')
+            {
+                HTML_TAG_OPEN = 0;
+                fputc('>', out);
+                continue;
+            }
+            if (HTML_TAG_OPEN)
+            {
+                // Nothing needs escaping, fputc() and move on
+                fputc(cch, out);
                 continue;
             }
 
 
-            if (!CODE_OPEN)
+            // HTML Numeric Character references
+            if (cch == '&' && nch == '#')
             {
-                // HTML <tags>
-                if ((cch == '<') && (nch == '/' || isalpha(nch)) && pch != '\\')
-                {
-                    HTML_TAG_OPEN = 1;
-                    fputc('<', out);
-                    continue;
-                }
-                if (HTML_TAG_OPEN && cch == '>')
-                {
-                    HTML_TAG_OPEN = 0;
-                    fputc('>', out);
-                    continue;
-                }
-                if (HTML_TAG_OPEN)
-                {
-                    // Nothing needs escaping, fputc() and move on
+                if (pch == '\\')
+                    fputs("&amp;", out);
+                else
+                    fputc('&', out);
+                continue;
+            }
+
+
+            // *bold*
+            if (cch == '*' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
+            {
+                ++BOLD_OPEN;
+                if (BOLD_OPEN %= 2)
+                    fputs("<b>", out);
+                else
+                    fputs("</b>", out);
+                continue;
+            }
+
+
+            // _italic_
+            if (cch == '_' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
+            {
+                ++ITALIC_OPEN;
+                if (ITALIC_OPEN %= 2)
+                    fputs("<i>", out);
+                else
+                    fputs("</i>", out);
+                continue;
+            }
+
+
+            // Links    !(ID) attribute="value" [text]
+            if (cch == '!' && nch == '(' && pch != '\\' && !LINK_OPEN)
+            {
+                LINK_OPEN = 1;
+                fputs("<a href=\"", out);
+
+                char *p = memchr(line+index, ')', MAX_LINE_LENGTH - index);
+                *p = '\0';
+
+                int link_id = stoi(line + index + 1);
+                fputs(links[link_id], out);
+
+                *p = ')';
+                nch = ')';
+                index = p - line;
+                continue;
+            }
+            if (LINK_OPEN)
+            {
+                if (cch == ')' || cch == '[')
+                    if (cch == ')')
+                        fputc('"', out);
+                    else /* cch == '[' */
+                    {
+                        fputc('>', out);
+                        LINK_OPEN = 0;
+                        LINK_TEXT_OPEN = 1;
+                    }
+                else
                     fputc(cch, out);
+                continue;
+            }
+            if (LINK_TEXT_OPEN && cch == ']' && nch != '\\')
+            {
+                LINK_TEXT_OPEN = 0;
+                fputs("</a>", out);
+                continue;
+            }
+
+
+            // Table cells
+            if (TABLE_MODE)
+            {
+                if (cch == '|' && pch != '\\')
+                {
+                    fputs("</td><td>", out);
                     continue;
                 }
-
-
-                // HTML Numeric Character references
-                if (cch == '&' && nch == '#')
+                if (cch == '\n')
                 {
-                    if (pch == '\\')
-                        fputs("&amp;", out);
-                    else
-                        fputc('&', out);
+                    fputs("</td></tr>\n", out);
                     continue;
-                }
-
-
-                // *bold*
-                if (cch == '*' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
-                {
-                    ++BOLD_OPEN;
-                    if (BOLD_OPEN %= 2)
-                        fputs("<b>", out);
-                    else
-                        fputs("</b>", out);
-                    continue;
-                }
-
-
-                // _italic_
-                if (cch == '_' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
-                {
-                    ++ITALIC_OPEN;
-                    if (ITALIC_OPEN %= 2)
-                        fputs("<i>", out);
-                    else
-                        fputs("</i>", out);
-                    continue;
-                }
-
-
-                // Links    !(ID) attribute="value" [text]
-                if (cch == '!' && nch == '(' && pch != '\\' && !LINK_OPEN)
-                {
-                    LINK_OPEN = 1;
-                    fputs("<a href=\"", out);
-
-                    char *p = memchr(line+index, ')', MAX_LINE_LENGTH - index);
-                    *p = '\0';
-
-                    int link_id = stoi(line + index + 1);
-                    fputs(links[link_id], out);
-
-                    *p = ')';
-                    nch = ')';
-                    index = p - line;
-                    continue;
-                }
-                if (LINK_OPEN)
-                {
-                    if (cch == ')' || cch == '[')
-                        if (cch == ')')
-                            fputc('"', out);
-                        else /* cch == '[' */
-                        {
-                            fputc('>', out);
-                            LINK_OPEN = 0;
-                            LINK_TEXT_OPEN = 1;
-                        }
-                    else
-                        fputc(cch, out);
-                    continue;
-                }
-                if (LINK_TEXT_OPEN && cch == ']' && nch != '\\')
-                {
-                    LINK_TEXT_OPEN = 0;
-                    fputs("</a>", out);
-                    continue;
-                }
-
-
-                // Table cells
-                if (TABLE_MODE)
-                {
-                    if (cch == '|' && pch != '\\')
-                    {
-                        fputs("</td><td>", out);
-                        continue;
-                    }
-                    if (cch == '\n')
-                    {
-                        fputs("</td></tr>\n", out);
-                        continue;
-                    }
                 }
             }
 
 
+            // It's just a simple, innocent character
             fputc_escaped(cch, out);
         }
     }
+
+
+    fputs(
+            "<!-- Blog content ends here -->\n"
+            "    </body>\n"
+            "</html>\n",
+            out
+         );
 }
 
 
