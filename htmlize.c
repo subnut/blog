@@ -28,10 +28,10 @@ const char INITIAL_HTML_PRE_SUBTITLE[] = "\
     </head>\n\
     <body>\n\
         <h1 class=\"title\">%s</h1>\n\
-        <span class=\"subtitle\">\n\
+        <p class=\"subtitle\">\n\
 ";
 const char INITIAL_HTML_POST_SUBTITLE[] = "\
-        </span>\n\
+        </p>\n\
         <table class=\"blog-date\"><tr>\n\
                 <td class=\"blog-date\">Date created</td>\n\
                 <td class=\"blog-date\">%s</td>\n\
@@ -63,6 +63,7 @@ void fputs_escaped(const char *s, FILE *stream)
 void htmlize(FILE *in, FILE *out)
 /*
  * Things that are escaped using '\\' -
+ *  - \```\n
  *  - \`code\`
  *  - \*bold\*
  *  - \_italic\_
@@ -83,7 +84,7 @@ void htmlize(FILE *in, FILE *out)
  *  - HTML <tags>
  *  - Linebreak if two spaces at line end
  *  - &#...;  numeric character references
- *  - <br> at blank lines
+ *  - <br> at Blank lines with two spaces
  *  - Links
  */
 {
@@ -185,9 +186,15 @@ void htmlize(FILE *in, FILE *out)
          */
 
         // For <pre> blocks
+        if (!memcmp(line, "\\```", 3))
+        {
+            fputs("```\n", out);
+            continue;
+        }
         if (!memcmp(line, "```", 3))
         {
-            if (++CODEBLOCK_OPEN % 2)
+            ++CODEBLOCK_OPEN;
+            if (CODEBLOCK_OPEN %= 2)
                 fputs("<pre>\n", out);
             else
                 fputs("</pre>\n", out);
@@ -209,43 +216,11 @@ void htmlize(FILE *in, FILE *out)
         if (!memcmp(line, "![", 2))
             continue;
 
-        // Blank lines
-        if (!memcmp(line, "\n", 2))
+        // Blank line with two spaces
+        if (!memcmp(line, "  \n", 4))
         {
-            if (!memcmp(last_line, "\n", 2))     // Previous line was blank
-                fputs("<br>\n", out);
-            else
-                if (memcmp(last_line, "![", 2))     // Prev line wasn't link defn
-                    if (memcmp(last_line, "<", 1))  // Prev line (hopefully) wasn't HTML tag
-                        fputs("<br><br>\n", out);
+            fputs("<br>\n", out);
             continue;
-
-            /*
-             * For convenience, if there is a blank line after the link
-             * definition(s), then we shall not treat it as a blank line
-             *
-             * e.g. -
-             * │
-             * │lorem ipsum dolor sit amet.
-             * │
-             * │![1]: https://localhost
-             * │![2]: http://localhost
-             * │
-             * │Lorem Ipsum Dolor sit Amet
-             * │consecteiur blah blah blah
-             * │
-             *
-             * Shall be interpreted as -
-             * │
-             * │lorem ipsum dolor sit amet.
-             * │
-             * │Lorem Ipsum Dolor sit Amet
-             * │consecteiur blah blah blah
-             * │
-             *
-             * Which... is obviously what the original text would have been
-             * if the links weren't there.
-             */
         }
 
 
@@ -324,7 +299,11 @@ void htmlize(FILE *in, FILE *out)
                         if (isalnum(line[i]))
                             h_id[j++] = line[i];
 
-            fprintf(out, "<h%i id=\"%s\">", H_LEVEL, h_id);
+            fprintf(
+                    out,
+                    "<h%i id=\"%s\"><a class=\"self-link\" href=\"#%s\">",
+                    H_LEVEL, h_id, h_id
+                   );
         }
 
 
@@ -366,7 +345,7 @@ void htmlize(FILE *in, FILE *out)
             // Heading tag close
             if (H_LEVEL && cch == '\n')
             {
-                fprintf(out, "</h%u>\n", H_LEVEL);
+                fprintf(out, "</a></h%u>\n", H_LEVEL);
                 H_LEVEL = 0;
                 continue;
             }
