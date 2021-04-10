@@ -537,16 +537,16 @@ int main(int argc, const char **argv)
         switch (errno)
         {
             case ENOENT:
-                fprintf(stderr, "htmlize: directory not found: %s\n", SOURCE_DIR);
+                fprintf(stderr, "%s: directory not found: %s\n",    *argv, SOURCE_DIR);
                 break;
             case ENOTDIR:
-                fprintf(stderr, "htmlize: not a directory: %s\n", SOURCE_DIR);
+                fprintf(stderr, "%s: not a directory: %s\n",        *argv, SOURCE_DIR);
                 break;
             case EACCES:
-                fprintf(stderr, "htmlize: permission denied: %s\n", SOURCE_DIR);
+                fprintf(stderr, "%s: permission denied: %s\n",      *argv, SOURCE_DIR);
                 break;
             default:
-                fprintf(stderr, "htmlize: opendir error: %s\n", SOURCE_DIR);
+                fprintf(stderr, "%s: opendir error: %s\n",          *argv, SOURCE_DIR);
                 break;
         }
         return 1;
