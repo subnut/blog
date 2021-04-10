@@ -3,12 +3,9 @@ body {
   background: #FFF;
 }
 :target { background: #FF06; }
-::selection {
-  color: inherit;
-  background: #BFDFFF;
-}
 pre, code { background: #eee; }
 hr { color: #CCC; background: #CCC; }
+a { color: inherit;}
 
 @media (prefers-color-scheme: dark) {
   body {
@@ -16,16 +13,21 @@ hr { color: #CCC; background: #CCC; }
     color: #FFF;
   }
   :target { background: #440; }
-  ::selection { background: #445; }
   pre, code { background: #333; }
   hr { color: #333; background: #333; }
+}
+@media (prefers-color-scheme: light) {
+  ::selection {
+    color: inherit;
+    background: #BDF;
+  }
 }
 
 body {
   margin: 1rem auto;
   padding: 0 1rem;
-  max-width: 35rem;
   font-size: 1rem;
+  max-width: 60ch;
   font-family: RecVar, sans-serif;
   font-variation-settings: 'CASL' 0.7;
 }
@@ -50,18 +52,9 @@ h1 { letter-spacing: -1px; }
 h2 { letter-spacing: -0.5px; }
 u { text-decoration: underline wavy; }
 
-a {
-  color: inherit;
-  text-decoration: underline;
-  transition: 150ms linear;
-}
-a:hover {
-  font-weight: bolder;
-  font-variation-settings: 'CASL' 1;
-}
-
+a { text-decoration: underline; }
+a:hover { font-weight: bolder; }
 @media (prefers-reduced-motion: reduce) {
-  a { transition: none; }
   a:hover { font-weight: inherit; }
 }
 
