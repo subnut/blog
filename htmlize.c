@@ -196,7 +196,7 @@ void htmlize(FILE *in, FILE *out)
         if (CODEBLOCK_OPEN)
         {
             // Blindly escape everything and move on
-            fputc_escaped(cch, out);
+            fputs_escaped(line, out);
             continue;
         }
 
@@ -386,7 +386,7 @@ void htmlize(FILE *in, FILE *out)
             if (CODE_OPEN && cch == '`' && pch != '\\')
             {
                 CODE_OPEN = 0;
-                fputs("<code>", out);
+                fputs("</code>", out);
                 continue;
             }
             if (CODE_OPEN)
