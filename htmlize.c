@@ -97,29 +97,6 @@ void htmlize(FILE *in, FILE *out)
     char links[MAX_LINKS + 1][MAX_LINE_LENGTH];  // +1 because indexing starts at 0
 
 
-    /* Collect links */
-    while (fgets(line, MAX_LINE_LENGTH, in) != NULL)
-    {
-        if (!memcmp(line, "![", 2))     // i.e. line starts with ![
-        {
-            char *p = memchr(line, ']', MAX_LINE_LENGTH);
-            *p = '\0';
-
-            int i = 2;
-            while (p[i] == ' ')
-                i++;
-
-            char link[MAX_LINE_LENGTH];
-            memmove(link, p + i, MAX_LINE_LENGTH - (p-line + i));
-            *(strrchr(link, '\n')) = '\0';
-
-            int link_id = stoi(line + 2);
-            memmove(links[link_id], link, strlen(link)+1);  // +1 for '\0'
-        }
-    }
-    rewind(in);
-
-
     /* ---- BEGIN initial HTML ---- */
     fgets(line, MAX_LINE_LENGTH, in);   // ---\n
     memmove(TITLE,         fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
@@ -164,11 +141,6 @@ void htmlize(FILE *in, FILE *out)
     char cch;  // Current char
     char nch;  // Next char
 
-    // Initialize them now to avoid undefined behaviour
-    pch = '\0';
-    cch = '\0';
-    nch = '\0';
-
     for (;;)
     {
         // Save current line in last_line
@@ -212,9 +184,26 @@ void htmlize(FILE *in, FILE *out)
         if (!memcmp(line, "---\n", 4))
             break;
 
-        // Link definitions
+        // Link definition
         if (!memcmp(line, "![", 2))
+        {
+            int link_id;
+            char link_address[MAX_LINE_LENGTH];
+
+            char *p;
+            *(p = memchr(line, ']', MAX_LINE_LENGTH)) = '\0';
+            link_id = stoi(line + 2);
+
+            int index = 2;
+            while (p[index] == ' ')
+                index++;
+            memmove(link_address, p+index, MAX_LINE_LENGTH-((p-line)+index));
+
+            *(strrchr(link_address, '\n')) = '\0';
+            memmove(links[link_id], link_address, strlen(link_address)+1);  // +1 for '\0'
+
             continue;
+        }
 
         // Blank line with two spaces
         if (!memcmp(line, "  \n", 4))
@@ -279,6 +268,7 @@ void htmlize(FILE *in, FILE *out)
         // Headings (NOTE: starts from h2)
         if (line[0] == '#')
         {
+            // Calculate H_LEVEL
             H_LEVEL = 1;
             while (line[H_LEVEL++] == '#') {;}
 
@@ -287,7 +277,12 @@ void htmlize(FILE *in, FILE *out)
             while (line[0] == ' ')                                   // spaces
                 memmove(line, line + 1, MAX_LINE_LENGTH - 1);
 
-            // Create an ID for the heading
+            /*
+             * Create an ID for the heading
+             *   - Alphabets and numbers are kept as-is
+             *   - Spaces are transformed into '-'s
+             *   - Anything else is discarded
+             */
             char h_id[MAX_LINE_LENGTH] = "";
             for (int i=0,j=0; i < MAX_LINE_LENGTH; i++)
                 if (line[i] == '\0')
@@ -322,7 +317,7 @@ void htmlize(FILE *in, FILE *out)
             cch = nch;
             nch = *(line + index);
 
-            if (cch == '\0')   // we've reached end of string
+            if (cch == '\0')    // we've reached end of string
                 break;          // stop iterating
 
 
@@ -334,8 +329,7 @@ void htmlize(FILE *in, FILE *out)
                         || (TABLE_MODE && nch == '|')
                         || (nch == '&' && line[index + 1] == '#')
                         || (!LINK_OPEN && nch == '!' && line[index + 1] == '(')
-                   )
-                {;}
+                   ) {;}
                 else
                     fputc('\\', out);
                 continue;
@@ -352,7 +346,7 @@ void htmlize(FILE *in, FILE *out)
 
 
             /*
-             * NOTE: As I NOTE'd above, CODE shall always come first
+             * NOTE: CODE shall always come first
              */
 
             // `code`
@@ -378,7 +372,10 @@ void htmlize(FILE *in, FILE *out)
 
             // Linebreak if two spaces at line end
             if (cch == '\n' && pch == ' ' && line[index - 2] == ' ')
+            {
                 fputs("<br>\n", out);
+                continue;
+            }
 
 
             // HTML <tags>
