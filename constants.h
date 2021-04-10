@@ -1,4 +1,4 @@
-#define SOURCE_EXT ".raw"
+#define SOURCE_EXT ".blog"
 #define SOURCE_DIR "src"
 #define DEST_DIR   "docs"
 #define MAX_LINE_LENGTH 500
