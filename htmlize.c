@@ -498,9 +498,9 @@ void htmlize(FILE *in, FILE *out)
 
     fputs(
             "<!-- Blog content ends here -->\n"
-            "    <br>\n"
-            "    <br>\n"
-            "    <br>\n"
+            "        <br>\n"
+            "        <br>\n"
+            "        <br>\n"
             "    </body>\n"
             "</html>\n",
             out
