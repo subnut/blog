@@ -3,12 +3,14 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 /*
  * ctype.h  - isalnum(), isalpha(), etc.
  * dirent.h - opendir(), readdir()
  * stdio.h  - printf(), fopen(), fprintf(), etc
  * string.h - str*(), mem*()
+ * stdlib.h - malloc(), free()
  */
 
 #include "include/cd.h"
@@ -60,6 +62,54 @@ void fputs_escaped(const char *s, FILE *stream)
 }
 
 
+void collect_links(FILE *stream, char *links[])
+{
+    char line[MAX_LINE_LENGTH];
+    unsigned char CODEBLOCK_OPEN = 0;
+
+    while (fgets(line, MAX_LINE_LENGTH, stream) != NULL)
+    {
+        if (!memcmp(line, "```", 3))
+        {
+            ++CODEBLOCK_OPEN;
+            CODEBLOCK_OPEN %= 2;
+            continue;
+        }
+        if (CODEBLOCK_OPEN)
+            continue;
+
+        if (*line != '!')
+            continue;
+
+        if (!memcmp(line, "![", 2))
+        {
+            int id;
+            char *end;      // End of link id
+            char *start;    // Start of link id
+            char *address;
+
+            start = line + 2;       // +2 for ![
+            end = memchr(line, ']', MAX_LINE_LENGTH);
+            *end = '\0';
+            id = stoi(start);
+            *end = ']';
+
+            address = end + 2;      // +2 for ]:
+            while (*address == ' ') // Strip whitespaces
+                address++;
+            /* address now points to the start of the link address */
+
+            char *p;
+            *(p = memchr(address, '\n', MAX_LINE_LENGTH)) = '\0';
+
+            char *storage = malloc(MAX_LINE_LENGTH - (address-line));
+            memmove(storage, address, MAX_LINE_LENGTH - (address-line));
+            links[id] = storage;
+        }
+    }
+    rewind(stream);
+}
+
 void htmlize(FILE *in, FILE *out)
 /*
  * Things that are escaped using '\\' -
@@ -92,10 +142,11 @@ void htmlize(FILE *in, FILE *out)
     char DATE_CREATED[MAX_LINE_LENGTH];
     char DATE_MODIFIED[MAX_LINE_LENGTH];
 
-    char line[MAX_LINE_LENGTH];
-    char last_line[MAX_LINE_LENGTH];
-    char links[MAX_LINKS + 1][MAX_LINE_LENGTH];  // +1 because indexing starts at 0
+    char  line[MAX_LINE_LENGTH];
+    char  last_line[MAX_LINE_LENGTH];
+    char *links[MAX_LINKS + 1];  // +1 because indexing starts at 0
 
+    collect_links(in, links);
 
     /* ---- BEGIN initial HTML ---- */
     fgets(line, MAX_LINE_LENGTH, in);   // ---\n
@@ -185,25 +236,9 @@ void htmlize(FILE *in, FILE *out)
             break;
 
         // Link definition
-        if (!memcmp(line, "\t![", 3))
-        {
-            int link_id;
-            char link_address[MAX_LINE_LENGTH];
-
-            char *p;
-            *(p = memchr(line, ']', MAX_LINE_LENGTH)) = '\0';   // Mark end of link ID
-            link_id = stoi(line + 3);                           // 3 for '\t' '!' '['
-
-            int index = 2;
-            while (p[index] == ' ')
-                index++;
-            memmove(link_address, p+index, MAX_LINE_LENGTH-((p-line)+index));
-
-            *(strrchr(link_address, '\n')) = '\0';
-            memmove(links[link_id], link_address, strlen(link_address)+1);  // +1 for '\0'
-
+        if (!memcmp(line, "![", 2))
             continue;
-        }
+
 
         // Blank line with two spaces
         if (!memcmp(line, "  \n", 4))
@@ -445,6 +480,7 @@ void htmlize(FILE *in, FILE *out)
 
                 int link_id = stoi(line + index + 1);
                 fputs(links[link_id], out);
+                free(links[link_id]);
 
                 *p = ')';
                 nch = ')';
