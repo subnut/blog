@@ -427,9 +427,9 @@ void htmlize(FILE *in, FILE *out)
 			{
 				++BOLD_OPEN;
 				if (BOLD_OPEN %= 2)
-					fputs("<b>", out);
+					fputs("<strong>", out);
 				else
-					fputs("</b>", out);
+					fputs("</strong>", out);
 				continue;
 			}
 
@@ -439,9 +439,9 @@ void htmlize(FILE *in, FILE *out)
 			{
 				++ITALIC_OPEN;
 				if (ITALIC_OPEN %= 2)
-					fputs("<i>", out);
+					fputs("<em>", out);
 				else
-					fputs("</i>", out);
+					fputs("</em>", out);
 				continue;
 			}
 
