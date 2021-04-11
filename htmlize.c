@@ -185,8 +185,25 @@ void htmlize(FILE *in, FILE *out)
             break;
 
         // Link definition
-        if (!memcmp(line, "![", 2))
+        if (!memcmp(line, "\t![", 3))
+        {
+            int link_id;
+            char link_address[MAX_LINE_LENGTH];
+
+            char *p;
+            *(p = memchr(line, ']', MAX_LINE_LENGTH)) = '\0';   // Mark end of link ID
+            link_id = stoi(line + 3);                           // 3 for '\t' '!' '['
+
+            int index = 2;
+            while (p[index] == ' ')
+                index++;
+            memmove(link_address, p+index, MAX_LINE_LENGTH-((p-line)+index));
+
+            *(strrchr(link_address, '\n')) = '\0';
+            memmove(links[link_id], link_address, strlen(link_address)+1);  // +1 for '\0'
+
             continue;
+        }
 
         // Blank line with two spaces
         if (!memcmp(line, "  \n", 4))
@@ -423,43 +440,15 @@ void htmlize(FILE *in, FILE *out)
                 LINK_OPEN = 1;
                 fputs("<a href=\"", out);
 
-                fpos_t saved_pos;
-                fgetpos(in, &saved_pos);
+                char *p = memchr(line+index, ')', MAX_LINE_LENGTH - index);
+                *p = '\0';
 
-                char *p;
-                p = memchr(line+index, ')', MAX_LINE_LENGTH - index);
-                *p = ']';
-                *(line + index) = '[';
-
-                char link[MAX_LINE_LENGTH];
-                while (fgets(link, MAX_LINE_LENGTH, in) != NULL)
-                {
-                    if (*link == '\t')
-                    {
-                        if (!memcmp(link+1, line+index-1, p-(line+index)+2))
-                        {
-                            char *p2;
-                            if ((p2 = strrchr(link, '\n')) != NULL)
-                                *p2 = '\0';             // Mark link end
-
-                            p2 = memchr(link, ':', MAX_LINE_LENGTH);
-                            p2++;                       // Skip ':'
-                            while (*p2++ == ' ') {;}    // Skip Whitespaces
-
-                            memmove(link, p2, MAX_LINE_LENGTH - (p2-link));
-                            break;
-                        }
-                    }
-                }
+                int link_id = stoi(line + index + 1);
+                fputs(links[link_id], out);
 
                 *p = ')';
-                *(line + index) = '(';
                 nch = ')';
                 index = p - line;
-
-                fputs(link, out);
-                fsetpos(in, &saved_pos);
-
                 continue;
             }
             if (LINK_OPEN)
