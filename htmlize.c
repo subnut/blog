@@ -146,7 +146,9 @@ void htmlize(FILE *in, FILE *out)
 	char  last_line[MAX_LINE_LENGTH];
 	char *links[MAX_LINKS + 1];			// +1 because indexing starts at 0
 
+	/* Collect links */
 	collect_links(in, links);
+
 
 	/* ---- BEGIN initial HTML ---- */
 	fgets(line, MAX_LINE_LENGTH, in);	// ---\n
@@ -242,7 +244,7 @@ void htmlize(FILE *in, FILE *out)
 
 
 		// Blank line with two spaces
-		if (!memcmp(line, "  \n", 4))
+		if (!memcmp(line, "  \n", 3))
 		{
 			fputs("<br>\n", out);
 			continue;
@@ -267,13 +269,19 @@ void htmlize(FILE *in, FILE *out)
 			char *p;
 			if ((p = memchr(line, '-', MAX_LINE_LENGTH)) != NULL)
 			{
-				/* Check if the found '-' is the first char of the line */
+				/*
+				 * Check if the found '-' is the first char of the line
+				 *
+				 * ie. check whether there exists any non-blankspace character
+				 * on this line before the '-' character we found
+				 */
 				char *i = p;
 				while (i > line)
-					if (!isblank(*--i))
-						break;
-				if (i == line)
-				{
+					if (!isblank(*--i))		// We found a non-blank character
+						break;				// break out
+
+				if (i == line)	// ie. we didn't "break" out of the previous loop
+				{				// That means our '-' *is* the first character of the line
 					memmove(&p[3], p, MAX_LINE_LENGTH-(p-line)-3);
 					*p++ = '<';
 					*p++ = 'l';
@@ -547,8 +555,11 @@ void htmlize(FILE *in, FILE *out)
 
 int main(int argc, const char **argv)
 {
+	FILE *sfp;	// (s)ource      (f)ile (p)ointer
+	FILE *dfp;	// (d)estination (f)ile (p)ointer
 	DIR *dir;
 	struct dirent *dirent;
+
 	if ((dir = opendir(SOURCE_DIR)) == NULL)
 	{
 		switch (errno)
@@ -568,6 +579,7 @@ int main(int argc, const char **argv)
 		}
 		return 1;
 	}
+
 	while ((dirent = readdir(dir)) != NULL)
 	{
 		char *name = &(*dirent->d_name);
@@ -577,20 +589,16 @@ int main(int argc, const char **argv)
 			char new_name[mem_needed];
 			memmove(new_name, name, mem_needed);
 			char *p = strrchr(new_name, '.');
-			1[p] = 'h';
-			2[p] = 't';
-			3[p] = 'm';
-			4[p] = 'l';
-			5[p] = '\0';
+			memmove(p, ".html", 6);
 
 			if (cd(SOURCE_DIR))
 				return 1;
-			FILE *sfp = fopen(name, "r");
+			sfp = fopen(name, "r");
 			cd("..");
 
 			if (cd(DEST_DIR))
 				return 1;
-			FILE *dfp = fopen(new_name, "w");
+			dfp = fopen(new_name, "w");
 			cd("..");
 
 			htmlize(sfp, dfp);
