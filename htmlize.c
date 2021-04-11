@@ -94,7 +94,7 @@ void htmlize(FILE *in, FILE *out)
 
 	char line[MAX_LINE_LENGTH];
 	char last_line[MAX_LINE_LENGTH];
-	char links[MAX_LINKS + 1][MAX_LINE_LENGTH + 1];	// +1 because indexing starts at 0
+	char links[MAX_LINKS + 1][MAX_LINE_LENGTH];	// +1 because indexing starts at 0
 
 
 	/* ---- BEGIN initial HTML ---- */
@@ -137,9 +137,9 @@ void htmlize(FILE *in, FILE *out)
 
 	unsigned int H_LEVEL = 0;
 
-	char pch;	// (p)revious (ch)aracter
-	char cch;	// (c)urrent  (ch)aracter
-	char nch;	// (n)ext     (ch)aracter
+	char *pch;	// (p)revious (ch)aracter
+	char *cch;	// (c)urrent  (ch)aracter
+	char *nch;	// (n)ext     (ch)aracter
 
 	for (;;)
 	{
@@ -158,7 +158,7 @@ void htmlize(FILE *in, FILE *out)
 		 */
 
 		// For <pre> blocks
-		if (!memcmp(line, "\\```", 3))
+		if (!memcmp(line, "\\```", 3))	// Escaped by a backslash
 		{
 			fputs("```\n", out);
 			continue;
@@ -194,12 +194,11 @@ void htmlize(FILE *in, FILE *out)
 			char *start;
 			char *end;
 
-			start = line + 2;		// +2 for the leading '\t['
-			end = memchr(line, ']', MAX_LINE_LENGTH-1);
-			*end = '\0';			// mark end of id
+			start = line + 2;						// +2 for the '\t['
+			*(end = memchr(line, ']', MAX_LINE_LENGTH-1)) = '\0';	// for stoi()
 			id = stoi(start);
 
-			href = end + 2;			// +2 for the ']:'
+			href = end + 2;							// +2 for the ']:'
 			while (*href == ' ' || *href == '\t')	// Skip whitespaces, if any
 				href++;
 
@@ -248,15 +247,24 @@ void htmlize(FILE *in, FILE *out)
 					if (!isblank(*--i))		// We found a non-blank character
 						break;				// break out
 
-				if (i == line)	// ie. we didn't "break" out of the previous loop
-				{				// That means our '-' *is* the first character of the line
-					memmove(&p[3], p, MAX_LINE_LENGTH-(p-line)-3);
-					*p++ = '<';
-					*p++ = 'l';
-					*p++ = 'i';
-					*p++ = '>';
+				if (i == line)
+					/*
+					 * ie. we didn't "break" out of the previous loop
+					 * That means our '-' *is* the first character of the line
+					 * So, it should be turned into <li>
+					 */
+				{
+
+					/* Move the text forward by 3 spaces to make space for the <li> tag */
+					memmove(p+3, p, MAX_LINE_LENGTH-(p-line)-3);
+
+					/* Add the <li> tag */
+					memmove(p, "<li>", 4);	// 4, NOT 5, bcoz we DO NOT want the last \0
+
+					/* Remove extra whitespaces, if any */
+					p += 4;		// p now points to the char just after the <li> tag
 					while (*p == ' ')
-						memmove(p, &p[1], MAX_LINE_LENGTH-(p-line));
+						memmove(p, p + 1, MAX_LINE_LENGTH-(p-line));
 				}
 			}
 		}
@@ -298,13 +306,16 @@ void htmlize(FILE *in, FILE *out)
 			char h_id[MAX_LINE_LENGTH] = "";
 			for (int i=0,j=0; i < MAX_LINE_LENGTH; i++)
 				if (line[i] == '\0')
-					break;
-				else
-					if (line[i] == ' ')
-						h_id[j++] = '-';
-					else
-						if (isalnum(line[i]))
-							h_id[j++] = line[i];
+					/*
+					 * NOTE: because of the way we initialized h_id,
+					 * all of the characters in the array are initialized to '\0'
+					 * So, we don't need to add the \0 terminator here
+					 */
+				   	break;
+				else if (isalnum(line[i]))
+					h_id[j++] = line[i];
+				else if (line[i] == ' ')
+					h_id[j++] = '-';
 
 			fprintf(
 					out,
@@ -319,28 +330,39 @@ void htmlize(FILE *in, FILE *out)
 			fputs("<tr><td>", out);
 
 
+
+		/* Initialize variables to avoid undefined behaviour */
+		pch = line;
+		cch = line;
+		nch = line;
+		/*
+		 * Yes, I know the values are nonsense
+		 * But at least it's _known_ nonsense
+		 *
+		 * If we access it while it's undefined, it will
+		 *   - either SEGFAULT (in which case debugging it is easy)
+		 *   - or *silently* input _unknown_ nonsense into outfile!
+		 */
+
 		/* iterate over the stored line[] */
-		pch = *line;
-		cch = *line;
-		nch = *line;
 		for (int index = 1; index < MAX_LINE_LENGTH; index++)
 		{
 			pch = cch;
 			cch = nch;
-			nch = *(line + index);
+			nch = line + index;
 
-			if (cch == '\0')	// we've reached end of string
+			if (*cch == '\0')	// we've reached end of string
 				break;			// stop iterating
 
 
-			if (cch == '\\')
+			if (*cch == '\\')
 			{
 				if (
-						(nch == '`' || nch == '*' || nch == '_')
-						|| (!HTML_TAG_OPEN && nch == '<')
-						|| (TABLE_MODE && nch == '|')
-						|| (nch == '&' && line[index + 1] == '#')
-						|| (!LINK_OPEN && nch == '!' && line[index + 1] == '(')
+						(*nch == '`' || *nch == '*' || *nch == '_')
+						|| (!HTML_TAG_OPEN && *nch == '<')
+						|| (TABLE_MODE && *nch == '|')
+						|| (*nch == '&' && *(nch + 1) == '#')
+						|| (!LINK_OPEN && *nch == '!' && *(nch + 1) == '(')
 				   ) {;}
 				else
 					fputc('\\', out);
@@ -349,7 +371,7 @@ void htmlize(FILE *in, FILE *out)
 
 
 			// Heading tag close
-			if (H_LEVEL && cch == '\n')
+			if (H_LEVEL && *cch == '\n')
 			{
 				fprintf(out, "</a></h%u>\n", H_LEVEL);
 				H_LEVEL = 0;
@@ -362,13 +384,13 @@ void htmlize(FILE *in, FILE *out)
 			 */
 
 			// `code`
-			if (!CODE_OPEN && cch == '`' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
+			if (!CODE_OPEN && *cch == '`' && !(isalnum(*pch) && isalnum(*nch)) && *pch != '\\')
 			{
 				CODE_OPEN = 1;
 				fputs("<code>", out);
 				continue;
 			}
-			if (CODE_OPEN && cch == '`' && pch != '\\')
+			if (CODE_OPEN && *cch == '`' && *pch != '\\')
 			{
 				CODE_OPEN = 0;
 				fputs("</code>", out);
@@ -377,13 +399,13 @@ void htmlize(FILE *in, FILE *out)
 			if (CODE_OPEN)
 			{
 				// Nothing to see here, just escape and move along
-				fputc_escaped(cch, out);
+				fputc_escaped(*cch, out);
 				continue;
 			}
 
 
 			// Linebreak if two spaces at line end
-			if (cch == '\n' && pch == ' ' && line[index - 2] == ' ')
+			if (*cch == '\n' && *pch == ' ' && *(pch-1) == ' ')
 			{
 				fputs("<br>\n", out);
 				continue;
@@ -391,13 +413,13 @@ void htmlize(FILE *in, FILE *out)
 
 
 			// HTML <tags>
-			if ((cch == '<') && (nch == '/' || isalpha(nch)) && pch != '\\')
+			if ((*cch == '<') && (*nch == '/' || isalpha(*nch)) && *pch != '\\')
 			{
 				HTML_TAG_OPEN = 1;
 				fputc('<', out);
 				continue;
 			}
-			if (HTML_TAG_OPEN && cch == '>')
+			if (HTML_TAG_OPEN && *cch == '>')
 			{
 				HTML_TAG_OPEN = 0;
 				fputc('>', out);
@@ -406,15 +428,15 @@ void htmlize(FILE *in, FILE *out)
 			if (HTML_TAG_OPEN)
 			{
 				// Nothing needs escaping, fputc() and move on
-				fputc(cch, out);
+				fputc(*cch, out);
 				continue;
 			}
 
 
 			// HTML Numeric Character references
-			if (cch == '&' && nch == '#')
+			if (*cch == '&' && *nch == '#')
 			{
-				if (pch == '\\')
+				if (*pch == '\\')		// ie. it has been escaped
 					fputs("&amp;", out);
 				else
 					fputc('&', out);
@@ -423,7 +445,7 @@ void htmlize(FILE *in, FILE *out)
 
 
 			// *bold*
-			if (cch == '*' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
+			if (*cch == '*' && !(isalnum(*pch) && isalnum(*nch)) && *pch != '\\')
 			{
 				++BOLD_OPEN;
 				if (BOLD_OPEN %= 2)
@@ -435,7 +457,7 @@ void htmlize(FILE *in, FILE *out)
 
 
 			// _italic_
-			if (cch == '_' && !(isalnum(pch) && isalnum(nch)) && pch != '\\')
+			if (*cch == '_' && !(isalnum(*pch) && isalnum(*nch)) && *pch != '\\')
 			{
 				++ITALIC_OPEN;
 				if (ITALIC_OPEN %= 2)
@@ -447,40 +469,54 @@ void htmlize(FILE *in, FILE *out)
 
 
 			// Links	!(ID) attribute="value" [text]
-			if (cch == '!' && nch == '(' && pch != '\\' && !LINK_OPEN)
+			if (*cch == '!' && *nch == '(' && *pch != '\\' && !LINK_OPEN)
 			{
 				LINK_OPEN = 1;
-				fputs("<a href=\"", out);
 
-				char *p = memchr(line+index, ')', MAX_LINE_LENGTH - index);
+				/* Mark string end for stoi() computation */
+				char *p = memchr(nch, ')', MAX_LINE_LENGTH - index);
 				*p = '\0';
 
-				int link_id = stoi(line + index + 1);
-				fputs(links[link_id], out);
-				free(links[link_id]);
+				int link_id = stoi(nch + 1);	// +1 for '('
+				fprintf(out, "<a href=\"%s\" ", links[link_id]);
 
-				*p = ')';
-				nch = ')';
-				index = p - line;
+				/* Skip the characters we have interpreted just now and continue looping */
+				nch = p + 1;			// nch now point at char after the ')' in "!(id)"
+				index = nch - line;		// since (nch = line + index)
 				continue;
 			}
 			if (LINK_OPEN)
 			{
-				if (cch == ')' || cch == '[')
-					if (cch == ')')
-						fputc('"', out);
-					else /* cch == '[' */
-					{
-						fputc('>', out);
-						LINK_OPEN = 0;
-						LINK_TEXT_OPEN = 1;
-					}
+				if (*cch == '[')
+				{
+					/*
+					 * !(ID)     [Text]
+					 * <a href=ID>Text</a>
+					 *           ↑
+					 *           |
+					 */
+					fputc('>', out);
+					LINK_OPEN = 0;
+					LINK_TEXT_OPEN = 1;
+				}
 				else
-					fputc(cch, out);
+				{
+					/*
+					 * LINK_OPEN means we are inside the < and >
+					 * So, we mustn't escape anything
+					 */
+					fputc(*cch, out);
+				}
 				continue;
 			}
-			if (LINK_TEXT_OPEN && cch == ']' && nch != '\\')
+			if (LINK_TEXT_OPEN && *cch == ']' && *nch != '\\')
 			{
+				/*
+				 * !(ID)     [Text]
+				 * <a href=ID>Text</a>
+				 *                ↑
+				 *                |
+				 */
 				LINK_TEXT_OPEN = 0;
 				fputs("</a>", out);
 				continue;
@@ -490,13 +526,15 @@ void htmlize(FILE *in, FILE *out)
 			// Table cells
 			if (TABLE_MODE)
 			{
-				if (cch == '|' && pch != '\\')
+				if (*cch == '|' && *pch != '\\')
 				{
+					/* Cell separator */
 					fputs("</td><td>", out);
 					continue;
 				}
-				if (cch == '\n')
+				if (*cch == '\n')
 				{
+					/* Table row ends here */
 					fputs("</td></tr>\n", out);
 					continue;
 				}
@@ -504,7 +542,7 @@ void htmlize(FILE *in, FILE *out)
 
 
 			// It's just a simple, innocent character
-			fputc_escaped(cch, out);
+			fputc_escaped(*cch, out);
 		}
 	}
 
@@ -523,9 +561,9 @@ void htmlize(FILE *in, FILE *out)
 
 int main(int argc, const char **argv)
 {
-	FILE *sfp;	// (s)ource      (f)ile (p)ointer
-	FILE *dfp;	// (d)estination (f)ile (p)ointer
 	DIR *dir;
+	FILE *sfp;		// (s)ource      (f)ile (p)ointer
+	FILE *dfp;		// (d)estination (f)ile (p)ointer
 	struct dirent *dirent;
 
 	if ((dir = opendir(SOURCE_DIR)) == NULL)
@@ -550,25 +588,30 @@ int main(int argc, const char **argv)
 
 	while ((dirent = readdir(dir)) != NULL)
 	{
-		char *name = &(*dirent->d_name);
+		char *name = dirent->d_name;
 		if (!memcmp(strrchr(name, '.'), SOURCE_EXT, strlen(SOURCE_EXT)))
 		{
-			int mem_needed = strlen(name) + 1 + (5-strlen(SOURCE_EXT));  // 5 for ".html"
-			char new_name[mem_needed];
-			memmove(new_name, name, mem_needed);
-			char *p = strrchr(new_name, '.');
-			memmove(p, ".html", 6);
+			/* Copy name to new_name */
+			char new_name[FILENAME_MAX];
+			memmove(new_name, name, strlen(new_name));
 
+			/* Change extension to .html */
+			char *p = strrchr(new_name, '.');
+			memmove(p, ".html", 6);		// 6, because ".html" has \0 at end
+
+			/* Open source file */
 			if (cd(SOURCE_DIR))
 				return 1;
 			sfp = fopen(name, "r");
 			cd("..");
 
+			/* Open destination file */
 			if (cd(DEST_DIR))
 				return 1;
 			dfp = fopen(new_name, "w");
 			cd("..");
 
+			/* Process file content and close files  */
 			htmlize(sfp, dfp);
 			fclose(sfp);
 			fclose(dfp);
