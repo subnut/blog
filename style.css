@@ -5,12 +5,16 @@ hr          { background: #CCC; color: #CCC; }
 a           { color: inherit;}
 ::selection { background: #BDF; color: inherit; }
 
+table.blog-date     { color: #888;}
+td.blog-index-date  { color: #888;}
+
 @media (prefers-color-scheme: dark) {
   body        { background: #000; color: #FFF; }
   pre, code   { background: #333; }
   hr          { background: #333; color: #333; }
   ::selection { background: #88F6; color: inherit; }
 }
+
 
 body {
   margin: 1ch auto;
@@ -51,7 +55,6 @@ a:hover { text-decoration: underline double; }
 /* Blog */
 table.blog-date {
   padding: 0;
-  color: #888;
   border: none;
   margin-right: 0;
   margin-left: auto;
@@ -88,7 +91,6 @@ td.blog-index-date {
   text-align: right;
   padding: 0;
   border: none;
-  color: #888;
   font-size: smaller;
 }
 
