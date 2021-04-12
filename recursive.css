@@ -1,0 +1,23 @@
+body { max-width: 60ch; }
+h1   { letter-spacing: -1px; }
+h2   { letter-spacing: -0.5px; }
+
+body                    { font-family: RecSans; }
+pre, code               { font-family: RecMono; }
+h1, h2, h3, h4, h5, h6  { font-family: inherit; }
+
+
+@font-face {
+  font-family: RecSans;
+  font-variation-settings: 'CASL' 1;
+  src: url('https://raw.githubusercontent.com/arrowtype/recursive/main/fonts/ArrowType-Recursive-1.078/Recursive_Web/woff2_variable_subsets/fonts/Recursive_VF_1.078--subset_range_english_basic.woff2') format('woff2');
+  unicode-range: U+0020-007F,U+00A9,U+2190-2193,U+2018,U+2019,U+201C,U+201D,U+2022;
+}
+@font-face {
+  font-family: RecMono;
+  font-variation-settings: 'CASL' 1, 'MONO' 1;
+  src: url('https://raw.githubusercontent.com/arrowtype/recursive/main/fonts/ArrowType-Recursive-1.078/Recursive_Web/woff2_variable_subsets/fonts/Recursive_VF_1.078--subset_range_english_basic.woff2') format('woff2');
+  unicode-range: U+0020-007F,U+00A9,U+2190-2193,U+2018,U+2019,U+201C,U+201D,U+2022;
+}
+
+/* vim:set et ts=2 sw=2 nowrap: */

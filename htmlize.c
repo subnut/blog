@@ -25,6 +25,7 @@ const char INITIAL_HTML_PRE_SUBTITLE[] = "\
         <title>%s</title>\n\
         <link href=data:, rel=icon>\n\
         <link rel=\"stylesheet\" href=\"style.css\">\n\
+<!--    <link rel=\"stylesheet\" href=\"recursive.css\">  -->\n\
     </head>\n\
     <body>\n\
         <h1 class=\"title\">\n\
