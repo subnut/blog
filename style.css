@@ -25,17 +25,14 @@ body {
   text-align: justify;
 }
 
-pre { padding: 2ch; }
+#title                  { font-family: serif; }
+h1, h2, h3, h4, h5, h6  { font-family: serif; }
+
+pre  { padding: 2ch; }
 code { padding: 0 0.5ch; }
 
 a.self-link       { text-decoration: none; }
 a.self-link:hover { text-decoration: underline; }
-
-h1, h2, h3, h4, h5, h6 { font-family: serif; }
-h1 { font-size: 32px }
-h2 { font-size: 24px }
-h3 { font-size: 20px }
-h4 { font-size: 16px }
 
 hr {
   border: none;
@@ -46,8 +43,6 @@ hr {
 
 th, td { padding: 0.5ch; }
 table, th, td { border: 1px solid; }
-h1 { letter-spacing: -1px; }
-h2 { letter-spacing: -0.5px; }
 u { text-decoration: underline wavy; }
 
 a       { text-decoration: underline; }
@@ -68,6 +63,10 @@ td.blog-date {
   padding: 0 1ch;
 }
 h1.title {
+  text-align: center;
+}
+#title {
+  font-size: larger;
   margin: 2ch 0;
   text-align: center;
   font-family: serif;

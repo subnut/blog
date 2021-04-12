@@ -27,7 +27,9 @@ const char INITIAL_HTML_PRE_SUBTITLE[] = "\
         <link rel=\"stylesheet\" href=\"style.css\">\n\
     </head>\n\
     <body>\n\
-        <h1 class=\"title\">%s</h1>\n\
+        <h1 class=\"title\">\n\
+            <span id=\"title\">%s</span>\n\
+        </h1>\n\
         <p class=\"subtitle\">\n\
 ";
 const char INITIAL_HTML_POST_SUBTITLE[] = "\
