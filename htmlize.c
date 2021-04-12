@@ -23,7 +23,7 @@ const char INITIAL_HTML_PRE_SUBTITLE[] = "\
 <html>\n\
     <head>\n\
         <title>%s</title>\n\
-        <link href=data:, rel=icon>\n\
+        %s\n\
         <link rel=\"stylesheet\" href=\"style.css\">\n\
 <!--    <link rel=\"stylesheet\" href=\"recursive.css\">  -->\n\
     </head>\n\
@@ -118,7 +118,7 @@ void htmlize(FILE *in, FILE *out)
 	*(p = memchr(DATE_CREATED,	'\n', MAX_LINE_LENGTH)) = '\0';
 	*(p = memchr(DATE_MODIFIED, '\n', MAX_LINE_LENGTH)) = '\0';
 
-	fprintf(out, INITIAL_HTML_PRE_SUBTITLE, TITLE, TITLE);
+	fprintf(out, INITIAL_HTML_PRE_SUBTITLE, TITLE, FAVICON, TITLE);
 	while (strcmp(fgets(line, MAX_LINE_LENGTH, in), "---\n"))  // ie. line != "---\n"
 		fputs_escaped(line, out);
 	fprintf(out, INITIAL_HTML_POST_SUBTITLE,

@@ -1,3 +1,4 @@
+#define FAVICON    "<link href=data:, rel=icon>"
 #define SOURCE_EXT ".blog"
 #define SOURCE_DIR "src"
 #define DEST_DIR   "docs"

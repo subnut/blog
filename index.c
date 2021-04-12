@@ -22,6 +22,7 @@ const char INITIAL_TEXT[] = "\
 <html>\n\
     <head>\n\
         <title>subnut's blog</title>\n\
+        %s\n\
         <link rel=\"stylesheet\" href=\"style.css\">\n\
 <!--    <link rel=\"stylesheet\" href=\"recursive.css\">  -->\n\
     </head>\n\
@@ -93,7 +94,7 @@ int main(int argc, const char **argv)
 		return 1;
 
 	outfile = fopen("index.html", "w");
-	fputs(INITIAL_TEXT, outfile);
+	fprintf(outfile, INITIAL_TEXT, FAVICON);
 
 	if ((dir = opendir(".")) == NULL)
 	{
