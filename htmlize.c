@@ -593,7 +593,7 @@ int main(int argc, const char **argv)
 		{
 			/* Copy name to new_name */
 			char new_name[FILENAME_MAX];
-			memmove(new_name, name, strlen(new_name));
+			memmove(new_name, name, strlen(name)+1);	// +1 for \0
 
 			/* Change extension to .html */
 			char *p = strrchr(new_name, '.');
