@@ -22,6 +22,7 @@ body {
   max-width: 72ch;
   font-family: monospace;
   font-size: 16px;
+  text-align: justify;
 }
 
 pre { padding: 2ch; }
