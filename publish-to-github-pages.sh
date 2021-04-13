@@ -17,5 +17,5 @@ run cp -v recursive.css docs
 run git add -f docs
 run git commit -m PUBLISH
 run trap : INT
-run git push --set-upstream $(git remote) gh-pages --force
+run git push --set-upstream github gh-pages --force
 run git switch -
