@@ -1,3 +1,4 @@
+/* Colors */
 body        { background: #FFF; color: #000; }
 :target     { background: #FF06; }
 pre, code   { background: #eee; }
@@ -16,21 +17,30 @@ td.blog-index-date  { color: #888;}
 }
 
 
+/* Fonts */
+body                    { font-family: monospace; }
+#title                  { font-family: serif; }
+h1, h2, h3, h4, h5, h6  { font-family: serif; }
+
+
+/* Everything else */
 body {
   margin: 1ch auto;
   padding: 0 1ch;
   max-width: 72ch;
-  font-family: monospace;
   font-size: 16px;
   text-align: justify;
 }
 
-#title                  { font-family: serif; }
-h1, h2, h3, h4, h5, h6  { font-family: serif; }
-
 pre  { padding: 2ch; }
 code { padding: 0 0.5ch; }
 
+th, td        { padding: 0.5ch; }
+th, td, table { border: 1px solid; }
+
+u                 { text-decoration: underline wavy; }
+a                 { text-decoration: underline; }
+a:hover           { text-decoration: underline double; }
 a.self-link       { text-decoration: none; }
 a.self-link:hover { text-decoration: underline; }
 
@@ -41,12 +51,6 @@ hr {
   margin: 1ch auto;
 }
 
-th, td { padding: 0.5ch; }
-table, th, td { border: 1px solid; }
-u { text-decoration: underline wavy; }
-
-a       { text-decoration: underline; }
-a:hover { text-decoration: underline double; }
 
 /* Blog */
 table.blog-date {
@@ -69,7 +73,6 @@ h1.title {
   font-size: larger;
   margin: 2ch 0;
   text-align: center;
-  font-family: serif;
 }
 p.subtitle {
   margin: 2ch 0;
