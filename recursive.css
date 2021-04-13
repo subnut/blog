@@ -2,8 +2,8 @@ body { max-width: 60ch; }
 h1   { letter-spacing: -1px; }
 h2   { letter-spacing: -0.5px; }
 
-body                    { font-family: RecSans; }
-pre, code               { font-family: RecMono; }
+body                    { font-family: 'Recursive Sn Csl St', RecSans; }
+pre, code               { font-family: 'Recursive Mn Csl St', RecMono; }
 h1, h2, h3, h4, h5, h6  { font-family: inherit; }
 
 
