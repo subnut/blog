@@ -1,26 +1,32 @@
 /* Colors */
-body        { background: #FFF; color: #000; }
-:target     { background: #FF06; }
-pre, code   { background: #eee; }
-hr          { background: #CCC; color: #CCC; }
-a           { color: inherit;}
+body        { background: #FFF; color: #000;    }
+:target     { background: #FF06;                }
+pre, code   { background: #eee;                 }
+hr          { background: #CCC; color: #CCC;    }
+a           { color: inherit;                   }
 ::selection { background: #BDF; color: inherit; }
 
-table.blog-date     { color: #888;}
-td.blog-index-date  { color: #888;}
+table.blog-date     { color: #888; }
+td.blog-index-date  { color: #888; }
 
 @media (prefers-color-scheme: dark) {
-  body        { background: #000; color: #FFF; }
-  pre, code   { background: #333; }
-  hr          { background: #333; color: #333; }
+  body        { background: #000; color: #FFF;     }
+  pre, code   { background: #333;                  }
+  hr          { background: #333; color: #333;     }
   ::selection { background: #88F6; color: inherit; }
 }
 
 
 /* Fonts */
 body                    { font-family: monospace; }
-#title                  { font-family: serif; }
-h1, h2, h3, h4, h5, h6  { font-family: serif; }
+#title                  { font-family: serif;     }
+h1, h2, h3, h4, h5, h6  { font-family: serif;     }
+
+body                { font-size: 16px;    }
+table               { font-size: 16px;    }
+table.blog-date     { font-size: smaller; }
+#title              { font-size: larger;  }
+td.blog-index-date  { font-size: smaller; }
 
 
 /* Everything else */
@@ -28,7 +34,6 @@ body {
   margin: 1ch auto;
   padding: 0 1ch;
   max-width: 72ch;
-  font-size: 16px;
   text-align: justify;
 }
 
@@ -38,10 +43,8 @@ code { padding: 0 0.5ch; }
 th, td        { padding: 0.5ch; }
 th, td, table { border: 1px solid; }
 
-u                 { text-decoration: underline wavy; }
 a                 { text-decoration: underline; }
-a:hover           { text-decoration: underline double; }
-a.self-link       { text-decoration: none; }
+a.self-link       { text-decoration: none;      }
 a.self-link:hover { text-decoration: underline; }
 
 hr {
@@ -50,6 +53,9 @@ hr {
   max-width: 50ch;
   margin: 1ch auto;
 }
+
+footer    { text-align: center;   }
+footer hr { max-width:  inherit;  }
 
 
 /* Blog */
@@ -60,7 +66,6 @@ table.blog-date {
   margin-left: auto;
   margin-top: 2ch;
   margin-bottom: 4ch;
-  font-size: smaller;
 }
 td.blog-date {
   border: none;
@@ -70,7 +75,6 @@ h1.title {
   text-align: center;
 }
 #title {
-  font-size: larger;
   margin: 2ch 0;
   text-align: center;
 }
@@ -94,7 +98,6 @@ td.blog-index-date {
   text-align: right;
   padding: 0;
   border: none;
-  font-size: smaller;
 }
 
 /* vim:set et ts=2 sw=2 nowrap: */

@@ -29,11 +29,14 @@ const char INITIAL_TEXT[] = "\
     <body class=\"blog-index\">\n\
         <h1 class=\"title\">subnut's blog</h1>\n\
         <table class=\"blog-index\">\n\
-<!-- Automation starts here -->\n\
+<!-- Index starts here -->\n\
 ";
 const char FINAL_TEXT[] = "\
-<!-- Automation stops here -->\n\
+<!-- Index ends here -->\n\
         </table>\n\
+		<br>\n\
+		<br>\n\
+%s\n\
     </body>\n\
 </head>\n\
 ";
@@ -164,7 +167,7 @@ int main(int argc, const char **argv)
 			 );
 	}
 
-	fputs(FINAL_TEXT, outfile);
+	fprintf(outfile, FINAL_TEXT, FOOTER);
 	fclose(outfile);
 
 	return 0;

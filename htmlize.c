@@ -28,9 +28,11 @@ const char INITIAL_HTML_PRE_SUBTITLE[] = "\
 <!--    <link rel=\"stylesheet\" href=\"recursive.css\" media=\"screen\">  -->\n\
     </head>\n\
     <body>\n\
-        <h1 class=\"title\">\n\
-            <span id=\"title\">%s</span>\n\
-        </h1>\n\
+        <header>\n\
+            <h1 class=\"title\">\n\
+                <span id=\"title\">%s</span>\n\
+            </h1>\n\
+        </header>\n\
         <p class=\"subtitle\">\n\
 ";
 const char INITIAL_HTML_POST_SUBTITLE[] = "\
@@ -42,8 +44,19 @@ const char INITIAL_HTML_POST_SUBTITLE[] = "\
                 <td class=\"blog-date\">Last modified</td>\n\
                 <td class=\"blog-date\">%s</td>\n\
         </tr></table>\n\
+        <main>\n\
 <!-- Blog content starts here -->\n\
 ";
+
+const char FINAL_HTML[] = "\
+<!-- Blog content ends here -->\n\
+        </main>\n\
+        <br>\n\
+        <br>\n\
+        <br>\n\
+%s\n\
+    </body>\n\
+</html>";
 
 
 void fputc_escaped(char c, FILE *stream)
@@ -550,15 +563,7 @@ void htmlize(FILE *in, FILE *out)
 	}
 
 
-	fputs(
-			"<!-- Blog content ends here -->\n"
-			"        <br>\n"
-			"        <br>\n"
-			"        <br>\n"
-			"    </body>\n"
-			"</html>\n",
-			out
-		 );
+	fprintf(out, FINAL_HTML, FOOTER);
 }
 
 
