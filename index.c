@@ -165,6 +165,11 @@ int main(int argc, const char **argv)
 				TITLE,
 				date_to_text(DATE_CREATED)
 			 );
+
+#ifdef PRINT_FILENAMES
+		printf("%i:\t%s\n", i, filenames[i]);
+#endif
+
 	}
 
 	fprintf(outfile, FINAL_TEXT, FOOTER);

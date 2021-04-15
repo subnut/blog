@@ -623,7 +623,11 @@ int main(int argc, const char **argv)
 			htmlize(sfp, dfp);
 			fclose(sfp);
 			fclose(dfp);
+
+#ifdef PRINT_FILENAMES
 			printf("%s -> %s\n", name, new_name);
+#endif
+
 		}
 	}
 	closedir(dir);
