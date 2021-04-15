@@ -21,6 +21,7 @@
 const char INITIAL_TEXT[] = "\
 <html>\n\
     <head>\n\
+        <meta charset=\"utf-8\"/>\n\
         <title>subnut's blog</title>\n\
         %s\n\
         <link rel=\"stylesheet\" href=\"style.css\">\n\
