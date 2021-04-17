@@ -69,7 +69,8 @@ const char FINAL_HTML[] = "\
         <br>\n\
 %s\n\
     </body>\n\
-</html>";
+</html>\n\
+";
 
 
 void fputc_escaped(char c, FILE *stream)
