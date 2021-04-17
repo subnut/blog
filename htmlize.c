@@ -1,23 +1,35 @@
 #include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
 /*
  * ctype.h	- isalnum(), isalpha(), etc.
- * dirent.h	- opendir(), readdir()
  * stdio.h	- printf(), fopen(), fprintf(), etc
  * string.h	- str*(), mem*()
  */
 
-#include "include/cd.h"
 #include "include/date.h"
 #include "include/stoi.h"
 #include "constants.h"
 
-#define date_to_text(x)		date_to_text(x, 0)
-#define cd(x)				cd(x, argv)
+#define  date_to_text(x) \
+         date_to_text(x, 0)
+
+
+#ifndef HTMLIZE_STDIN
+	/*
+	 * dirent.h	- opendir(), readdir()
+	 * errno.h	- if opendir() fails, show proper error msg
+	 */
+	#include <dirent.h>
+	#include <errno.h>
+
+	#include "include/cd.h"
+	#define cd(x) \
+            cd(x, argv)
+#endif
+
+
 
 const char INITIAL_HTML_PRE_SUBTITLE[] = "\
 <html>\n\
@@ -570,6 +582,12 @@ void htmlize(FILE *in, FILE *out)
 
 int main(int argc, const char **argv)
 {
+
+#ifdef HTMLIZE_STDIN
+	htmlize(stdin, stdout);
+	return 0;
+#else
+
 	DIR *dir;
 	FILE *sfp;		// (s)ource      (f)ile (p)ointer
 	FILE *dfp;		// (d)estination (f)ile (p)ointer
@@ -632,6 +650,8 @@ int main(int argc, const char **argv)
 		}
 	}
 	closedir(dir);
+
+#endif
 }
 
 // vim:noet:ts=4:sts=0:sw=0:fdm=syntax
