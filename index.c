@@ -35,9 +35,9 @@ const char INITIAL_TEXT[] = "\
 const char FINAL_TEXT[] = "\
 <!-- Index ends here -->\n\
         </table>\n\
-		<br>\n\
-		<br>\n\
-%s\n\
+        <br>\n\
+        <br>\n\
+        %s\n\
     </body>\n\
 </head>\n\
 ";

@@ -67,7 +67,7 @@ const char FINAL_HTML[] = "\
         <br>\n\
         <br>\n\
         <br>\n\
-%s\n\
+        %s\n\
     </body>\n\
 </html>\n\
 ";
