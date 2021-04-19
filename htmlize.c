@@ -12,9 +12,6 @@
 #include "include/stoi.h"
 #include "constants.h"
 
-#define  date_to_text(x) \
-         date_to_text(x, 0)
-
 
 #ifndef HTMLIZE_STDIN
 	/*
@@ -148,10 +145,36 @@ void htmlize(FILE *in, FILE *out)
 	fprintf(out, INITIAL_HTML_PRE_SUBTITLE, TITLE, FAVICON, TITLE);
 	while (strcmp(fgets(line, MAX_LINE_LENGTH, in), "---\n"))  // ie. line != "---\n"
 		fputs_escaped(line, out);
+
+	/*
+	 * NOTE: This will not work -
+	 *
+	 * 		char buffer[15];
+	 *
+	 * 		fprintf(out, INITIAL_HTML_POST_SUBTITLE,
+	 * 				date_to_text_short_month(DATE_CREATED, buffer),
+	 * 				date_to_text_short_month(DATE_MODIFIED, buffer)
+	 * 			   );
+	 *
+	 * Why? Because both date_to_text_short_month() invocations shall return a
+	 * pointer to the same buffer, and both shall operate on that same buffer.
+	 * So, when fprintf() starts formatting the string, it finds the buffer's
+	 * value to be what the last invocation of date_to_text_short_month() put
+	 * in it. (ie. the string form of DATE_MODIFIED)
+	 * This will cause both "Date created" and "Last modified" table fields to
+	 * show the value of DATE_MODIFIED.
+	 *
+	 * The solution?
+	 * Use different buffers for DATE_CREATED and DATE_MODIFIED
+	 */
+
+	char DATE_CREATED_str[15];
+	char DATE_MODIFIED_str[15];
 	fprintf(out, INITIAL_HTML_POST_SUBTITLE,
-			date_to_text(DATE_CREATED),
-			date_to_text(DATE_MODIFIED)
+			date_to_text_short_month(DATE_CREATED, DATE_CREATED_str),
+			date_to_text_short_month(DATE_MODIFIED, DATE_MODIFIED_str)
 		   );
+
 	/* ---- END initial HTML ---- */
 
 

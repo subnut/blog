@@ -15,8 +15,8 @@
 #include "include/stoi.h"
 #include "constants.h"
 
-#define date_to_text(x)     date_to_text(x, 1)
-#define cd(x)               cd(x, argv)
+#define cd(x) \
+        cd(x, argv)
 
 const char INITIAL_TEXT[] = "\
 <html>\n\
@@ -151,6 +151,7 @@ int main(int argc, const char **argv)
 		fclose(fp);
 
 
+		char DATE_CREATED_str[20];
 		char url[FILENAME_MAX*3 + 1];
 		urlencode_s(filenames[i], url);
 		fprintf(outfile,
@@ -164,7 +165,7 @@ int main(int argc, const char **argv)
 				"</tr>\n",
 				url,
 				TITLE,
-				date_to_text(DATE_CREATED)
+				date_to_text_long_month(DATE_CREATED, DATE_CREATED_str)
 			 );
 
 #ifdef PRINT_FILENAMES
