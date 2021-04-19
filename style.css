@@ -97,39 +97,4 @@ td.blog-index-date {
   border: none;
 }
 
-/* Heading anchors */
-a.anchor {
-  visibility: hidden;
-  text-decoration: none;
-  position: relative;
-}
-a.anchor svg {
-  position: relative;
-  box-sizing: border-box;
-  width: 0.7em;
-  height: 0.7em;
-  left: -0.35em;
-}
-
-h1.has-anchor,
-h2.has-anchor,
-h3.has-anchor,
-h4.has-anchor,
-h5.has-anchor,
-h6.has-anchor
-{
-  position: relative;
-  left: -0.7em;
-}
-
-h1:hover>a.anchor,
-h2:hover>a.anchor,
-h3:hover>a.anchor,
-h4:hover>a.anchor,
-h5:hover>a.anchor,
-h6:hover>a.anchor
-{
-  visibility: visible;
-}
-
 /* vim:set et ts=2 sw=2 nowrap: */

@@ -38,14 +38,6 @@ const char INITIAL_HTML_PRE_SUBTITLE[] = "\
 <!--    <link rel=\"stylesheet\" href=\"recursive.css\" media=\"screen\">  -->\n\
     </head>\n\
     <body>\n\
-		<svg style=\"display:none\">\n\
-			<symbol id=\"svg-link\" viewBox=\"0 0 24 24\">\n\
-				<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"feather feather-link\">\n\
-					<path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"></path>\n\
-					<path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"></path>\n\
-				</svg>\n\
-			</symbol>\n\
-		</svg>\n\
         <header>\n\
             <h1 class=\"title\">\n\
                 <span id=\"title\">%s</span>\n\
@@ -383,7 +375,7 @@ void htmlize(FILE *in, FILE *out)
 
 			fprintf(
 					out,
-					"<h%i id=\"%s\" class=\"has-anchor\"><a class=\"anchor\" href=\"#%s\"><svg><use href=\"#svg-link\"></use></svg></a>",
+					"<h%i id=\"%s\"><a class=\"self-link\" href=\"#%s\">",
 					H_LEVEL, h_id, h_id
 				   );
 		}
@@ -437,7 +429,7 @@ void htmlize(FILE *in, FILE *out)
 			// Heading tag close
 			if (H_LEVEL && *cch == '\n')
 			{
-				fprintf(out, "</h%u>\n", H_LEVEL);
+				fprintf(out, "</a></h%u>\n", H_LEVEL);
 				H_LEVEL = 0;
 				continue;
 			}
