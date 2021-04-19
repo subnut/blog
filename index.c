@@ -151,7 +151,7 @@ int main(int argc, const char **argv)
 		fclose(fp);
 
 
-		char DATE_CREATED_str[20];
+		char DATE_CREATED_str[15];
 		char url[FILENAME_MAX*3 + 1];
 		urlencode_s(filenames[i], url);
 		fprintf(outfile,
@@ -165,7 +165,7 @@ int main(int argc, const char **argv)
 				"</tr>\n",
 				url,
 				TITLE,
-				date_to_text_long_month(DATE_CREATED, DATE_CREATED_str)
+				date_to_text(DATE_CREATED, DATE_CREATED_str)
 			 );
 
 #ifdef PRINT_FILENAMES

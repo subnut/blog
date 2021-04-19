@@ -4,14 +4,9 @@
 #include <string.h>
 #include "stoi.h"
 
-#define date_to_text_short_month(date_str, text) date_to_text(date_str, text, 0)
-#define date_to_text_long_month(date_str, text)  date_to_text(date_str, text, 1)
-
-char *date_to_text(const char *date_str, char *text, const int long_month)
+char *date_to_text(const char *date_str, char *text)
 {
-    char final_str[20];
-    for (int i=0; i<20; i++)
-        final_str[i] = '\0';
+    char final_str[15];
 
     char *output;
     output = final_str;
@@ -67,24 +62,23 @@ char *date_to_text(const char *date_str, char *text, const int long_month)
 
 
     /* Month */
-    if (long_month)
-        switch (stoi(month))
+    switch (stoi(month))
     {
         case 1:
-            memmove(output, "January", 7);
-            output += 7;
+            memmove(output, "Jan", 3);
+            output += 3;
             break;
         case 2:
-            memmove(output, "February", 8);
-            output += 8;
+            memmove(output, "Feb", 3);
+            output += 3;
             break;
         case 3:
-            memmove(output, "March", 5);
-            output += 5;
+            memmove(output, "Mar", 3);
+            output += 3;
             break;
         case 4:
-            memmove(output, "April", 5);
-            output += 5;
+            memmove(output, "Apr", 3);
+            output += 3;
             break;
         case 5:
             memmove(output, "May", 3);
@@ -99,78 +93,26 @@ char *date_to_text(const char *date_str, char *text, const int long_month)
             output += 4;
             break;
         case 8:
-            memmove(output, "August", 6);
-            output += 6;
+            memmove(output, "Aug", 3);
+            output += 3;
             break;
         case 9:
-            memmove(output, "September", 9);
-            output += 9;
+            memmove(output, "Sep", 3);
+            output += 3;
             break;
         case 10:
-            memmove(output, "October", 7);
-            output += 7;
+            memmove(output, "Oct", 3);
+            output += 3;
             break;
         case 11:
-            memmove(output, "November", 8);
-            output += 8;
+            memmove(output, "Nov", 3);
+            output += 3;
             break;
         case 12:
-            memmove(output, "December", 8);
-            output += 8;
+            memmove(output, "Dec", 3);
+            output += 3;
             break;
     }
-    else
-        switch (stoi(month))
-        {
-            case 1:
-                memmove(output, "Jan", 3);
-                output += 3;
-                break;
-            case 2:
-                memmove(output, "Feb", 3);
-                output += 3;
-                break;
-            case 3:
-                memmove(output, "Mar", 3);
-                output += 3;
-                break;
-            case 4:
-                memmove(output, "Apr", 3);
-                output += 3;
-                break;
-            case 5:
-                memmove(output, "May", 3);
-                output += 3;
-                break;
-            case 6:
-                memmove(output, "June", 4);
-                output += 4;
-                break;
-            case 7:
-                memmove(output, "July", 4);
-                output += 4;
-                break;
-            case 8:
-                memmove(output, "Aug", 3);
-                output += 3;
-                break;
-            case 9:
-                memmove(output, "Sep", 3);
-                output += 3;
-                break;
-            case 10:
-                memmove(output, "Oct", 3);
-                output += 3;
-                break;
-            case 11:
-                memmove(output, "Nov", 3);
-                output += 3;
-                break;
-            case 12:
-                memmove(output, "Dec", 3);
-                output += 3;
-                break;
-        }
     *output++ = ' ';
 
 
@@ -179,7 +121,7 @@ char *date_to_text(const char *date_str, char *text, const int long_month)
     output += 4;
     *output++ = '\0';
 
-    memmove(text, final_str, strlen(final_str));
+    memmove(text, final_str, 15);
     return text;
 }
 
