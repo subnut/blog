@@ -86,6 +86,24 @@ void fputs_escaped(const char *s, FILE *stream)
 		fputc_escaped(s[i], stream);
 }
 
+int is_named_charref(const char *s)
+{
+	for (int i=0; i <= (sizeof(named_references)/sizeof(named_references[0])); i++)
+	{
+		const char *named_ref;
+		int index;
+		int len;
+
+		named_ref = named_references[i];
+		index = strchr(named_ref, ';') - named_ref;		// Index of ending ';'
+		len = index + 1;								// Since indexing starts from 0
+
+		if (!strncmp(s, named_references[i], len))
+			return 1;
+	}
+	return 0;
+}
+
 
 void htmlize(FILE *in, FILE *out)
 /*
@@ -96,6 +114,7 @@ void htmlize(FILE *in, FILE *out)
  *	- \_italic\_
  *	- \<HTML>
  *	- Table \| cells
+ *	- \&nbsp; HTML Named char refs
  *	- \&#...; HTML Numeric char ref
  *	- \!(ID)[Link text\]
  */
@@ -110,6 +129,7 @@ void htmlize(FILE *in, FILE *out)
  *	- Lists
  *	- HTML <tags>
  *	- Linebreak if two spaces at line end
+ *	- &nbsp;  named character references (names defined in constants.h)
  *	- &#...;  numeric character references
  *	- <br> at Blank lines with two spaces
  *	- Links
@@ -417,8 +437,8 @@ void htmlize(FILE *in, FILE *out)
 						(*nch == '`' || *nch == '*' || *nch == '_')
 						|| (!HTML_TAG_OPEN && *nch == '<')
 						|| (TABLE_MODE && *nch == '|')
-						|| (*nch == '&' && *(nch + 1) == '#')
 						|| (!LINK_OPEN && *nch == '!' && *(nch + 1) == '(')
+						|| (*nch == '&' && (*(nch + 1) == '#' || is_named_charref(nch)))
 				   ) {;}
 				else
 					fputc('\\', out);
@@ -489,8 +509,8 @@ void htmlize(FILE *in, FILE *out)
 			}
 
 
-			// HTML Numeric Character references
-			if (*cch == '&' && *nch == '#')
+			// HTML Character references
+			if (*cch == '&' && (*nch == '#' || is_named_charref(cch)))
 			{
 				if (*pch == '\\')		// ie. it has been escaped
 					fputs("&amp;", out);

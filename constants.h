@@ -26,4 +26,17 @@ gg==\">"
             <a href=\"https://opensource.org/licenses/MIT\">MIT</a>\n\
         </footer>"
 
+
+/*
+ * HTML Named Character References
+ *
+ * The first number indicates the number of elements in this array
+ * The second number indicates (the max number of letters in any element) + 1       // +1 for '\0'
+ */
+const char named_references[2][7] =
+{
+    "&nbsp;",
+    "&copy;",
+};
+
 // vim:et:ts=4:sts=0:sw=0:fdm=syntax:nowrap
