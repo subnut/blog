@@ -31,7 +31,7 @@
 const char INITIAL_HTML_PRE_SUBTITLE[] = "\
 <html>\n\
     <head>\n\
-    <meta charset=\"utf-8\"/>\n\
+        <meta charset=\"utf-8\"/>\n\
         <title>%s</title>\n\
         %s\n\
         <link rel=\"stylesheet\" href=\"style.css\" media=\"screen\">\n\
