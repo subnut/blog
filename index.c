@@ -25,7 +25,7 @@ const char INITIAL_TEXT[] = "\
         <title>subnut's blog</title>\n\
         %s\n\
         <link rel=\"stylesheet\" href=\"style.css\">\n\
-<!--    <link rel=\"stylesheet\" href=\"recursive.css\">  -->\n\
+        <link rel=\"stylesheet\" href=\"recursive.css\">\n\
     </head>\n\
     <body class=\"blog-index\">\n\
         <h1 class=\"title\">subnut's blog</h1>\n\

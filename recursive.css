@@ -1,12 +1,16 @@
 body        { max-width: 60ch; }
 
-h1          { letter-spacing: -1px; }
+h1          { letter-spacing: -1px;   }
 h2          { letter-spacing: -0.5px; }
 
 body                    { font-family: 'Recursive Sans Casual Static', 'Recursive Sn Csl St', RecSans; }
 pre, code               { font-family: 'Recursive Mono Casual Static', 'Recursive Mn Csl St', RecMono; }
 h1, h2, h3, h4, h5, h6  { font-family: inherit; }
 
+pre { font-size: 90%; }
+
+a:hover           { font-weight: bolder;  transition: .15s ease font-weight; }
+a.self-link:hover { font-weight: inherit; transition: none;                  }
 
 @font-face {
   font-family: RecSans;

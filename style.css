@@ -47,9 +47,6 @@ a                 { text-decoration: underline; }
 a.self-link       { text-decoration: none;      }
 a.self-link:hover { text-decoration: underline; }
 
-a:hover           { font-weight: bolder;  transition: .15s ease font-weight; }
-a.self-link:hover { font-weight: inherit; transition: none;                  }
-
 hr {
   border: none;
   height: 1px;

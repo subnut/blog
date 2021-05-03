@@ -13,6 +13,7 @@ run htmlize
 run index
 run cp -v style.css     docs
 run cp -v recursive.css docs
+run cp -v print.css     docs
 # run cp -v src/* docs
 run git add -f docs
 run git commit -m PUBLISH

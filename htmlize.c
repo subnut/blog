@@ -35,7 +35,8 @@ const char INITIAL_HTML_PRE_SUBTITLE[] = "\
         <title>%s</title>\n\
         %s\n\
         <link rel=\"stylesheet\" href=\"style.css\" media=\"screen\">\n\
-<!--    <link rel=\"stylesheet\" href=\"recursive.css\" media=\"screen\">  -->\n\
+        <link rel=\"stylesheet\" href=\"recursive.css\" media=\"screen\">\n\
+        <link rel=\"stylesheet\" href=\"print.css\" media=\"print\">\n\
     </head>\n\
     <body>\n\
         <header>\n\
