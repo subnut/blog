@@ -22,8 +22,7 @@ gg==\">"
             <hr>\n\
             Unless specified otherwise, text on this website is licensed under\n\
             <a href=\"https://creativecommons.org/licenses/by-sa/4.0/\">CC&nbsp;BY-SA&nbsp;4.0</a>\n\
-            and code on this website is licensed under\n\
-            <a href=\"https://opensource.org/licenses/MIT\">MIT</a>\n\
+            and code on this website is licensed under <a href=\"MIT.txt\">MIT</a>\n\
         </footer>"
 
 
