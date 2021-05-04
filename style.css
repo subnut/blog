@@ -37,6 +37,10 @@ body {
   text-align: justify;
 }
 
+pre  {
+  overflow-x: auto;   /* Enable scrolling if required */
+}
+
 pre  { padding: 2ch; }
 code { padding: 0 0.5ch; }
 
