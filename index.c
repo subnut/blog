@@ -186,7 +186,7 @@ main(int argc, const char **argv)
 
 #ifdef PRINT_FILENAMES
 		printf("%i:\t%s\n", i, filenames[i]);
-#endif
+#endif /* PRINT_FILENAMES */
 
 	}
 

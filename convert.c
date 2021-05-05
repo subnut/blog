@@ -23,7 +23,7 @@
 	#include "include/cd.h"
 	#define cd(x) \
             cd(x, argv)
-#endif
+#endif /* CONVERT_STDIN */
 
 
 const char INITIAL_HTML_PRE_SUBTITLE[] = "\
@@ -174,7 +174,7 @@ main(int argc, const char **argv)
 #ifdef CONVERT_STDIN
 	convert(stdin, stdout);
 	return 0;
-#else
+#else /* CONVERT_STDIN */
 
 	DIR *dir;
 	FILE *sfp;		// (s)ource      (f)ile (p)ointer
@@ -233,13 +233,13 @@ main(int argc, const char **argv)
 
 #ifdef PRINT_FILENAMES
 			printf("%s -> %s\n", name, new_name);
-#endif
+#endif /* PRINT_FILENAMES */
 
 		}
 	}
 	closedir(dir);
 
-#endif
+#endif /* CONVERT_STDIN */
 }
 
 // vim:noet:ts=4:sts=0:sw=0:fdm=syntax

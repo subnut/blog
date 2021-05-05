@@ -510,5 +510,4 @@ htmlize(FILE *in, FILE *out)
 	}
 }
 
-#endif
-// vim:noet:ts=4:sts=0:sw=0:fdm=syntax
+#endif /* HTMLIZE_H */
