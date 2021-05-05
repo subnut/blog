@@ -22,14 +22,14 @@ td.blog-index-date  { color: #888; }
 
 /* Fonts */
 body                    { font-family: monospace; }
-h1.title                { font-family: serif;     }
+h1.blog-title           { font-family: serif;     }
 h1, h2, h3, h4, h5, h6  { font-family: serif;     }
 
-body                { font-size: 16px;    }
-table               { font-size: 16px;    }
-h1.title            { font-size: 38px;    }
-p.blog-date         { font-size: 12px;    }
-td.blog-index-date  { font-size: smaller; }
+body                { font-size: 16px; }
+table               { font-size: 16px; }
+h1.blog-title       { font-size: 38px; }
+p.blog-date         { font-size: 12px; }
+td.blog-index-date  { font-size: 14px; }
 
 
 /* Everything else */
@@ -70,7 +70,7 @@ footer hr { max-width:  inherit;  }
 
 
 /* Blog */
-h1.title {
+h1.title, h1.blog-title {
   margin: 1.5ch 0;
   text-align: center;
 }

@@ -38,7 +38,7 @@ const char INITIAL_HTML_PRE_SUBTITLE[] = "\
     </head>\n\
     <body>\n\
         <header>\n\
-            <h1 class=\"title\">%s</h1>\n\
+            <h1 class=\"blog-title\">%s</h1>\n\
         </header>\n\
         <p class=\"subtitle\">\n\
 ";
