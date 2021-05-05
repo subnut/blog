@@ -15,6 +15,8 @@
 #include "include/stoi.h"
 #include "constants.h"
 
+#define MAX_FILES        100
+#define MAX_TITLE_LENGTH 150
 #define cd(x) \
         cd(x, argv)
 
@@ -127,33 +129,44 @@ int main(int argc, const char **argv)
 	closedir(dir);
 
 
-	FILE *fp;
-	char line[MAX_LINE_LENGTH];
-	char TITLE[MAX_LINE_LENGTH];
-	char DATE_CREATED[MAX_LINE_LENGTH];
+	FILE *file;
+
+	char TITLE[MAX_TITLE_LENGTH];
+	char DATE_CREATED[11]; // "YYYY/MM/DD" +1 for '\0'
+
 	for (int i=1; *filenames[i]!='\0' && i<=MAX_FILES ; i++)
 	{
-		if ((fp = fopen(filenames[i], "r")) == NULL)
+		/* Skip if filename is invalid */
+		if ((file = fopen(filenames[i], "r")) == NULL)
 			continue;
-		fgets(line, MAX_LINE_LENGTH, fp);					// <!--\n
 
-		memmove(TITLE, fgets(line, MAX_LINE_LENGTH, fp), MAX_LINE_LENGTH);
-		memmove(TITLE, TITLE + 6, MAX_LINE_LENGTH - 6);		// TITLE:
+		/* Remove first line */
+        char *first_line = "<!--\n";
+		fgets(first_line, 6, file);	// "<!--\n" +1 for '\0'
+
+		/* Title */
+		fgets(TITLE, MAX_TITLE_LENGTH, file);
+		memmove(TITLE, TITLE + 6, MAX_TITLE_LENGTH - 6);	// Remove "TITLE:"
 		while (*TITLE == ' ')
-			memmove(TITLE, TITLE + 1, MAX_LINE_LENGTH - 1);
+			memmove(TITLE, TITLE + 1, MAX_TITLE_LENGTH - 1);
 		*(strrchr(TITLE, '\n')) = '\0';
 
-		memmove(DATE_CREATED, fgets(line, MAX_LINE_LENGTH, fp), MAX_LINE_LENGTH);
-		memmove(DATE_CREATED, DATE_CREATED + 9, MAX_LINE_LENGTH - 9);	// DATE_CREATED:
+		/* Date created */
+		fgets(DATE_CREATED, 11, file);
+		memmove(DATE_CREATED, DATE_CREATED + 9, 11 - 9);	// Remove "DATE_CREATED:"
 		while (*DATE_CREATED == ' ')
-			memmove(DATE_CREATED, TITLE + 1, MAX_LINE_LENGTH - 1);
+			memmove(DATE_CREATED, TITLE + 1, 11 - 1);
 
-		fclose(fp);
+		/* Done reading from file */
+		fclose(file);
 
 
 		char DATE_CREATED_str[15];
 		char url[FILENAME_MAX*3 + 1];
+
 		urlencode_s(filenames[i], url);
+		date_to_text(DATE_CREATED, DATE_CREATED_str);
+
 		fprintf(outfile,
 				"<tr>\n"
 				"    <td class=\"blog-index-name\">\n"
@@ -165,7 +178,7 @@ int main(int argc, const char **argv)
 				"</tr>\n",
 				url,
 				TITLE,
-				date_to_text(DATE_CREATED, DATE_CREATED_str)
+				DATE_CREATED_str
 			 );
 
 #ifdef PRINT_FILENAMES
@@ -180,4 +193,4 @@ int main(int argc, const char **argv)
 	return 0;
 }
 
-// vim:noet:ts=4:sts=0:sw=0:fdm=syntax
+// vim:noet:ts=4:sts=0:sw=0:fdm=syntax:nowrap

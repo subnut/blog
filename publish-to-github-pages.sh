@@ -9,7 +9,7 @@ run test -d src || (echo "src directory not found" >&2 && exit 1)
 run git branch -D gh-pages
 run git checkout -b gh-pages
 run mkdir docs || (run rm docs -rv && run mkdir docs)
-run htmlize
+run convert
 run index
 run cp -v style.css     docs
 run cp -v recursive.css docs

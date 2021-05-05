@@ -1,9 +1,7 @@
 #define SOURCE_EXT ".blog"
+
 #define SOURCE_DIR "src"
 #define DEST_DIR   "docs"
-#define MAX_LINE_LENGTH 500
-#define MAX_FILES       100
-#define MAX_LINKS       100
 
 #define FAVICON "<link rel=icon href=\"data:image/png;base64,\n\
 iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAnXAAAJ1wGxbhe3AAAA\n\
@@ -24,18 +22,5 @@ gg==\">"
             <a href=\"https://creativecommons.org/licenses/by-sa/4.0/\">CC&nbsp;BY-SA&nbsp;4.0</a>\n\
             and code on this website is licensed under <a href=\"MIT.txt\">MIT</a>\n\
         </footer>"
-
-
-/*
- * HTML Named Character References
- *
- * The first number indicates the number of elements in this array
- * The second number indicates (the max number of letters in any element) + 1       // +1 for '\0'
- */
-const char named_references[2][7] =
-{
-    "&nbsp;",
-    "&copy;",
-};
 
 // vim:et:ts=4:sts=0:sw=0:fdm=syntax:nowrap

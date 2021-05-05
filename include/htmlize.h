@@ -1,6 +1,11 @@
+#ifndef HTMLIZE_H
+#define HTMLIZE_H
+
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "stoi.h"
 
 /*
  * ctype.h	- isalnum(), isalpha(), etc.
@@ -8,70 +13,17 @@
  * string.h	- str*(), mem*()
  */
 
-#include "include/date.h"
-#include "include/stoi.h"
-#include "constants.h"
+#define MAX_LINKS       50
+#define MAX_LINE_LENGTH 500
 
+const char *named_references[2] =
+{
+    "&nbsp;",
+    "&copy;",
+};
 
-#ifndef HTMLIZE_STDIN
-	/*
-	 * dirent.h	- opendir(), readdir()
-	 * errno.h	- if opendir() fails, show proper error msg
-	 */
-	#include <dirent.h>
-	#include <errno.h>
-
-	#include "include/cd.h"
-	#define cd(x) \
-            cd(x, argv)
-#endif
-
-
-
-const char INITIAL_HTML_PRE_SUBTITLE[] = "\
-<html>\n\
-    <head>\n\
-        <meta charset=\"utf-8\"/>\n\
-        <title>%s</title>\n\
-        %s\n\
-        <link rel=\"stylesheet\" href=\"style.css\" media=\"screen\">\n\
-        <link rel=\"stylesheet\" href=\"recursive.css\" media=\"screen\">\n\
-        <link rel=\"stylesheet\" href=\"print.css\" media=\"print\">\n\
-    </head>\n\
-    <body>\n\
-        <header>\n\
-            <h1 class=\"title\">\n\
-                <span id=\"title\">%s</span>\n\
-            </h1>\n\
-        </header>\n\
-        <p class=\"subtitle\">\n\
-";
-const char INITIAL_HTML_POST_SUBTITLE[] = "\
-        </p>\n\
-        <table class=\"blog-date\"><tr>\n\
-                <td class=\"blog-date\">Date created</td>\n\
-                <td class=\"blog-date\">%s</td>\n\
-            </tr><tr>\n\
-                <td class=\"blog-date\">Last modified</td>\n\
-                <td class=\"blog-date\">%s</td>\n\
-        </tr></table>\n\
-        <main>\n\
-<!-- Blog content starts here -->\n\
-";
-
-const char FINAL_HTML[] = "\
-<!-- Blog content ends here -->\n\
-        </main>\n\
-        <br>\n\
-        <br>\n\
-        <br>\n\
-        %s\n\
-    </body>\n\
-</html>\n\
-";
-
-
-void fputc_escaped(char c, FILE *stream)
+void
+fputc_escaped(char c, FILE *stream)
 {
 	switch (c)
 	{
@@ -81,13 +33,16 @@ void fputc_escaped(char c, FILE *stream)
 		default:  fputc(c,		 stream); break;
 	}
 }
-void fputs_escaped(const char *s, FILE *stream)
+
+void
+fputs_escaped(const char *s, FILE *stream)
 {
 	for (int i=0; s[i] != '\0'; i++)
 		fputc_escaped(s[i], stream);
 }
 
-int is_named_charref(const char *s)
+int
+is_named_charref(const char *given_str)
 {
 	for (int i=0; i <= (sizeof(named_references)/sizeof(named_references[0])); i++)
 	{
@@ -99,108 +54,18 @@ int is_named_charref(const char *s)
 		index = strchr(named_ref, ';') - named_ref;		// Index of ending ';'
 		len = index + 1;								// Since indexing starts from 0
 
-		if (!strncmp(s, named_references[i], len))
+		if (!strncmp(given_str, named_references[i], len))
 			return 1;
 	}
 	return 0;
 }
 
-
-void htmlize(FILE *in, FILE *out)
-/*
- * Things that are escaped using '\\' -
- *	- \```\n
- *	- \`code\`
- *	- \*bold\*
- *	- \_italic\_
- *	- \<HTML>
- *	- Table \| cells
- *	- \&nbsp; HTML Named char refs
- *	- \&#...; HTML Numeric char ref
- *	- \!(ID)[Link text\]
- */
-/*
- * Things implemented -
- *	- ```
- *	- `code`
- *	- *bold*
- *	- _italic_
- *	- <table>
- *	- # Headings
- *	- Lists
- *	- HTML <tags>
- *	- Linebreak if two spaces at line end
- *	- &nbsp;  named character references (names defined in constants.h)
- *	- &#...;  numeric character references
- *	- <br> at Blank lines with two spaces
- *	- Links
- */
+void
+htmlize(FILE *in, FILE *out)
 {
-	char TITLE[MAX_LINE_LENGTH];
-	char DATE_CREATED[MAX_LINE_LENGTH];
-	char DATE_MODIFIED[MAX_LINE_LENGTH];
-
 	char line[MAX_LINE_LENGTH];
 	char last_line[MAX_LINE_LENGTH];
 	char links[MAX_LINKS + 1][MAX_LINE_LENGTH];	// +1 because indexing starts at 0
-
-
-	/* ---- BEGIN initial HTML ---- */
-	fgets(line, MAX_LINE_LENGTH, in);	// ---\n
-	memmove(TITLE,		   fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
-	memmove(DATE_CREATED,  fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
-	memmove(DATE_MODIFIED, fgets(line, MAX_LINE_LENGTH, in), MAX_LINE_LENGTH);
-	fgets(line, MAX_LINE_LENGTH, in);	// ---\n
-
-	fputs("<!--\n", out);
-	fprintf(out, "TITLE: %s", TITLE);
-	fprintf(out, "CREATED: %s", DATE_CREATED);
-	fprintf(out, "MODIFIED: %s", DATE_MODIFIED);
-	fputs("-->\n", out);
-
-	char *p;
-	*(p = memchr(TITLE,			'\n', MAX_LINE_LENGTH)) = '\0';
-	*(p = memchr(DATE_CREATED,	'\n', MAX_LINE_LENGTH)) = '\0';
-	*(p = memchr(DATE_MODIFIED, '\n', MAX_LINE_LENGTH)) = '\0';
-
-	fprintf(out, INITIAL_HTML_PRE_SUBTITLE, TITLE, FAVICON, TITLE);
-	while (strcmp(fgets(line, MAX_LINE_LENGTH, in), "---\n"))  // ie. line != "---\n"
-		fputs_escaped(line, out);
-
-	/*
-	 * NOTE: This will not work -
-	 *
-	 * 		char buffer[15];
-	 *
-	 * 		fprintf(out, INITIAL_HTML_POST_SUBTITLE,
-	 * 				date_to_text(DATE_CREATED, buffer),
-	 * 				date_to_text(DATE_MODIFIED, buffer)
-	 * 			   );
-	 *
-	 * Why? Because both date_to_text() invocations shall return a
-	 * pointer to the same buffer, and both shall operate on that same buffer.
-	 *
-	 * So, when fprintf() starts formatting the string, it finds the buffer's
-	 * value to be what the last invocation of date_to_text() had put in it.
-	 * (ie. the string form of DATE_MODIFIED)
-	 *
-	 * This will cause both "Date created" and "Last modified" table fields to
-	 * show the value of DATE_MODIFIED.
-	 *
-	 *
-	 * The solution?
-	 * Use different buffers for DATE_CREATED and DATE_MODIFIED
-	 */
-
-	char DATE_CREATED_str[15];
-	char DATE_MODIFIED_str[15];
-	fprintf(out, INITIAL_HTML_POST_SUBTITLE,
-			date_to_text(DATE_CREATED, DATE_CREATED_str),
-			date_to_text(DATE_MODIFIED, DATE_MODIFIED_str)
-		   );
-
-	/* ---- END initial HTML ---- */
-
 
 	unsigned char BOLD_OPEN = 0;
 	unsigned char ITALIC_OPEN = 0;
@@ -271,9 +136,17 @@ void htmlize(FILE *in, FILE *out)
 			char *start;
 			char *end;
 
-			start = line + 2;						// +2 for the '\t['
-			*(end = memchr(line, ']', MAX_LINE_LENGTH-1)) = '\0';	// for stoi()
+			start = line + 2;	// +2 for the '\t['
+			*(end = memchr(line, ']', MAX_LINE_LENGTH-1)) = '\0'; // mark the end
 			id = stoi(start);
+
+			if (id > MAX_LINKS)
+			{
+				fprintf(stderr,
+						"link index %i is bigger than MAX_LINKS (%i)",
+						id, MAX_LINKS);
+				continue;
+			}
 
 			href = end + 2;							// +2 for the ']:'
 			while (*href == ' ' || *href == '\t')	// Skip whitespaces, if any
@@ -555,7 +428,15 @@ void htmlize(FILE *in, FILE *out)
 				*p = '\0';
 
 				int link_id = stoi(nch + 1);	// +1 for '('
-				fprintf(out, "<a href=\"%s\" ", links[link_id]);
+				if (link_id > MAX_LINKS)
+				{
+					fprintf(stderr,
+							"link index %i is bigger than MAX_LINKS (%i)",
+							link_id, MAX_LINKS);
+					continue;
+				}
+				else
+					fprintf(out, "<a href=\"%s\" ", links[link_id]);
 
 				/* Skip the characters we have interpreted just now and continue looping */
 				nch = p + 1;			// nch now point at char after the ')' in "!(id)"
@@ -622,84 +503,7 @@ void htmlize(FILE *in, FILE *out)
 			fputc_escaped(*cch, out);
 		}
 	}
-
-
-	fprintf(out, FINAL_HTML, FOOTER);
 }
 
-
-int main(int argc, const char **argv)
-{
-
-#ifdef HTMLIZE_STDIN
-	htmlize(stdin, stdout);
-	return 0;
-#else
-
-	DIR *dir;
-	FILE *sfp;		// (s)ource      (f)ile (p)ointer
-	FILE *dfp;		// (d)estination (f)ile (p)ointer
-	struct dirent *dirent;
-
-	if ((dir = opendir(SOURCE_DIR)) == NULL)
-	{
-		switch (errno)
-		{
-			case ENOENT:
-				fprintf(stderr, "%s: directory not found: %s\n",	*argv, SOURCE_DIR);
-				break;
-			case ENOTDIR:
-				fprintf(stderr, "%s: not a directory: %s\n",		*argv, SOURCE_DIR);
-				break;
-			case EACCES:
-				fprintf(stderr, "%s: permission denied: %s\n",		*argv, SOURCE_DIR);
-				break;
-			default:
-				fprintf(stderr, "%s: opendir error: %s\n",			*argv, SOURCE_DIR);
-				break;
-		}
-		return 1;
-	}
-
-	while ((dirent = readdir(dir)) != NULL)
-	{
-		char *name = dirent->d_name;
-		if (!memcmp(strrchr(name, '.'), SOURCE_EXT, strlen(SOURCE_EXT)))
-		{
-			/* Copy name to new_name */
-			char new_name[FILENAME_MAX];
-			memmove(new_name, name, strlen(name)+1);	// +1 for \0
-
-			/* Change extension to .html */
-			char *p = strrchr(new_name, '.');
-			memmove(p, ".html", 6);		// 6, because ".html" has \0 at end
-
-			/* Open source file */
-			if (cd(SOURCE_DIR))
-				return 1;
-			sfp = fopen(name, "r");
-			cd("..");
-
-			/* Open destination file */
-			if (cd(DEST_DIR))
-				return 1;
-			dfp = fopen(new_name, "w");
-			cd("..");
-
-			/* Process file content and close files  */
-			htmlize(sfp, dfp);
-			fclose(sfp);
-			fclose(dfp);
-
-#ifdef PRINT_FILENAMES
-			printf("%s -> %s\n", name, new_name);
 #endif
-
-		}
-	}
-	closedir(dir);
-
-#endif
-}
-
 // vim:noet:ts=4:sts=0:sw=0:fdm=syntax
