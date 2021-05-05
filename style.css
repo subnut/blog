@@ -1,31 +1,34 @@
 /* Colors */
-body        { background: #FFF; color: #000;    }
-:target     { background: #FF06;                }
-pre, code   { background: #eee;                 }
-hr          { background: #CCC; color: #CCC;    }
 a           { color: inherit;                   }
+hr          { background: #CCC; color: #CCC;    }
+body        { background: #FFF; color: #000;    }
+pre, code   { background: #EEE;                 }
+p.subtitle  { background: #DDD;                 }
+:target     { background: #FF06;                }
 ::selection { background: #BDF; color: inherit; }
 
-table.blog-date     { color: #888; }
+p.blog-date         { color: #888; }
 td.blog-index-date  { color: #888; }
 
 @media (prefers-color-scheme: dark) {
-  body        { background: #000; color: #FFF;     }
-  pre, code   { background: #333;                  }
-  hr          { background: #333; color: #333;     }
-  ::selection { background: #88F6; color: inherit; }
+  hr          { background: #555; color: #555;      }
+  body        { background: #000; color: #FFF;      }
+  pre, code   { background: #333;                   }
+  p.subtitle  { background: #444;                   }
+  :target     { background: #550;                   }
+  ::selection { background: #338; color: inherit;   }
 }
 
 
 /* Fonts */
 body                    { font-family: monospace; }
-#title                  { font-family: serif;     }
+h1.title                { font-family: serif;     }
 h1, h2, h3, h4, h5, h6  { font-family: serif;     }
 
 body                { font-size: 16px;    }
 table               { font-size: 16px;    }
-table.blog-date     { font-size: smaller; }
-#title              { font-size: larger;  }
+h1.title            { font-size: 38px;    }
+p.blog-date         { font-size: 12px;    }
 td.blog-index-date  { font-size: smaller; }
 
 
@@ -63,24 +66,18 @@ footer hr { max-width:  inherit;  }
 
 
 /* Blog */
-table.blog-date {
-  padding: 0;
-  border: none;
-  margin-right: 0;
-  margin-left: auto;
-  margin-top: 2ch;
-  margin-bottom: 4ch;
-}
-td.blog-date {
-  border: none;
-  padding: 0 1ch;
-}
 h1.title {
-  margin: 2ch 0;
+  margin: 1.5ch 0;
   text-align: center;
 }
 p.subtitle {
-  margin: 2ch 0;
+  padding: 2ch;
+  margin-bottom: 1ch;
+  border: 2px solid #888;
+}
+p.blog-date {
+  margin-top: 0px;
+  margin-bottom: 5ch;
 }
 
 

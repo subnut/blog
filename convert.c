@@ -38,21 +38,16 @@ const char INITIAL_HTML_PRE_SUBTITLE[] = "\
     </head>\n\
     <body>\n\
         <header>\n\
-            <h1 class=\"title\">\n\
-                <span id=\"title\">%s</span>\n\
-            </h1>\n\
+            <h1 class=\"title\">%s</h1>\n\
         </header>\n\
         <p class=\"subtitle\">\n\
 ";
 const char INITIAL_HTML_POST_SUBTITLE[] = "\
         </p>\n\
-        <table class=\"blog-date\"><tr>\n\
-                <td class=\"blog-date\">Date created</td>\n\
-                <td class=\"blog-date\">%s</td>\n\
-            </tr><tr>\n\
-                <td class=\"blog-date\">Last modified</td>\n\
-                <td class=\"blog-date\">%s</td>\n\
-        </tr></table>\n\
+        <p class=\"blog-date\">\n\
+            Published on %s.\n\
+            Last modified on %s.\n\
+        </p>\n\
         <main>\n\
 <!-- Blog content starts here -->\n\
 ";
