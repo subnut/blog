@@ -1,7 +1,8 @@
 #ifndef STOI_H
 #define STOI_H
 
-int ctoi(int c)
+int
+ctoi(int c)
 {
     switch (c)
     {
@@ -18,7 +19,9 @@ int ctoi(int c)
         default:  return c;
     }
 }
-int stoi(const char *s)
+
+int
+stoi(const char *s)
 {
     int retval = 0;
     for (int i = 0; s[i] != '\0'; i++)

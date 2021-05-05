@@ -69,7 +69,8 @@ const char FINAL_HTML[] = "\
 ";
 
 
-void convert(FILE *in, FILE *out)
+void
+convert(FILE *in, FILE *out)
 /*
  * Things that are escaped using '\\' -
  *	- \```\n
@@ -166,7 +167,8 @@ void convert(FILE *in, FILE *out)
 }
 
 
-int main(int argc, const char **argv)
+int
+main(int argc, const char **argv)
 {
 
 #ifdef CONVERT_STDIN

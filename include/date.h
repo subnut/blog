@@ -4,7 +4,8 @@
 #include <string.h>
 #include "stoi.h"
 
-char *date_to_text(const char *date_str, char *text)
+char *
+date_to_text(const char *date_str, char *text)
 {
     char final_str[15];
 

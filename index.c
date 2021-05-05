@@ -34,6 +34,7 @@ const char INITIAL_TEXT[] = "\
         <table class=\"blog-index\">\n\
 <!-- Index starts here -->\n\
 ";
+
 const char FINAL_TEXT[] = "\
 <!-- Index ends here -->\n\
         </table>\n\
@@ -44,8 +45,8 @@ const char FINAL_TEXT[] = "\
 </head>\n\
 ";
 
-
-char *urlencode_c(const char c, char *str_size_4)
+char *
+urlencode_c(const char c, char *str_size_4)
 {
 	/* unreserved */
 	if (isalnum(c))
@@ -69,7 +70,9 @@ char *urlencode_c(const char c, char *str_size_4)
 	sprintf(str_size_4, "%%%0X", c);
 	return str_size_4;
 }
-char *urlencode_s(const char *s, char *storage)
+
+char *
+urlencode_s(const char *s, char *storage)
 {
 	char str[4];
 	char *pointer;
@@ -84,8 +87,8 @@ char *urlencode_s(const char *s, char *storage)
 	return storage;
 }
 
-
-int main(int argc, const char **argv)
+int
+main(int argc, const char **argv)
 {
 	DIR *dir;
 	FILE *outfile;
