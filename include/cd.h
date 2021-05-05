@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+int	cd(const char *, const char **);
+
 int
 cd(const char *path, const char **argv)
 {

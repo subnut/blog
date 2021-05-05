@@ -16,6 +16,11 @@
 #define MAX_LINKS       50
 #define MAX_LINE_LENGTH 500
 
+void	fputc_escaped(char, FILE *);
+void	fputs_escaped(const char *, FILE *);
+int	is_named_charref(const char *);
+void	htmlize(FILE *, FILE *);
+
 const char *named_references[2] =
 {
     "&nbsp;",
