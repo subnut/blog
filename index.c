@@ -134,8 +134,20 @@ main(int argc, const char **argv)
 
 	FILE *file;
 
-	char TITLE[MAX_TITLE_LENGTH];
-	char DATE_CREATED[11]; // "YYYY/MM/DD" +1 for '\0'
+	/*
+	 * Title.
+	 * +7 for the leading "TITLE: "
+	 * +2 for the trailing '\n' and '\0'
+	 */
+	char TITLE[MAX_TITLE_LENGTH + 9];
+
+	/*
+	 * Date published.
+	 * 10 for the "YYYY/MM/DD"
+	 * +9 for the leading "CREATED:"
+	 * +1 for the trailing '\0'
+	 */
+	char DATE_CREATED[20];
 
 	for (int i=1; *filenames[i]!='\0' && i<=MAX_FILES ; i++)
 	{
@@ -144,7 +156,7 @@ main(int argc, const char **argv)
 			continue;
 
 		/* Remove first line */
-        char *first_line = "<!--\n";
+        char first_line[6];
 		fgets(first_line, 6, file);	// "<!--\n" +1 for '\0'
 
 		/* Title */
@@ -155,10 +167,10 @@ main(int argc, const char **argv)
 		*(strrchr(TITLE, '\n')) = '\0';
 
 		/* Date created */
-		fgets(DATE_CREATED, 11, file);
-		memmove(DATE_CREATED, DATE_CREATED + 9, 11 - 9);	// Remove "DATE_CREATED:"
+		fgets(DATE_CREATED, 20, file);
+		memmove(DATE_CREATED, DATE_CREATED + 9, 20 - 9);	// Remove "DATE_CREATED:"
 		while (*DATE_CREATED == ' ')
-			memmove(DATE_CREATED, TITLE + 1, 11 - 1);
+			memmove(DATE_CREATED, TITLE + 1, 20 - 1);
 
 		/* Done reading from file */
 		fclose(file);
