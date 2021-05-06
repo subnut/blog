@@ -15,7 +15,7 @@ export CPPFLAGS="-I.     $CPPFLAGS"
 
 run "$CC" $CFLAGS $CPPFLAGS $LDFLAGS -c src/*
 run "$CC" $CFLAGS $CPPFLAGS $LDFLAGS -o index   index.o   cd.o date_to_text.o stoi.o
-run "$CC" $CFLAGS $CPPFLAGS $LDFLAGS -o convert convert.o cd.o date_to_text.o stoi.o htmlize.o
+run "$CC" $CFLAGS $CPPFLAGS $LDFLAGS -o blogify blogify.o cd.o date_to_text.o stoi.o htmlize.o
 run "$CC" $CFLAGS $CPPFLAGS $LDFLAGS -o htmlize                date_to_text.o stoi.o htmlize.o \
 -x c - << EOF
 #include <stdio.h>

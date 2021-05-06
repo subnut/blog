@@ -11,7 +11,7 @@
 #include "constants.h"
 
 
-#ifndef CONVERT_STDIN
+#ifndef BLOGIFY_FROM_STDIN
 	#include <dirent.h>
 	#include <errno.h>
 
@@ -23,7 +23,7 @@
 	#include "include/cd.h"
 	#define cd(x) \
             cd(x, argv)
-#endif /* CONVERT_STDIN */
+#endif /* BLOGIFY_FROM_STDIN */
 
 
 const char INITIAL_HTML_PRE_SUBTITLE[] = "\
@@ -65,7 +65,7 @@ const char FINAL_HTML[] = "\
 
 
 void
-convert(FILE *in, FILE *out)
+process(FILE *in, FILE *out)
 /*
  * Things that are escaped using '\\' -
  *	- \```\n
@@ -166,10 +166,10 @@ int
 main(int argc, const char **argv)
 {
 
-#ifdef CONVERT_STDIN
-	convert(stdin, stdout);
+#ifdef BLOGIFY_FROM_STDIN
+	process(stdin, stdout);
 	return 0;
-#else /* CONVERT_STDIN */
+#else /* BLOGIFY_FROM_STDIN */
 
 	DIR *dir;
 	FILE *sfp;		// (s)ource      (f)ile (p)ointer
@@ -222,7 +222,7 @@ main(int argc, const char **argv)
 			cd("..");
 
 			/* Process file content and close files  */
-			convert(sfp, dfp);
+			process(sfp, dfp);
 			fclose(sfp);
 			fclose(dfp);
 
@@ -234,7 +234,7 @@ main(int argc, const char **argv)
 	}
 	closedir(dir);
 
-#endif /* CONVERT_STDIN */
+#endif /* BLOGIFY_FROM_STDIN */
 }
 
 // vim:noet:ts=4:sts=0:sw=0:fdm=syntax
