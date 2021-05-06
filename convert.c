@@ -6,7 +6,7 @@
  * string.h	- str*(), mem*()
  */
 
-#include "include/date.h"
+#include "include/date_to_text.h"
 #include "include/htmlize.h"
 #include "constants.h"
 

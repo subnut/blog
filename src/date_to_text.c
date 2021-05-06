@@ -1,10 +1,5 @@
-#ifndef DATE_H
-#define DATE_H
-
 #include <string.h>
-#include "stoi.h"
-
-char	*date_to_text(const char *, char *);
+#include "include/stoi.h"
 
 char *
 date_to_text(const char *date_str, char *text)
@@ -127,5 +122,3 @@ date_to_text(const char *date_str, char *text)
 	memmove(text, final_str, 15);
 	return text;
 }
-
-#endif /* DATE_H */

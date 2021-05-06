@@ -1,7 +1,17 @@
+/* Extension for blog source files */
 #define SOURCE_EXT ".blog"
 
-#define SOURCE_DIR "src"
+/* Directories to convert from and to */
+#define SOURCE_DIR "raw"
 #define DEST_DIR   "docs"
+
+/* Needed for htmlize() */
+#define MAX_LINKS       50
+#define MAX_LINE_LENGTH 500
+
+/* Used in index.c */
+#define MAX_FILES        100
+#define MAX_TITLE_LENGTH 150
 
 #define FAVICON "<link rel=icon href=\"data:image/png;base64,\n\
 iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAnXAAAJ1wGxbhe3AAAA\n\

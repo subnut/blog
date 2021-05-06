@@ -11,12 +11,10 @@
  */
 
 #include "include/cd.h"
-#include "include/date.h"
+#include "include/date_to_text.h"
 #include "include/stoi.h"
 #include "constants.h"
 
-#define MAX_FILES        100
-#define MAX_TITLE_LENGTH 150
 #define cd(x) \
         cd(x, argv)
 
