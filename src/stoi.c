@@ -1,3 +1,5 @@
+#include "include/stoi.h"
+
 int
 ctoi(int c)
 {
