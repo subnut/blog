@@ -4,6 +4,7 @@
 
 #include "include/htmlize.h"
 #include "include/stoi.h"
+#include "constants.h"
 
 /*
  * ctype.h	- isalnum(), isalpha(), etc.
