@@ -18,7 +18,7 @@
 #define cd(x) \
         cd(x, argv)
 
-const char INITIAL_TEXT[] = "\
+static const char INITIAL_TEXT[] = "\
 <html>\n\
     <head>\n\
         <meta charset=\"utf-8\"/>\n\
@@ -33,7 +33,7 @@ const char INITIAL_TEXT[] = "\
 <!-- Index starts here -->\n\
 ";
 
-const char FINAL_TEXT[] = "\
+static const char FINAL_TEXT[] = "\
 <!-- Index ends here -->\n\
         </table>\n\
         <br>\n\

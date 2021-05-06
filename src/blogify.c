@@ -19,7 +19,7 @@
         cd(x, argv)
 
 
-const char INITIAL_HTML_PRE_SUBTITLE[] = "\
+static const char INITIAL_HTML_PRE_SUBTITLE[] = "\
 <html>\n\
     <head>\n\
         <meta charset=\"utf-8\"/>\n\
@@ -35,7 +35,7 @@ const char INITIAL_HTML_PRE_SUBTITLE[] = "\
         </header>\n\
         <p class=\"subtitle\">\n\
 ";
-const char INITIAL_HTML_POST_SUBTITLE[] = "\
+static const char INITIAL_HTML_POST_SUBTITLE[] = "\
         </p>\n\
         <p class=\"blog-date\">\n\
             Published on %s.\n\
@@ -45,7 +45,7 @@ const char INITIAL_HTML_POST_SUBTITLE[] = "\
 <!-- Blog content starts here -->\n\
 ";
 
-const char FINAL_HTML[] = "\
+static const char FINAL_HTML[] = "\
 <!-- Blog content ends here -->\n\
         </main>\n\
         <br>\n\

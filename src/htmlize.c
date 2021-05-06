@@ -12,7 +12,7 @@
  * string.h	- str*(), mem*()
  */
 
-const char *named_references[2] =
+static const char *named_references[2] =
 {
     "&nbsp;",
     "&copy;",
