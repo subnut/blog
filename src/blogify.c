@@ -1,29 +1,22 @@
+#include <dirent.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
 /*
+ * dirent.h	- opendir(), readdir()
+ * errno.h	- if opendir() fails, show proper error msg
  * stdio.h	- printf(), fopen(), fprintf(), etc
  * string.h	- str*(), mem*()
  */
 
+#include "include/cd.h"
 #include "include/date_to_text.h"
 #include "include/htmlize.h"
 #include "constants.h"
 
-
-#ifndef BLOGIFY_FROM_STDIN
-	#include <dirent.h>
-	#include <errno.h>
-
-	/*
-	 * dirent.h	- opendir(), readdir()
-	 * errno.h	- if opendir() fails, show proper error msg
-	 */
-
-	#include "include/cd.h"
-	#define cd(x) \
-            cd(x, argv)
-#endif /* BLOGIFY_FROM_STDIN */
+#define cd(x) \
+        cd(x, argv)
 
 
 const char INITIAL_HTML_PRE_SUBTITLE[] = "\
@@ -165,12 +158,6 @@ process(FILE *in, FILE *out)
 int
 main(int argc, const char **argv)
 {
-
-#ifdef BLOGIFY_FROM_STDIN
-	process(stdin, stdout);
-	return 0;
-#else /* BLOGIFY_FROM_STDIN */
-
 	DIR *dir;
 	FILE *sfp;		// (s)ource      (f)ile (p)ointer
 	FILE *dfp;		// (d)estination (f)ile (p)ointer
@@ -233,8 +220,6 @@ main(int argc, const char **argv)
 		}
 	}
 	closedir(dir);
-
-#endif /* BLOGIFY_FROM_STDIN */
 }
 
 // vim:noet:ts=4:sts=0:sw=0:fdm=syntax
