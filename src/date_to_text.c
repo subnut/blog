@@ -37,15 +37,15 @@ date_to_text(const char *date_str, char *text)
 		output += 3;
 		break;
 
-	case 4: output[0] = '4';
-	case 5: output[0] = '5';
-	case 6: output[0] = '6';
-	case 7: output[0] = '7';
-	case 8: output[0] = '8';
-	case 9: output[0] = '9';
-		output++;
-		memmove(output, "th", 2);
-		output += 3;
+	case 4:
+	case 5:
+	case 6:
+	case 7:
+	case 8:
+	case 9:
+		*output++ = date[1];
+		*output++ = 't';
+		*output++ = 'h';
 		break;
 
 	default:
