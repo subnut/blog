@@ -4,21 +4,16 @@
 char *
 date_to_text(const char *date_str, char *text)
 {
-	char final_str[15];
-
 	char *output;
+	char final_str[15];
 	output = final_str;
 
 	char working_copy[11];
 	memmove(working_copy, date_str, 11);
 
-	char *year	= working_copy;
-	char *month = working_copy + 4;
-	char *date	= working_copy + 7;
-
-	*month++  = '\0';
-	*date++   = '\0';
-	*(date+2) = '\0';
+	char *date  = working_copy;
+	char *month = memchr(date,  '/', 3); *month++ = '\0';
+	char *year  = memchr(month, '/', 3); *year++  = '\0';
 
 
 	/* Date */
@@ -43,17 +38,19 @@ date_to_text(const char *date_str, char *text)
 	case 7:
 	case 8:
 	case 9:
-		*output++ = date[1];
+		if (ctoi(date[0]) != 0)		/* eg.  2/../.... */
+			*output++ = date[0];
+		else				/* eg. 02/../.... */
+			*output++ = date[1];
 		*output++ = 't';
 		*output++ = 'h';
 		break;
 
 	default:
-		output[0] = date[0];
-		output[1] = date[1];
-		output[2] = 't';
-		output[3] = 'h';
-		output += 4;
+		*output++ = date[0];
+		*output++ = date[1];
+		*output++ = 't';
+		*output++ = 'h';
 		break;
 	}
 	*output++ = ' ';
@@ -119,6 +116,9 @@ date_to_text(const char *date_str, char *text)
 	output += 4;
 	*output++ = '\0';
 
+
 	memmove(text, final_str, 15);
 	return text;
 }
+
+// vim: fdm=syntax
