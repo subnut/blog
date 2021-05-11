@@ -104,6 +104,7 @@ htmlize(FILE *in, FILE *out)
 	unsigned char LINK_TEXT_OPEN = 0;
 	unsigned char TABLE_MODE = 0;
 	unsigned char LIST_MODE = 0;
+	unsigned char FOOTNOTE_MODE = 0;
 
 	unsigned int H_LEVEL = 0;
 
@@ -156,6 +157,15 @@ htmlize(FILE *in, FILE *out)
 		// End of blog
 		if (!memcmp(line, "---\n", 4))
 			break;
+
+
+		// Footnotes
+		if (!memcmp(line, "===\n", 4))
+		{
+			FOOTNOTE_MODE = 1;
+			fputs("<p id=\"footnotes\">\n", out);
+			continue;
+		}
 
 
 		// Link definition
@@ -306,6 +316,30 @@ htmlize(FILE *in, FILE *out)
 		}
 
 
+		// Footnotes
+		if (FOOTNOTE_MODE)
+		{
+			char *id_end;
+			char  id[MAX_LINE_LENGTH];
+
+			id_end = memchr(line, ':', MAX_LINE_LENGTH);
+			if (id_end == NULL)
+				continue;
+
+			*id_end = '\0';
+			memmove(id, line, MAX_LINE_LENGTH);
+			*id_end = ':';
+
+			fprintf(out, "<a class=\"footnote\" id=\"fn:%s\" href=\"#fnref:%s\">[%s]</a>",
+					id, id, id);
+
+			memmove(line, id_end, MAX_LINE_LENGTH - (id_end-line));	// Skip till ':'
+
+			/* no continue */
+		}
+
+
+
 		// Line prefix for tables
 		if (TABLE_MODE)
 			fputs("<tr><td>", out);
@@ -344,6 +378,7 @@ htmlize(FILE *in, FILE *out)
 						|| (TABLE_MODE && *nch == '|')
 						|| (!LINK_OPEN && *nch == '!' && *(nch + 1) == '(')
 						|| (*nch == '&' && (*(nch + 1) == '#' || is_named_charref(nch)))
+						|| (*nch == '[' && *(nch + 1) == '^')
 				   ) {;}
 				else
 					fputc('\\', out);
@@ -512,6 +547,29 @@ htmlize(FILE *in, FILE *out)
 			}
 
 
+			// Footnotes	[^1]
+			if (*cch == '[' && *nch == '^' && *pch != '\\')
+			{
+				char *p;
+				char id[MAX_LINE_LENGTH];
+
+				*(p = memchr(cch, ']', MAX_LINE_LENGTH - (cch-line))) = '\0';
+				memmove(id, cch+2, MAX_LINE_LENGTH - (cch-line)); // +2 for '[^'
+				*p = ']';
+
+				fprintf(out,
+					"<a class=\"footnote\" id=\"fnref:%s\" href=\"#fn:%s\"><sup>[%s]</sup></a>",
+					id, id, id
+					);
+
+				/* skip till the character just after the ']' */
+				nch = p + 1;
+				cch = p;
+				index = p - line;
+
+				continue;
+			}
+
 			// Table cells
 			if (TABLE_MODE)
 			{
@@ -529,6 +587,13 @@ htmlize(FILE *in, FILE *out)
 				}
 			}
 
+
+			// For footnotes
+			if (FOOTNOTE_MODE && *cch == '\n')
+			{
+				fputs("<br>\n", out);
+				break;
+			}
 
 			// It's just a simple, innocent character
 			fputc_escaped(*cch, out);
