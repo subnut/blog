@@ -7,6 +7,8 @@ p.subtitle  { background: #DDD;                     }
 :target     { background: #FF06;                    }
 ::selection { background: #BDF; color: inherit;     }
 blockquote  { color: #666; border-left-color: #AAA; }
+summary     { background: #DDD;                     }
+pre         { scrollbar-color: #888 #EEE;/* FG BG */}
 
 p.blog-date         { color: #888; }
 td.blog-index-date  { color: #888; }
@@ -19,6 +21,8 @@ td.blog-index-date  { color: #888; }
   :target     { background: #550;                     }
   ::selection { background: #338; color: inherit;     }
   blockquote  { color: #CCC; border-left-color: #666; }
+  summary     { background: #444;                     }
+  pre         { scrollbar-color: #888 #333;/* FG BG */}
 }
 
 
@@ -30,8 +34,9 @@ h1, h2, h3, h4, h5, h6  { font-family: serif;     }
 body                { font-size: 16px; }
 table               { font-size: 16px; }
 h1.blog-title       { font-size: 38px; }
-p.blog-date         { font-size: 12px; }
+p.blog-date         { font-size: 14px; }
 td.blog-index-date  { font-size: 14px; }
+#footnotes          { font-size: 14px; }
 
 
 /* Everything else */
@@ -51,12 +56,17 @@ blockquote {
   border-left-style: solid;
 }
 
+summary {
+  padding: 0.5ch 1ch;
+  border-radius: 0.5ch;
+}
+
 h1, h2, h3, h4, h5, h6 {
   text-align: initial;
 }
 
-pre  {
-  overflow-x: auto;   /* Enable scrolling if required */
+table, pre  {
+  overflow: scroll;
 }
 
 pre  { padding: 2ch; }
@@ -66,6 +76,7 @@ th, td        { padding: 0.5ch; }
 th, td, table { border: 1px solid; }
 
 a                 { text-decoration: underline; }
+a.footnote        { text-decoration: none;      }
 a.self-link       { text-decoration: none;      }
 a.self-link:hover { text-decoration: underline; }
 
@@ -79,6 +90,9 @@ hr {
 footer    { text-align: center;   }
 footer hr { max-width:  inherit;  }
 
+#footnotes {
+  margin: 4ch;
+}
 
 /* Blog */
 h1.title, h1.blog-title {
