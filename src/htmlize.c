@@ -204,6 +204,14 @@ htmlize(FILE *in, FILE *out)
 		// Blank line with two spaces
 		if (!memcmp(line, "  \n", 3) || !memcmp(line, "\n", 2))
 		{
+			if (!memcmp(last_line, "\t[", 2))
+				/*
+				 * Last line was a link definition.
+				 * So, this empty line was just inserted for
+				 * readablity.  Ignore it.
+				 */
+				continue;
+
 			fputs("<br>\n", out);
 			continue;
 		}
