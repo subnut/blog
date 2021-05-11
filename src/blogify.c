@@ -48,9 +48,6 @@ static const char INITIAL_HTML_POST_SUBTITLE[] = "\
 static const char FINAL_HTML[] = "\
 <!-- Blog content ends here -->\n\
         </main>\n\
-        <br>\n\
-        <br>\n\
-        <br>\n\
         %s\n\
     </body>\n\
 </html>\n\
