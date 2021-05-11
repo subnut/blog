@@ -89,7 +89,9 @@ htmlize(FILE *in, FILE *out)
  *	- Footnotes[^10]
  */
 {
-	char line[MAX_LINE_LENGTH];
+	char line[MAX_LINE_LENGTH];	// The buffer we shall work on
+	char original_line[MAX_LINE_LENGTH];	// The buffer used to store the current line, unmodified
+
 	char last_line[MAX_LINE_LENGTH];
 	char links[MAX_LINKS + 1][MAX_LINE_LENGTH];	// +1 because indexing starts at 0
 
@@ -111,8 +113,8 @@ htmlize(FILE *in, FILE *out)
 
 	for (;;)
 	{
-		// Save current line in last_line
-		memmove(last_line, line, MAX_LINE_LENGTH);
+		// Save current line (unmodified) in last_line
+		memmove(last_line, original_line, MAX_LINE_LENGTH);
 
 		/*
 		 * Read and store a line from *in into line[]
@@ -120,6 +122,9 @@ htmlize(FILE *in, FILE *out)
 		 */
 		if (fgets(line, MAX_LINE_LENGTH, in) == NULL)
 			break;
+
+		// Save the unmodified line into a buffer for future reference
+		memmove(original_line, line, MAX_LINE_LENGTH);
 
 		/*
 		 * NOTE: Always remember, CODEBLOCKs take precedence over anything else
