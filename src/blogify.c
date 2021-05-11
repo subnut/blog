@@ -59,34 +59,6 @@ static const char FINAL_HTML[] = "\
 
 void
 process(FILE *in, FILE *out)
-/*
- * Things that are escaped using '\\' -
- *	- \```\n
- *	- \`code\`
- *	- \*bold\*
- *	- \_italic\_
- *	- \<HTML>
- *	- Table \| cells
- *	- \&nbsp; HTML Named char refs
- *	- \&#...; HTML Numeric char ref
- *	- \!(ID)[Link text\]
- */
-/*
- * Things implemented -
- *	- ```
- *	- `code`
- *	- *bold*
- *	- _italic_
- *	- <table>
- *	- # Headings
- *	- Lists
- *	- HTML <tags>
- *	- Linebreak if two spaces at line end
- *	- &nbsp;  named character references (names defined in constants.h)
- *	- &#...;  numeric character references
- *	- <br> at Blank lines with two spaces
- *	- Links
- */
 {
 	char TITLE[MAX_LINE_LENGTH];
 	char DATE_CREATED[MAX_LINE_LENGTH];

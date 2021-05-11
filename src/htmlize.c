@@ -58,6 +58,36 @@ is_named_charref(const char *given_str)
 
 void
 htmlize(FILE *in, FILE *out)
+/*
+ * Things that are escaped using '\\' -
+ *	- \```\n
+ *	- \`code\`
+ *	- \*bold\*
+ *	- \_italic\_
+ *	- \<HTML>
+ *	- Table \| cells
+ *	- \&nbsp; HTML Named char refs
+ *	- \&#...; HTML Numeric char ref
+ *	- \!(ID)[Link text\]
+ *	- Footnotes\[^10]
+ */
+/*
+ * Things implemented -
+ *	- ```
+ *	- `code`
+ *	- *bold*
+ *	- _italic_
+ *	- <table>
+ *	- # Headings
+ *	- Lists
+ *	- HTML <tags>
+ *	- Linebreak if two spaces at line end
+ *	- &nbsp;  named character references (names defined in constants.h)
+ *	- &#...;  numeric character references
+ *	- <br> at Blank lines with two spaces
+ *	- Links
+ *	- Footnotes[^10]
+ */
 {
 	char line[MAX_LINE_LENGTH];
 	char last_line[MAX_LINE_LENGTH];
