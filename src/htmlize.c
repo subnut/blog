@@ -93,7 +93,7 @@ htmlize(FILE *in, FILE *out)
 	char original_line[MAX_LINE_LENGTH];	// The buffer used to store the current line, unmodified
 
 	char last_line[MAX_LINE_LENGTH];
-	char links[MAX_LINKS + 1][MAX_LINE_LENGTH];	// +1 because indexing starts at 0
+	char links[MAX_LINKS][MAX_LINE_LENGTH];	// +1 because indexing starts at 0
 
 	unsigned char BOLD_OPEN = 0;
 	unsigned char ITALIC_OPEN = 0;

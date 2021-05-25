@@ -5,7 +5,11 @@
 #define SOURCE_DIR "raw"
 #define DEST_DIR   "docs"
 
-/* Needed for htmlize() */
+/*
+ * Needed for htmlize()
+ * NOTE: The effective values are actually one less than what is defined here.
+ *       Please adjust the values accordingly.
+ */
 #define MAX_LINKS       50
 #define MAX_LINE_LENGTH 500
 
