@@ -4,4 +4,4 @@ a.out
 index
 blogify
 htmlize
-src/*.o
+**/*.o
