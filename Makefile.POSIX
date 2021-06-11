@@ -1,0 +1,13 @@
+include include.mk
+
+index:		src/index.o   src/cd.o src/date_to_text.o src/stoi.o
+	$(CC) $(__LDFLAGS__) -o $@ \
+		src/index.o   src/cd.o src/date_to_text.o src/stoi.o
+
+blogify:	src/blogify.o src/cd.o src/date_to_text.o src/stoi.o src/htmlize.o
+	$(CC) $(__LDFLAGS__) -o $@ \
+		src/blogify.o src/cd.o src/date_to_text.o src/stoi.o src/htmlize.o
+
+htmlize:	.htmlize.o             src/date_to_text.o src/stoi.o src/htmlize.o
+	$(CC) $(__LDFLAGS__) -o $@ \
+		.htmlize.o             src/date_to_text.o src/stoi.o src/htmlize.o
