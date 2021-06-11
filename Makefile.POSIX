@@ -1,4 +1,4 @@
-include include.mk
+include Makeinclude.mk
 
 index:		src/index.o   src/cd.o src/date_to_text.o src/stoi.o
 	$(CC) $(__LDFLAGS__) -o $@ \
