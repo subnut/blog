@@ -13,7 +13,7 @@ all: index blogify htmlize
 	$(CC) $(__CFLAGS__) $(__CPPFLAGS__) -c "$<" -o "$*.o"
 
 clean:
-	rm -f src/*.o index blogify htmlize
+	rm -f src/*.o index blogify htmlize .htmlize.o
 
 # src/{index,blogify,htmlize}.o depend on constants.h
 # i.e. if constant.h changes, re-build them.
@@ -27,7 +27,6 @@ blogify: src/blogify.o src/cd.o src/date_to_text.o src/stoi.o src/htmlize.o
 	$(CC) $(__LDFLAGS__) -o $@ \
 		src/blogify.o src/cd.o src/date_to_text.o src/stoi.o src/htmlize.o
 
-htmlize: src/date_to_text.o src/stoi.o src/htmlize.o htmlize.c
-	$(CC) $(__CFLAGS__) $(__CPPFLAGS__) $(__LDFLAGS__) -o $@ \
-		src/date_to_text.o src/stoi.o src/htmlize.o \
-		htmlize.c
+htmlize: .htmlize.o             src/date_to_text.o src/stoi.o src/htmlize.o
+	$(CC) $(__LDFLAGS__) -o $@ \
+		.htmlize.o             src/date_to_text.o src/stoi.o src/htmlize.o
