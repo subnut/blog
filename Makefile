@@ -1,4 +1,5 @@
 .POSIX:
+.SUFFIXES:
 .SUFFIXES: .c .o
 
 __CFLAGS__	= -Wall -O2 $(CFLAGS)
