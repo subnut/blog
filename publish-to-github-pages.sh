@@ -11,8 +11,8 @@ run git checkout -b gh-pages
 run mkdir docs || (run rm docs -rv && run mkdir docs)
 run blogify
 run index
-run cp -v css/*   docs
-run cp -v MIT.txt docs
+run cp -v css/* docs
+run cp -v LICENSE.txt docs
 # run cp -v src/* docs
 run git add -f docs
 run git commit -m PUBLISH
