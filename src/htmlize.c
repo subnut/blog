@@ -2,15 +2,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "include/htmlize.h"
-#include "include/stoi.h"
-#include "constants.h"
-
 /*
  * ctype.h	- isalnum(), isalpha(), etc.
  * stdio.h	- printf(), fopen(), fprintf(), etc
  * string.h	- str*(), mem*()
  */
+
+#include "include/htmlize.h"
+#include "include/stoi.h"
+#include "constants.h"
 
 static const char *named_references[2] =
 {

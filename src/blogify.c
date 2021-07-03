@@ -54,16 +54,14 @@ static const char FINAL_HTML[] = "\
 ";
 
 
-void
-process(FILE *in, FILE *out)
+static void
+initial_html(FILE *in, FILE *out)
 {
 	char TITLE[MAX_LINE_LENGTH];
 	char DATE_CREATED[MAX_LINE_LENGTH];
 	char DATE_MODIFIED[MAX_LINE_LENGTH];
 	char BUFFER[MAX_LINE_LENGTH];
 
-
-	/* ---- BEGIN initial HTML ---- */
 	fgets(TITLE,         MAX_LINE_LENGTH, in);
 	fgets(DATE_CREATED,  MAX_LINE_LENGTH, in);
 	fgets(DATE_MODIFIED, MAX_LINE_LENGTH, in);
@@ -115,12 +113,15 @@ process(FILE *in, FILE *out)
 			date_to_text(DATE_CREATED, DATE_CREATED_str),
 			date_to_text(DATE_MODIFIED, DATE_MODIFIED_str)
 		   );
+}
 
-	/* ---- END initial HTML ---- */
 
-
-	htmlize(in, out);
-	fprintf(out, FINAL_HTML, FOOTER);
+static void
+process_file(FILE *src, FILE *dest)
+{
+	initial_html(src, dest);
+	htmlize(src, dest);
+	fprintf(dest, FINAL_HTML, FOOTER);
 }
 
 
@@ -178,14 +179,13 @@ main(int argc, const char **argv)
 			cd("..");
 
 			/* Process file content and close files  */
-			process(sfp, dfp);
+			process_file(sfp, dfp);
 			fclose(sfp);
 			fclose(dfp);
 
 #ifdef PRINT_FILENAMES
 			printf("%s -> %s\n", name, new_name);
 #endif /* PRINT_FILENAMES */
-
 		}
 	}
 	closedir(dir);
