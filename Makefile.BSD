@@ -1,8 +1,0 @@
-include Makeinclude.mk
-
-.o:
-	$(CC) $(__LDFLAGS__) -o "$@" $>
-
-index:   src/index.o    src/cd.o src/date_to_text.o src/stoi.o
-blogify: src/blogify.o  src/cd.o src/date_to_text.o src/stoi.o src/htmlize.o
-htmlize: .htmlize.o              src/date_to_text.o src/stoi.o src/htmlize.o
