@@ -37,6 +37,7 @@ h1.blog-title       { font-size: 38px; }
 p.blog-date         { font-size: 14px; }
 td.blog-index-date  { font-size: 14px; }
 #footnotes          { font-size: 14px; }
+a.footnote          { font-size: 14px; }
 
 
 /* Everything else */
