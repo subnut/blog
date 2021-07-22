@@ -89,22 +89,23 @@ htmlize(FILE *in, FILE *out)
  *	- Footnotes[^10]
  */
 {
-	char line[MAX_LINE_LENGTH];	// The buffer we shall work on
+	char line         [MAX_LINE_LENGTH];	// The buffer we shall work on
+	char last_line    [MAX_LINE_LENGTH];    // The buffer used to store the previous line
 	char original_line[MAX_LINE_LENGTH];	// The buffer used to store the current line, unmodified
 
-	char last_line[MAX_LINE_LENGTH];
 	char links[MAX_LINKS][MAX_LINE_LENGTH];	// +1 because indexing starts at 0
 
-	unsigned char BOLD_OPEN = 0;
-	unsigned char ITALIC_OPEN = 0;
-	unsigned char CODE_OPEN = 0;
-	unsigned char CODEBLOCK_OPEN = 0;
-	unsigned char HTML_TAG_OPEN = 0;
-	unsigned char LINK_OPEN = 0;
-	unsigned char LINK_TEXT_OPEN = 0;
-	unsigned char TABLE_MODE = 0;
-	unsigned char LIST_MODE = 0;
-	unsigned char FOOTNOTE_MODE = 0;
+	enum bool {false, true};
+	enum bool BOLD_OPEN         = false;
+	enum bool ITALIC_OPEN       = false;
+	enum bool CODE_OPEN         = false;
+	enum bool CODEBLOCK_OPEN    = false;
+	enum bool HTML_TAG_OPEN     = false;
+	enum bool LINK_OPEN         = false;
+	enum bool LINK_TEXT_OPEN    = false;
+	enum bool TABLE_MODE        = false;
+	enum bool LIST_MODE         = false;
+	enum bool FOOTNOTE_MODE     = false;
 
 	unsigned int H_LEVEL = 0;
 
@@ -609,4 +610,4 @@ htmlize(FILE *in, FILE *out)
 	}
 }
 
-// vim:fdm=syntax:
+// vim:fdm=syntax:sw=4:sts=4:ts=4:nowrap:
