@@ -33,22 +33,24 @@ static const char INITIAL_HTML_PRE_SUBTITLE[] = "\
         <header>\n\
             <h1 class=\"blog-title\">%s</h1>\n\
         </header>\n\
-        <p class=\"subtitle\">\n\
+        <div id=\"wrapper\">\n\
+            <p class=\"subtitle\">\n\
 ";
 static const char INITIAL_HTML_POST_SUBTITLE[] = "\
-        </p>\n\
-        <p class=\"blog-date\">\n\
-            Published on %s.\n\
-            Last modified on %s.\n\
-        </p>\n\
-        <main>\n\
+            </p>\n\
+            <p class=\"blog-date\">\n\
+                Published on %s.\n\
+                Last modified on %s.\n\
+            </p>\n\
+            <main>\n\
 <!-- Blog content starts here -->\n\
 ";
 
 static const char FINAL_HTML[] = "\
 <!-- Blog content ends here -->\n\
-        </main>\n\
-        %s\n\
+            </main>\n\
+            %s\n\
+        </div>\n\
     </body>\n\
 </html>\n\
 ";

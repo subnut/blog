@@ -42,10 +42,13 @@ a.footnote          { font-size: 14px; }
 
 /* Everything else */
 body {
-  margin: 1ch auto;
   padding: 0 1ch;
-  max-width: 72ch;
   text-align: justify;
+}
+
+#wrapper {
+  max-width: 72ch;
+  margin: 1ch auto;
 }
 
 blockquote {

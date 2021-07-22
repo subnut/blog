@@ -31,10 +31,10 @@ P23yMA/gLhZLArjjovl2i43NEgzjLLYmCq7jhS0mnPM90T3T6zemFFVQZGM2gAAAAABJRU5ErkJg\n\
 gg==\">"
 
 #define FOOTER  "<footer>\n\
-            <hr>\n\
-            Unless specified otherwise, text on this website is licensed under\n\
-            <a href=\"https://creativecommons.org/licenses/by-sa/4.0/\">CC&nbsp;BY-SA&nbsp;4.0</a>\n\
-            and code on this website is licensed under <a href=\"LICENSE.txt\">MIT</a>\n\
-        </footer>"
+                <hr>\n\
+                Unless specified otherwise, text on this website is licensed under\n\
+                <a href=\"https://creativecommons.org/licenses/by-sa/4.0/\">CC&nbsp;BY-SA&nbsp;4.0</a>\n\
+                and code on this website is licensed under <a href=\"LICENSE.txt\">MIT</a>\n\
+            </footer>"
 
 // vim:et:ts=4:sts=0:sw=0:fdm=syntax:nowrap

@@ -28,17 +28,21 @@ static const char INITIAL_TEXT[] = "\
         <link rel=\"stylesheet\" href=\"recursive.css\">\n\
     </head>\n\
     <body class=\"blog-index\">\n\
-        <h1 class=\"title\">subnut's blog</h1>\n\
-        <table class=\"blog-index\">\n\
+        <header>\n\
+            <h1 class=\"title\">subnut's blog</h1>\n\
+        </header>\n\
+        <div id=\"wrapper\">\n\
+            <table class=\"blog-index\">\n\
 <!-- Index starts here -->\n\
 ";
 
 static const char FINAL_TEXT[] = "\
 <!-- Index ends here -->\n\
-        </table>\n\
-        <br>\n\
-        <br>\n\
-        %s\n\
+            </table>\n\
+            <br>\n\
+            <br>\n\
+            %s\n\
+        </div>\n\
     </body>\n\
 </head>\n\
 ";

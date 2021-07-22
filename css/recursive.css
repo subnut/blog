@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Quando&display=swap');
 h1.blog-title { font-family: Quando; }
 
-body        { max-width: 60ch; }
+#wrapper    { max-width: 60ch;        }
 h1          { letter-spacing: -1px;   }
 h2          { letter-spacing: -0.5px; }
 
