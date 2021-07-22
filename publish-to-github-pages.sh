@@ -9,6 +9,7 @@ run test -d raw || (echo "raw directory not found" >&2 && exit 1)
 run git branch -D gh-pages
 run git checkout -b gh-pages
 run mkdir docs || (run rm docs -rv && run mkdir docs)
+run make
 run blogify
 run index
 run cp -v css/* docs
