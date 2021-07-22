@@ -1,0 +1,236 @@
+<!--
+TITLE: My blog syntax
+CREATED: 10/04/2021
+MODIFIED: 14/04/2021
+-->
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>My blog syntax</title>
+        <link rel=icon href="data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAnXAAAJ1wGxbhe3AAAA
+GXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAchJREFUWIXF1j1oFFEUxfHfrF+J
+hVpFAqksxEoU0TQhRoiNplOs7ATtLERBLPRFMIWCvZ1NCjsbiWAQFUQFwU4iqIUIFgZJIiJmXdci
+6Ca7bzOj+2ZzujnvMuc/9743M6yxssKV406pO4YNCXJnbHTVJZ/XFyoPTqu7lSD4j0YtOoDBYh0I
+XmFPQoAlrbMjHyAYwAf/Mq5i+oG+SoHCsRLCazgvWCiyB45GvEnc7gBgRvCRvCe7qdeCWWxuWjkk
+eNQBwF+tPoKvRiPh8/o9TRGeD1A3FnGnnFHtBkCGIxH/Xqrw1QGCvRhocmu43x0A0fY/E8ymBGh/
+CoLnGEyYNScz4Yob+QBBHz7J26T/o4oRlz1uXMa1s5Rw+GX/Sp64XuNbKQCZN/kAwRccx7vE8VU9
+K9+gqT8yDY27oO56k/tEcHC5Uc6coe5wxH3QbJQDEPRgqMWvdAuAYfQ2eXN2edktgFj7p51QW0uA
+lvaXA3DNduyOrEzHypf/kmWCfdjWEUDVkNbj/Vbwvj3A0q6dwkhH4e0VbT+NEZwsMZwsDyDTX1o4
+P23yMA/gLhZLArjjovl2i43NEgzjLLYmCq7jhS0mnPM90T3T6zemFFVQZGM2gAAAAABJRU5ErkJg
+gg==">
+        <link rel="stylesheet" href="style.css" media="screen">
+        <link rel="stylesheet" href="recursive.css" media="screen">
+        <link rel="stylesheet" href="print.css" media="print">
+    </head>
+    <body>
+        <header>
+            <h1 class="blog-title">My blog syntax</h1>
+        </header>
+        <div id="wrapper">
+            <p class="subtitle">
+I wanted to write my own parser for my blog, but I realized that Markdown is
+too complicated. This blog discusses the syntax I ended up using to write my
+blog posts.
+            </p>
+            <p class="blog-date">
+                Published on 10th Apr 2021.
+                Last modified on 14th Apr 2021.
+            </p>
+            <main>
+<!-- Blog content starts here -->
+<h2 id="Lets-talk-about-markdown"><a class="self-link" href="#Lets-talk-about-markdown">Let's talk about markdown</a></h2>
+Specifically, how to parse Markdown <em>without</em> using <abbr title="regular expressions">
+regex</abbr>.  <br>
+Ever tried that?  <br>
+<br>
+
+I don't think that a proper Markdown-to-HTML converter exists that doesn't use
+any regex at all. I searched a bit, and the only result I could find was
+<a href="https://github.com/songquanpeng/md2html" >this</a>. A program written in Go, which is a language that I know nothing
+about.  <br>
+<br>
+Let me put down my requirements first. I want a program that -
+<ul>
+<li>Is open-source
+<li>Is simple and light-weight
+<li><strong>Does not use regex</strong>
+<li>Reads plaintext (from file or stdout)
+<li>Spits out HTML
+</ul>
+Also, the format that I shall write the plaintext must be -
+<ul>
+<li>Readable  <br>
+By 'readable' I mean that the raw, plaintext file should be easily readable and
+understandable. That is, the formatting itself must not hinder while reading
+the raw file.
+<li>Familiar  <br>
+<li>Simple
+<li>Concise
+<li><strong>Does not need regex</strong>
+</ul>
+<br>
+<br>
+So, that puts Markdown out of the question, as it absolutely requires regex.  <br>
+
+Also, pure HTML is too verbose. While reading a plaintext file, two<a class="footnote" id="fnref:1" href="#fn:1"><sup>[1]</sup></a>  or
+four<a class="footnote" id="fnref:2" href="#fn:2"><sup>[2]</sup></a>  extra characters are OK. But seventeen<a class="footnote" id="fnref:3" href="#fn:3"><sup>[3]</sup></a>?? Not OK.  <br>
+
+
+<details>
+<summary>Click here to show some examples of my syntax</summary>
+<h3 id="Features-currently-implemented-"><a class="self-link" href="#Features-currently-implemented-">Features currently implemented -</a></h3>
+
+
+<ul>
+<li><a href="#Code-blocks" class="self-link">Code blocks</a> (<code>&lt;pre&gt;</code>)
+<li><a href="#Inline-code" class="self-link">Inline code</a> (<code>&lt;code&gt;</code>)
+<li><a href="#Bold-italic" class="self-link">Bold, Italic</a>
+<li><a href="#Lists" class="self-link">Lists</a>
+<li><a href="#Tables" class="self-link">Tables</a>
+<li><a href="#Headings" class="self-link">Headings</a>
+<li><a href="#Links" class="self-link">Links</a>
+</ul>
+
+
+<h4 id="Code-blocks"><a class="self-link" href="#Code-blocks">Code blocks</a></h4>
+<pre>
+```
+Code block
+```
+</pre>
+<h4 id="Inline-code"><a class="self-link" href="#Inline-code">Inline code</a></h4>
+This is <code>`Inline Code`</code>
+
+<h4 id="Bold-italic"><a class="self-link" href="#Bold-italic">Bold, italic</a></h4>
+This is <strong>bold</strong> (<code>*bold*</code>) and this is <em>italic</em> (<code>_italic_</code>)
+<ul>
+<li><em><strong>Bolditalic</strong></em> (<code>_*Bolditalic*_</code>)
+<li><em><strong>Bolditalic</em></strong> (<code>_*Bolditalic_*</code>)
+<li><strong><em>Bolditalic</em></strong> (<code>*_Bolditalic_*</code>)
+<li><strong><em>Bolditalic</strong></em> (<code>*_Bolditalic*_</code>)
+</ul>
+
+<h4 id="Lists"><a class="self-link" href="#Lists">Lists</a></h4>
+<pre>
+&lt;ul&gt;
+- list item
+- list item
+- list item
+  &lt;ul&gt;
+  - nested list item
+  - nested list item
+  - nested list item
+    &lt;ol&gt;
+    - nested&lt;sup&gt;2&lt;/sup&gt; list item
+    - nested&lt;sup&gt;2&lt;/sup&gt; list item
+    &lt;/ol&gt;
+  &lt;/ul&gt;
+- list item
+- list item
+&lt;/ul&gt;
+</pre>
+<ul>
+<li>list item
+<li>list item
+<li>list item
+  <ul>
+  <li>nested list item
+  <li>nested list item
+  <li>nested list item
+    <ol>
+    <li>nested<sup>2</sup> list item
+    <li>nested<sup>2</sup> list item
+    </ol>
+  </ul>
+<li>list item
+<li>list item
+</ul>
+
+<h4 id="Tables"><a class="self-link" href="#Tables">Tables</a></h4>
+<pre>
+&lt;table id="example" class="example"&gt;
+item | item
+item|  item
+item  |item
+&lt;/table&gt;
+</pre>
+<table id="example" class="example">
+<tr><td>item </td><td> item</td></tr>
+<tr><td>item</td><td>  item</td></tr>
+<tr><td>item  </td><td>item</td></tr>
+</table>
+<pre>
+&lt;table id="insanity"&gt;
+item  | item | item
+item  | item
+item  | item
+item \| item | item
+item \| item \| item
+item| item|item    |item\|item
+item       |  item|             item    |item\|item
+&lt;/table&gt;
+</pre>
+<table id="example">
+<tr><td>item  </td><td> item </td><td> item</td></tr>
+<tr><td>item  </td><td> item</td></tr>
+<tr><td>item  </td><td> item</td></tr>
+<tr><td>item | item </td><td> item</td></tr>
+<tr><td>item | item | item</td></tr>
+<tr><td>item</td><td> item</td><td>item    </td><td>item|item</td></tr>
+<tr><td>item       </td><td>  item</td><td>                  item    </td><td>item|item</td></tr>
+</table>
+<br>
+<h4 id="Headings"><a class="self-link" href="#Headings">Headings</a></h4>
+<pre>
+&lt;h1&gt; Heading 1 &lt;/h1&gt;
+&lt;h2&gt; Heading 2 &lt;/h2&gt;
+##    Heading 2
+### Heading 3
+#### Heading 4
+#####   Heading 5
+</pre>
+<h1> Heading 1 </h1>
+<h2> Heading 2 </h2>
+<h3 id="Heading-2"><a class="self-link" href="#Heading-2">Heading 2</a></h3>
+<h4 id="Heading-3"><a class="self-link" href="#Heading-3">Heading 3</a></h4>
+<h5 id="Heading-4"><a class="self-link" href="#Heading-4">Heading 4</a></h5>
+<h6 id="Heading-5"><a class="self-link" href="#Heading-5">Heading 5</a></h6>
+<br>
+<h4 id="Links"><a class="self-link" href="#Links">Links</a></h4>
+<pre>
+	[1]: http://localhost
+	[2]:https://localhost
+	[3]:        localhost
+
+!(1)[Link]  
+!(2) [Link]  
+!(3)title="Hover over the link to see this text"[Link]  
+</pre>
+
+<a href="http://localhost" >Link</a>  <br>
+<a href="https://localhost"  >Link</a>  <br>
+<a href="localhost" title="Hover over the link to see this text">Link</a>  <br>
+<br>
+<h4 id="HTML-Tags"><a class="self-link" href="#HTML-Tags">HTML Tags</a></h4>
+<pre>
+This is &lt;u&gt;\&lt;u&gt;underlined\&lt;/u&gt;&lt;/u&gt; text
+</pre>
+This is <u>&lt;u&gt;underlined&lt;/u&gt;</u> text
+</details>
+
+<p id="footnotes">
+<a class="footnote" id="fn:1" href="#fnref:1">[1]</a>: <code>*bold*</code>, as in WhatsApp<br>
+<a class="footnote" id="fn:2" href="#fnref:2">[2]</a>: <code>**bold**</code> or <code>__bold__</code>, used in Markdown<br>
+<a class="footnote" id="fn:3" href="#fnref:3">[3]</a>: <code>&lt;strong&gt;bold&lt;/strong&gt;</code>, as in <abbr title="HyperText Markup Lanugage">HTML</abbr><br>
+<!-- Blog content ends here -->
+            </main>
+            <footer>
+                <hr>
+                Unless specified otherwise, text on this website is licensed under
+                <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC&nbsp;BY-SA&nbsp;4.0</a>
+                and code on this website is licensed under <a href="LICENSE.txt">MIT</a>
+            </footer>
+        </div>
+    </body>
+</html>

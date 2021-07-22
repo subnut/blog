@@ -1,0 +1,102 @@
+<!--
+TITLE: CSS demonstration
+CREATED: 6/05/2020
+MODIFIED: 06/5/2020
+-->
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>CSS demonstration</title>
+        <link rel=icon href="data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAnXAAAJ1wGxbhe3AAAA
+GXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAchJREFUWIXF1j1oFFEUxfHfrF+J
+hVpFAqksxEoU0TQhRoiNplOs7ATtLERBLPRFMIWCvZ1NCjsbiWAQFUQFwU4iqIUIFgZJIiJmXdci
+6Ca7bzOj+2ZzujnvMuc/9743M6yxssKV406pO4YNCXJnbHTVJZ/XFyoPTqu7lSD4j0YtOoDBYh0I
+XmFPQoAlrbMjHyAYwAf/Mq5i+oG+SoHCsRLCazgvWCiyB45GvEnc7gBgRvCRvCe7qdeCWWxuWjkk
+eNQBwF+tPoKvRiPh8/o9TRGeD1A3FnGnnFHtBkCGIxH/Xqrw1QGCvRhocmu43x0A0fY/E8ymBGh/
+CoLnGEyYNScz4Yob+QBBHz7J26T/o4oRlz1uXMa1s5Rw+GX/Sp64XuNbKQCZN/kAwRccx7vE8VU9
+K9+gqT8yDY27oO56k/tEcHC5Uc6coe5wxH3QbJQDEPRgqMWvdAuAYfQ2eXN2edktgFj7p51QW0uA
+lvaXA3DNduyOrEzHypf/kmWCfdjWEUDVkNbj/Vbwvj3A0q6dwkhH4e0VbT+NEZwsMZwsDyDTX1o4
+P23yMA/gLhZLArjjovl2i43NEgzjLLYmCq7jhS0mnPM90T3T6zemFFVQZGM2gAAAAABJRU5ErkJg
+gg==">
+        <link rel="stylesheet" href="style.css" media="screen">
+        <link rel="stylesheet" href="recursive.css" media="screen">
+        <link rel="stylesheet" href="print.css" media="print">
+    </head>
+    <body>
+        <header>
+            <h1 class="blog-title">CSS demonstration</h1>
+        </header>
+        <div id="wrapper">
+            <p class="subtitle">
+A simple blog post to demonstrate the CSS used for this website&lt;br&gt;
+&lt;br&gt;
+This is the subtitle
+            </p>
+            <p class="blog-date">
+                Published on 6th May 2020.
+                Last modified on 6th May 2020.
+            </p>
+            <main>
+<!-- Blog content starts here -->
+<strong>bold</strong> <em>italic</em> <strong><em>bolditalic</em></strong> <code>code</code> <u>underlined</u> <a href="#!">Link</a>  <br>
+
+<h2 id="Heading-2"><a class="self-link" href="#Heading-2">Heading 2</a></h2>
+<h3 id="Heading-3"><a class="self-link" href="#Heading-3">Heading 3</a></h3>
+<h4 id="Heading-4"><a class="self-link" href="#Heading-4">Heading 4</a></h4>
+
+<pre>
+#include &lt;stdio.h&gt;
+
+int
+main(void)
+{
+	printf("This is a codeblock\nIs this line long enough for the scrollbar to appear?")
+}
+</pre>
+
+<blockquote>
+This is a blockquote.
+Probably something that I liked.
+</blockquote>
+
+<ol>
+<li>Ordered
+<li>List
+<li>Containing
+<li>A
+<li>Nested
+  <ul>
+  <li>Unordered
+  <li>List
+  </ul>
+<li>List
+</ol>
+
+<table>
+<tr><td>This</td><td>is</td></tr>
+<tr><td>a</td><td>table</td></tr>
+</table>
+
+<table>
+<tr><td>And this is</td></tr>
+<tr><td>a</td><td>very</td></tr>
+<tr><td>very</td><td>ugly</td><td>table</td></tr>
+</table>
+
+Try selecting this text.  <br>
+
+<a href="#a-self-link" id="a-self-link" class="self-link" title="Good. Now try clicking it">
+Try hovering over this link
+</a>
+<!-- Blog content ends here -->
+            </main>
+            <footer>
+                <hr>
+                Unless specified otherwise, text on this website is licensed under
+                <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC&nbsp;BY-SA&nbsp;4.0</a>
+                and code on this website is licensed under <a href="LICENSE.txt">MIT</a>
+            </footer>
+        </div>
+    </body>
+</html>
