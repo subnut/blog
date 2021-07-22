@@ -29,7 +29,7 @@ static const char INITIAL_TEXT[] = "\
     </head>\n\
     <body class=\"blog-index\">\n\
         <header>\n\
-            <h1 class=\"title\">subnut's blog</h1>\n\
+            <h1 class=\"blog-title\">subnut's blog</h1>\n\
         </header>\n\
         <div id=\"wrapper\">\n\
             <table class=\"blog-index\">\n\

@@ -33,6 +33,7 @@ h1, h2, h3, h4, h5, h6  { font-family: serif;     }
 
 body                { font-size: 16px; }
 table               { font-size: 16px; }
+h1.title            { font-size: 38px; }
 h1.blog-title       { font-size: 38px; }
 p.blog-date         { font-size: 14px; }
 td.blog-index-date  { font-size: 14px; }
