@@ -296,7 +296,7 @@ htmlize(FILE *in, FILE *out)
 
 			// Remove leading #'s and spaces
 			memmove(&line[0], &line[H_LEVEL - 1], MAX_LINE_LENGTH - (H_LEVEL - 1));	// #'s
-			while (line[0] == ' ')									 				// spaces
+			while (line[0] == ' ')													// spaces
 				memmove(line, line + 1, MAX_LINE_LENGTH - 1);
 
 			/*
@@ -313,7 +313,7 @@ htmlize(FILE *in, FILE *out)
 					 * all of the characters in the array are initialized to '\0'
 					 * So, we don't need to add the \0 terminator here
 					 */
-				   	break;
+					break;
 				else if (isalnum(line[i]))
 					h_id[j++] = line[i];
 				else if (line[i] == ' ')
