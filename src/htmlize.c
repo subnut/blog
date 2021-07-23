@@ -40,7 +40,7 @@ fputs_escaped(const char *s, FILE *stream)
 int
 is_named_charref(const char *given_str)
 {
-	for (int i=0; i <= (sizeof(named_references)/sizeof(named_references[0])); i++)
+	for (int i=0; i < (sizeof(named_references)/sizeof(named_references[0])); i++)
 	{
 		const char *named_ref;
 		int index;
