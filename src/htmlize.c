@@ -12,10 +12,20 @@
 #include "include/stoi.h"
 #include "constants.h"
 
-static const char *named_references[2] =
+/* Named Character References that will be recognized by htmlize()
+ *
+ * Say a named Character Reference is "&abcd;", but hasn't been included in
+ * this array. htmlize() will turn it to "&nbsp;abcd;". So, the browser shall
+ * show "&abcd;" literally instead of the character that was originally
+ * referenced by "&abcd;"
+ */
+static const char *named_references[] =
 {
-    "&nbsp;",
-    "&copy;",
+	"&amp;" ,
+	"&nbsp;",
+	"&reg;" , "&REG;" ,
+	"&copy;", "&COPY;",
+	"&mdash", "&ndash",
 };
 
 void
@@ -42,15 +52,7 @@ is_named_charref(const char *given_str)
 {
 	for (int i=0; i < (sizeof(named_references)/sizeof(named_references[0])); i++)
 	{
-		const char *named_ref;
-		int index;
-		int len;
-
-		named_ref = named_references[i];
-		index = strchr(named_ref, ';') - named_ref;		// Index of ending ';'
-		len = index + 1;								// Since indexing starts from 0
-
-		if (!strncmp(given_str, named_references[i], len))
+		if (!strncmp(given_str, named_references[i], strlen(named_references[i])))
 			return 1;
 	}
 	return 0;
@@ -388,7 +390,7 @@ htmlize(FILE *in, FILE *out)
 						|| (!LINK_OPEN && *nch == '!' && *(nch + 1) == '(')
 						|| (*nch == '&' && (*(nch + 1) == '#' || is_named_charref(nch)))
 						|| (*nch == '[' && *(nch + 1) == '^')
-				   ) {;}
+				   ) {;} // print nothing
 				else
 					fputc('\\', out);
 				continue;
