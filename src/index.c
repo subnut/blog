@@ -12,6 +12,7 @@
 
 #include "include/cd.h"
 #include "include/date_to_text.h"
+#include "include/escape.h"
 #include "include/stoi.h"
 #include "constants.h"
 
@@ -184,6 +185,7 @@ main(int argc, const char **argv)
 		urlencode_s(filenames[i], url);
 		date_to_text(DATE_CREATED, DATE_CREATED_str);
 
+		/*
 		fprintf(outfile,
 				"<tr>\n"
 				"    <td class=\"blog-index-name\">\n"
@@ -195,6 +197,22 @@ main(int argc, const char **argv)
 				"</tr>\n",
 				url,
 				TITLE,
+				DATE_CREATED_str
+			 );
+		*/
+
+		fprintf(outfile,
+				"<tr>\n"
+				"    <td class=\"blog-index-name\">\n"
+				"        <a href=\"%s\">",
+				url);
+		fputs_escaped(TITLE, outfile);
+		fprintf(outfile,                  "</a>\n"
+				"    </td>\n"
+				"    <td class=\"blog-index-date\">\n"
+				"        %s\n"
+				"    </td>\n"
+				"</tr>\n",
 				DATE_CREATED_str
 			 );
 

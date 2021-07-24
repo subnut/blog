@@ -4,6 +4,9 @@
 int
 main(void)
 {
-	htmlize(stdin, stdout);
-	return 0;
+	int retcode;
+	retcode = htmlize(stdin, stdout);
+	if (retcode == -1)
+		fputs("No lines input\n", stderr);
+	return retcode;
 }

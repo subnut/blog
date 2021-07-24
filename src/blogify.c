@@ -12,6 +12,7 @@
 
 #include "include/cd.h"
 #include "include/date_to_text.h"
+#include "include/escape.h"
 #include "include/htmlize.h"
 #include "constants.h"
 
