@@ -1,10 +1,8 @@
-#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
 
 /*
- * ctype.h  - isalnum
  * stdio.h  - fopen, fclose
  * string.h - memcmp, memchr
  * dirent.h - opendir, readdir
@@ -14,6 +12,7 @@
 #include "include/date_to_text.h"
 #include "include/escape.h"
 #include "include/stoi.h"
+#include "include/urlencode.h"
 #include "constants.h"
 
 #define cd(x) \
@@ -47,48 +46,6 @@ static const char FINAL_TEXT[] = "\
     </body>\n\
 </head>\n\
 ";
-
-char *
-urlencode_c(const char c, char *str_size_4)
-{
-	/* unreserved */
-	if (isalnum(c))
-	{
-		sprintf(str_size_4, "%c", c);
-		return str_size_4;
-	}
-	switch (c)
-	{
-		case '-':
-		case '.':
-		case '_':
-		case '~':
-			sprintf(str_size_4, "%c", c);
-			return str_size_4;
-		default:
-			break;
-	}
-
-	/* reserved */
-	sprintf(str_size_4, "%%%0X", c);
-	return str_size_4;
-}
-
-char *
-urlencode_s(const char *s, char *storage)
-{
-	char str[4];
-	char *pointer;
-	pointer = storage;
-	for (int i=0; s[i]!='\0' && i<=FILENAME_MAX*4; i++)
-	{
-		urlencode_c(s[i], str);
-		memmove(pointer, str, strlen(str));
-		pointer += strlen(str);
-	}
-	*pointer = '\0';
-	return storage;
-}
 
 int
 main(int argc, const char **argv)
