@@ -11,6 +11,7 @@
 #include "include/escape.h"
 #include "include/htmlize.h"
 #include "include/stoi.h"
+#include "include/urlencode.h"
 #include "constants.h"
 #define CONTEXT_LINES 2
 
@@ -43,7 +44,7 @@ is_named_charref(const char *given_str)
 }
 
 
-static void
+static inline void
 toggle(int *val)
 {
 	++*val;
@@ -51,76 +52,100 @@ toggle(int *val)
 }
 
 static void
-shift_lines(char lines[][MAX_LINE_LENGTH], size_t size)
+shift_lines(struct data *ptr)
 {
-	for (int i = 0; i < size; i++)
-		memmove(lines[i], lines[i+1], MAX_LINE_LENGTH);
+	for (int i = 0; i < ptr->nlines; i++)
+		memmove(ptr->lines[i], ptr->lines[i+1], MAX_LINE_LENGTH);
 }
 
 static void
-get_next_line(char lines[][MAX_LINE_LENGTH], size_t size)
+get_next_line(struct data *ptr)
 {
-	shift_lines(lines, size);
-	if(fgets(lines[size-1], MAX_LINE_LENGTH, in) == NULL)
-		memmove(lines[size-1], "", MAX_LINE_LENGTH);
+	shift_lines(ptr);
+	if(fgets(ptr->lines[ptr->nlines - 1], MAX_LINE_LENGTH, ptr->files->src) == NULL)
+		/* Mark buffer as empty */
+		ptr->lines[ptr->nlines - 1][0] = '\0';
 }
 
 static int
-BLOCKQUOTE(char lines[][MAX_LINE_LENGTH], size_t size, FILE *in, struct config *config)
+BLOCKQUOTE(struct data *ptr)
 {
-	if (!memcmp(lines[CONTEXT_LINES], "\\```", 4))
+	if (!memcmp(ptr->line, "\\```", 4))
 	{
-		fputs("```\n", out);
+		fputs("```\n", ptr->files->dest);
 		return 0;
 	}
-	if (!memcmp(lines[CONTEXT_LINES], "```", 3))
+	if (!memcmp(ptr->line, "```", 3))
 	{
-		fputs("<pre>\n", out);
-
-		while (!memcmp(lines[CONTEXT_LINES], "```", 3))
-			get_next_line(
-
-		fputs("</pre>\n", out);
+		fputs("<pre>\n", ptr->files->dest);
+		get_next_line(ptr);
+		while (memcmp(ptr->line, "```", 3) && memcmp(ptr->line, "", 1))
+		{
+			fputs_escaped(ptr->line, ptr->files->dest);
+			get_next_line(ptr);
+		}
+		fputs("</pre>\n", ptr->files->dest);
 		return 0;
 	}
+	return 1;
 }
 
 int
-htmlize(FILE *in, FILE *out)
+htmlize(FILE *src, FILE *dest)
 {
- 	BOLD_OPEN         = false;
- 	ITALIC_OPEN       = false;
- 	CODE_OPEN         = false;
- 	CODEBLOCK_OPEN    = false;
- 	HTML_TAG_OPEN     = false;
- 	LINK_OPEN         = false;
- 	LINK_TEXT_OPEN    = false;
- 	TABLE_MODE        = false;
- 	LIST_MODE         = false;
- 	FOOTNOTE_MODE     = false;
+	struct data data;
+	struct data *ptr;
+	ptr = &data;
 
-	char lines[CONTEXT_LINES*2 + 1][MAX_LINE_LENGTH] = { "" };
-	char *line = lines[CONTEXT_LINES];
-	size_t size;
+	struct files files;
+	data.files	= &files;
+	files.src	= src;
+	files.dest	= dest;
 
-	/* Calculate `lines` array size and check if it is correct */
-	if ((CONTEXT_LINES*2 + 1) == (sizeof(lines)/sizeof(lines[0])))
-		size = sizeof(lines)/sizeof(lines[0]);
+	struct config config;
+	data.config		= &config;
+	config.BOLD_OPEN	= false;
+	config.ITALIC_OPEN	= false;
+	config.CODE_OPEN	= false;
+	config.CODEBLOCK_OPEN	= false;
+	config.HTML_TAG_OPEN	= false;
+	config.LINK_OPEN	= false;
+	config.LINK_TEXT_OPEN	= false;
+	config.TABLE_MODE	= false;
+	config.LIST_MODE	= false;
+	config.FOOTNOTE_MODE	= false;
+
+	/* Calculate data.lines size and check if it is correct */
+	if ((CONTEXT_LINES*2 + 1) == (sizeof(data.lines)/sizeof(data.lines[0])))
+		data.nlines = sizeof(data.lines)/sizeof(data.lines[0]);
 	else
 	{
-		fputs("FATAL: htmlize(): (CONTEXT_LINES*2 + 1) != (sizeof(lines)/sizeof(lines[0]))\n", stderr);
+		fputs("FATAL: htmlize(): (CONTEXT_LINES*2 + 1) != (sizeof(data.lines)/sizeof(data.lines[0]))\n", stderr);
 		fprintf(stderr, "CONTEXT_LINES*2 + 1 = %i\n", CONTEXT_LINES*2 + 1);
-		fprintf(stderr, "sizeof(lines)/sizeof(lines[0]) = %i\n", (int)(sizeof(lines)/sizeof(lines[0])));
+		fprintf(stderr, "sizeof(data.lines)/sizeof(data.lines[0]) = %i\n", (int)(sizeof(data.lines)/sizeof(data.lines[0])));
 		return -10;
 	}
 
-	/* Populate the `lines` array upto `*line`, but stop immediately if EOF */
-	for (int i = CONTEXT_LINES; i < size; i++)
-		if (fgets(lines[i], MAX_LINE_LENGTH, in) == NULL)
+	/* Initialize data.lines with empty lines */
+	for (int i = 0; i < data.nlines; i++)
+		memmove(data.lines[i], "", 1);
+
+	/* Populate data.lines, but stop immediately at EOF */
+	for (int i = CONTEXT_LINES; i < data.nlines; i++)
+		if (fgets(data.lines[i], MAX_LINE_LENGTH, src) == NULL)
 			break;
-	if (!memcmp(lines[CONTEXT_LINES], "", 1))
+
+	/* If the first line we read is empty, that means we hit EOF as-soon-as
+	 * we started reading. ie. We received no input. */
+	if (!memcmp(data.lines[CONTEXT_LINES], "", 1))
 		return 1;	// No input
 
+	while (memcmp(data.lines[CONTEXT_LINES], "", 1))
+	{
+		ptr->line = ptr->lines[CONTEXT_LINES];
+		BLOCKQUOTE(ptr);
+		get_next_line(ptr);
+	}
 	return 0;
 }
 
@@ -391,10 +416,12 @@ htmlize(FILE *in, FILE *out)
 // 				else if (line[i] == ' ')
 // 					h_id[j++] = '-';
 // 
+// 			char h_id_urlencoded[strlen(h_id)*3 + 1];
+// 			urlencode_s(h_id, h_id_urlencoded, sizeof(storage)/sizeof(storage[0]));
 // 			fprintf(
 // 					out,
 // 					"<h%i id=\"%s\"><a class=\"self-link\" href=\"#%s\">",
-// 					H_LEVEL, h_id, h_id
+// 					H_LEVEL, h_id_urlencoded, h_id_urlencoded
 // 				   );
 // 		}
 // 
