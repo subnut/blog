@@ -10,8 +10,8 @@ __CPPFLAGS__  = -I. $(CPPFLAGS)
 __LDFLAGS__   = $(LDFLAGS)
 
 index_deps    =  src/index.o    src/cd.o src/date_to_text.o src/stoi.o src/escape.o src/urlencode.o
-blogify_deps  =  src/blogify.o  src/cd.o src/date_to_text.o src/stoi.o src/escape.o src/urlencode.o src/htmlize.o
-htmlize_deps  =  .htmlize.o              src/date_to_text.o src/stoi.o src/escape.o src/urlencode.o src/htmlize.o
+blogify_deps  =  src/blogify.o  src/cd.o src/date_to_text.o src/stoi.o src/escape.o src/urlencode.o src/charref.o src/htmlize.o
+htmlize_deps  =  .htmlize.o              src/date_to_text.o src/stoi.o src/escape.o src/urlencode.o src/charref.o src/htmlize.o
 
 all: index blogify htmlize
 clean: clean_objects clean_executables

@@ -1,3 +1,7 @@
+/*
+ * TODO: Allow HTML character references in TITLE
+ * (tip: use "include/charref.h")
+ */
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>

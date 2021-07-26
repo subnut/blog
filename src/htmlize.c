@@ -8,6 +8,7 @@
  * string.h	- str*(), mem*()
  */
 
+#include "include/charref.h"
 #include "include/debug.h"
 #include "include/escape.h"
 #include "include/htmlize.h"
@@ -15,43 +16,6 @@
 #include "include/urlencode.h"
 #include "constants.h"
 
-/*
- * Named Character References that will be recognized by htmlize()
- *
- * Say a named Character Reference is "&abcd;", but hasn't been included in
- * this array. htmlize() will turn it to "&nbsp;abcd;". So, the browser shall
- * show "&abcd;" literally instead of the character that was originally
- * referenced by "&abcd;"
- */
-static const char *named_references[] =
-{
-	"&amp;" ,
-	"&nbsp;",
-	"&reg;" , "&REG;" ,
-	"&copy;", "&COPY;",
-	"&mdash", "&ndash",
-};
-
-/*
- * Note that this function only checks from the beginning of the string. It
- * does not match the whole string.
- *
- * i.e. this function in python would be -
- *	def is_named_charref(given_str):
- *		for i in range(0,len(named_references)):
- *			if given_str.startswith(named_references[i]):
- *				return True
- *		else:
- *			return False
- */
-int
-is_named_charref(const char *given_str)
-{
-	for (int i=0; i < (sizeof(named_references)/sizeof(named_references[0])); i++)
-		if (!strncmp(given_str, named_references[i], strlen(named_references[i])))
-			return 1;
-	return 0;
-}
 
 
 static void shift_lines         (struct data *);
