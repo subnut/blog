@@ -12,12 +12,12 @@
  * dirent.h - opendir, readdir
  */
 
+#include "constants.h"
 #include "include/cd.h"
 #include "include/date_to_text.h"
 #include "include/escape.h"
 #include "include/stoi.h"
 #include "include/urlencode.h"
-#include "constants.h"
 
 #define cd(x) \
         cd(x, argv)

@@ -8,13 +8,13 @@
  * string.h	- str*(), mem*()
  */
 
+#include "constants.h"
 #include "include/charref.h"
 #include "include/debug.h"
 #include "include/escape.h"
 #include "include/htmlize.h"
 #include "include/stoi.h"
 #include "include/urlencode.h"
-#include "constants.h"
 
 
 
