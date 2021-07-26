@@ -17,12 +17,25 @@
 #include "include/urlencode.h"
 
 
+/*
+ * A macro to get the number of characters remaining in the string.
+ * Useful for safely incrementing ptr->line without going out-of-bounds.
+ * Or for doing memcmp().
+ *
+ * (MAX_LINE_LENGTH - 1)			Total number of indices
+ * (ptr->line - ptr->lines[CONTEXT_LINES])	Current index
+ *
+ * - 1	'cause the last index is occupied by the trailing '\0'
+ */
+#define REMAINING_CHARS \
+	((int)((MAX_LINE_LENGTH - 1) - (ptr->line - ptr->lines[CONTEXT_LINES]) - 1))
+
 
 static void shift_lines         (struct data *);
 static void get_next_line       (struct data *);
 static void parse_line          (struct data *);
 static int  CHECK_END           (struct data *);
-static int  BLOCKQUOTE          (struct data *);
+static int  CODEBLOCK          (struct data *);
 static int  HEADINGS            (struct data *);
 
 
@@ -42,6 +55,7 @@ shift_lines(struct data *ptr)
 	DPUTS("ENTER: shift_lines()\n");
 	for (int i = 0; i < ptr->nlines; i++)
 		memmove(ptr->lines[i], ptr->lines[i+1], MAX_LINE_LENGTH);
+	ptr->line = ptr->lines[CONTEXT_LINES];	// Reset ptr->lines
 	DPUTS("EXIT: shift_lines()\n");
 }
 
@@ -73,7 +87,59 @@ CHECK_END(struct data *ptr)
 }
 
 static int
-BLOCKQUOTE(struct data *ptr)
+LISTS(struct data *ptr)
+{
+	DPUTS(ptr->line);
+	if (ptr->line[0] == '\\')
+		if (!memcmp(ptr->line + 1, "<ul", 3) || !memcmp(ptr->line + 1, "<ol", 3))
+		{
+			ptr->line++;
+			return 0;
+		}
+
+	if (ptr->line[0] != '<')
+		return 1;
+
+	if (!(!memcmp(ptr->line, "<ul", 3) || !memcmp(ptr->line, "<ol", 3)))
+		return 1;
+
+	fputs(ptr->line, ptr->files->dest);
+	while (memcmp(ptr->line, "</ul", 4) || memcmp(ptr->line, "</ol", 4))
+	{
+		get_next_line(ptr);
+		if (ptr->line[0] == '\0')
+			break;
+
+		char *hyphen;
+		if ((hyphen = memchr(ptr->line, '-', MAX_LINE_LENGTH)) != NULL)
+		{
+			while (ptr->line < hyphen)
+				if (ptr->line[0] == ' ')
+				{
+					fputc(' ', ptr->files->dest);
+					ptr->line++;
+				}
+				else break;
+			if (ptr->line == hyphen)
+			{
+				fputs("<li>", ptr->files->dest);
+				ptr->line++;
+			}
+			else if (ptr->line == hyphen - 1 && *ptr->line == '\\')
+				ptr->line++;
+		}
+
+		parse_line(ptr);
+		if (ptr->line[0] == '\n')
+			fputc('\n', ptr->files->dest);
+	}
+	fputs(ptr->line, ptr->files->dest);
+	return 0;
+
+}
+
+static int
+CODEBLOCK(struct data *ptr)
 {
 	if (!memcmp(ptr->line, "\\```", 4))
 	{
@@ -134,13 +200,7 @@ HEADINGS(struct data *ptr)
 		/* Has somebody escaped the heading using backslashes? */
 		if (ptr->line[0] == '\\' && ptr->line[1] == '#')
 		{
-			fputc('#', ptr->files->dest);
-			ptr->line += 2;	// +2 because '\\' and '#'
-			/* The above line is safe because currently,
-			 * ptr->line points to the first character of
-			 * the actual line, and we know that
-			 * MAX_LINE_LENGTH >= 3
-			 */
+			ptr->line++;
 			return 0;	// We did our job
 		}
 		else return 1;	// Not our business
@@ -148,13 +208,11 @@ HEADINGS(struct data *ptr)
 
 	static int H_LEVEL;
 	H_LEVEL = 0;
-	DPRINTF("H_LEVEL (before): %i\n", H_LEVEL);
 	while (ptr->line[0] == '#')
 	{
 		H_LEVEL++;
 		ptr->line++;
 	}
-	DPRINTF("H_LEVEL (after): %i\n", H_LEVEL);
 	while (ptr->line[0] == ' ')
 		ptr->line++;
 
@@ -180,23 +238,218 @@ HEADINGS(struct data *ptr)
 
 	/* Parse the remaining of the line */
 	parse_line(ptr);
+	while (ptr->line[0] != '\n')
+	{
+		get_next_line(ptr);
+		parse_line(ptr);
+	}
 
 	/* Print the closing HTML tags */
-	fprintf(ptr->files->dest, "</a></h%u>\n", H_LEVEL);
+	fprintf(ptr->files->dest, "</a></h%u>", H_LEVEL);
 	return 0;
 }
 
 static int
 CHARREFS(struct data *ptr)
 {
-	/* For it to be a charref, the current character MUST be ampersand */
-	if (ptr->line[0] != '&')
+
+	char *line;
+	char *end;
+
+	/* It's either "&...;" or "\&...;".
+	 * So, if we can't find '&' and ';', it's not a charref */
+	if ((end = memchr(ptr->line, ';', REMAINING_CHARS)) == NULL)
 		return 1;
-	/* If the ampersand isn't the very first character in the current line,
-	 * then check whether the previous character was a backslash. If it
-	 * was, then it means that this ampersand was escaped. */
-	if ((ptr->line != ptr->lines[CONTEXT_LINES]) && ptr->line[-1] == '\\')
+	if (ptr->line[0] == '&')
+		line = ptr->line;
+	else if (ptr->line[0] == '\\' && ptr->line[1] == '&')
+		line = ptr->line + 1;
+	else
 		return 1;
+
+	if (!is_charref(line, REMAINING_CHARS))
+	{
+		for (char *p = line; p <= end; p++)
+			if(ptr->line[0] == '\\')
+				fputc_escaped(*p, ptr->files->dest);
+			else
+				fputc(*p, ptr->files->dest);
+
+		/*
+		 * ptr->line = end + 1  since we've already fputc'd *end in the
+		 * above loop
+		 */
+		ptr->line = end + 1;
+		return 0;
+	}
+	return 1;
+}
+
+static int
+HTML_TAGS(struct data *ptr)
+{
+	if (ptr->line[0] != '<')
+	{
+		if (ptr->line[0] == '\\' && ptr->line[1] == '<' &&
+				(REMAINING_CHARS > 1 && !isalpha(ptr->line[2])))
+		{
+			ptr->line++;
+			return 0;	// We did our job
+		}
+		else return 1;	// Not our business
+	}
+
+	/* The character right after the < MUST be isalpha() or '/' */
+	if (ptr->line[1] != '/' && !isalpha(ptr->line[1]))
+		return 1;
+
+	/* Check if the < was escaped */
+	if (ptr->line != ptr->lines[CONTEXT_LINES] && ptr->line[-1] == '\\')
+	{
+		fputc('<', ptr->files->dest);
+		ptr->line++;
+		return 0;
+	}
+
+	fputc('<', ptr->files->dest);
+	ptr->line++;
+	while (1)
+	{
+		if (ptr->line[0] == '\0')
+			get_next_line(ptr);
+		if (ptr->line[0] == '\0')
+			break;
+
+		if (ptr->line[0] != '>')
+		{
+			if (ptr->line[0] == '\\' && ptr->line[1] == '>')
+			{
+				fputc('>', ptr->files->dest);
+				ptr->line += 2;
+			}
+			else
+			{
+				fputc_escaped(ptr->line[0], ptr->files->dest);
+				ptr->line++;
+			}
+			continue;
+		}
+		break;
+	}
+	fputc('>', ptr->files->dest);
+	ptr->line++;
+	return 0;
+}
+
+static int
+CODE(struct data *ptr)
+{
+	if (ptr->line[0] != '`')
+	{
+		if (ptr->line[0] == '\\' && ptr->line[1] == '`')
+		{
+			ptr->line++;
+			return 0;	// We did our job
+		}
+		else return 1;	// Not our business
+	}
+
+	/* Check if the ` was escaped */
+	if (ptr->line != ptr->lines[CONTEXT_LINES] && ptr->line[-1] == '\\')
+	{
+		fputc('`', ptr->files->dest);
+		ptr->line++;
+		return 0;
+	}
+
+	fputs("<code>", ptr->files->dest);
+	ptr->line++;
+	while (1)
+	{
+		if (ptr->line[0] == '\0')
+			get_next_line(ptr);
+		if (ptr->line[0] == '\0')
+			break;
+
+		if (ptr->line[0] != '`')
+		{
+			if (ptr->line[0] == '\\' && ptr->line[1] == '`')
+			{
+				fputc('`', ptr->files->dest);
+				ptr->line += 2;
+			}
+			else
+			{
+				fputc_escaped(ptr->line[0], ptr->files->dest);
+				ptr->line++;
+			}
+			continue;
+		}
+		break;
+	}
+	fputs("</code>", ptr->files->dest);
+	ptr->line++;
+	return 0;
+}
+
+static int
+BOLD(struct data *ptr)
+{
+	if (ptr->line[0] != '*')
+	{
+		if (ptr->line[0] == '\\' && ptr->line[1] == '*')
+		{
+			ptr->line++;
+			return 0;	// We did our job
+		}
+		else return 1;	// Not our business
+	}
+
+	/* Check if the * was escaped */
+	if (ptr->line != ptr->lines[CONTEXT_LINES] && ptr->line[-1] == '\\')
+	{
+		fputc('*', ptr->files->dest);
+		ptr->line++;
+		return 0;
+	}
+
+	if (ptr->config->BOLD_OPEN)
+		fputs("</strong>", ptr->files->dest);
+	else
+		fputs("<strong>", ptr->files->dest);
+	toggle(&ptr->config->BOLD_OPEN);
+	ptr->line++;
+	return 0;
+}
+
+static int
+ITALIC(struct data *ptr)
+{
+	if (ptr->line[0] != '_')
+	{
+		if (ptr->line[0] == '\\' && ptr->line[1] == '_')
+		{
+			ptr->line++;
+			return 0;	// We did our job
+		}
+		else return 1;	// Not our business
+	}
+
+	/* Check if the * was escaped */
+	if (ptr->line != ptr->lines[CONTEXT_LINES] && ptr->line[-1] == '\\')
+	{
+		fputc('_', ptr->files->dest);
+		ptr->line++;
+		return 0;
+	}
+
+	if (ptr->config->ITALIC_OPEN)
+		fputs("</em>", ptr->files->dest);
+	else
+		fputs("<em>", ptr->files->dest);
+	toggle(&ptr->config->ITALIC_OPEN);
+	ptr->line++;
+	return 0;
 }
 
 static void
@@ -205,7 +458,15 @@ parse_line(struct data *ptr)
 	while (ptr->line[0] != '\n' && ptr->line[0] != '\0')
 	{
 		/* Check if the current character is worth anything to anyone */
-		if (!HEADINGS(ptr) || !CHARREFS(ptr) || !1) // XXX: Replace the 1 with any new function
+		if (
+				   !HEADINGS(ptr)
+				|| !CHARREFS(ptr)
+				|| !HTML_TAGS(ptr)
+				|| !CODE(ptr)
+				|| !BOLD(ptr)
+				|| !ITALIC(ptr)
+				|| !1 // XXX: Replace the 1 with any new function
+		   )
 			continue;
 
 		/* Nobody cared. fputc_escaped() it and move on. */
@@ -246,7 +507,6 @@ htmlize(FILE *src, FILE *dest)
 	data.config		= &config;
 	config.BOLD_OPEN	= false;
 	config.ITALIC_OPEN	= false;
-	config.CODE_OPEN	= false;
 	config.HTML_TAG_OPEN	= false;
 	config.LINK_OPEN	= false;
 	config.LINK_TEXT_OPEN	= false;
@@ -282,10 +542,13 @@ htmlize(FILE *src, FILE *dest)
 	ptr->line = ptr->lines[CONTEXT_LINES];
 	while (CHECK_END(ptr))
 	{
-		BLOCKQUOTE(ptr);
+		LISTS(ptr);
+		CODEBLOCK(ptr);
 		FOOTNOTES(ptr);
 
 		parse_line(ptr);
+		if (ptr->line[0] == '\n')
+			fputc('\n', ptr->files->dest);
 
 		get_next_line(ptr);
 	}

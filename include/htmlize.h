@@ -13,14 +13,12 @@
 #define CONTEXT_LINES 2
 #endif
 
-int	is_named_charref(const char *);
 int	htmlize(FILE *, FILE *);
 
 enum bool {false, true};
 struct config {
 	enum bool BOLD_OPEN;
 	enum bool ITALIC_OPEN;
-	enum bool CODE_OPEN;
 	enum bool HTML_TAG_OPEN;
 	enum bool LINK_OPEN;
 	enum bool LINK_TEXT_OPEN;

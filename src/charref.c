@@ -42,8 +42,8 @@ is_named_charref(const char *given_str)
 {
 	for (int i=0; i < (sizeof(named_references)/sizeof(named_references[0])); i++)
 		if (!strncmp(given_str, named_references[i], strlen(named_references[i])))
-			return 1;
-	return 0;
+			return 0;
+	return 1;
 }
 
 int
@@ -66,7 +66,7 @@ is_charref(const char *given_str, size_t n)
 	{
 		/* It's a Hexadecimal numeric character reference */
 		for (const char *p = &given_str[2]; p < end; p++)
-			if (!isxdigit(p))	// ie. *p isn't xdigit
+			if (!isxdigit(*p))	// ie. *p isn't xdigit
 				return 1;
 		return 0;
 	}
@@ -74,11 +74,11 @@ is_charref(const char *given_str, size_t n)
 	{
 		/* It's a Decimal numeric character reference */
 		for (const char *p = &given_str[2]; p < end; p++)
-			if (!isdigit(p))	// ie. *p isn't digit
+			if (!isdigit(*p))	// ie. *p isn't digit
 				return 1;
 		return 0;
 	}
-	if (is_named_charref(given_str))
+	if (!is_named_charref(given_str))
 		return 0;
 	return 1;
 }
