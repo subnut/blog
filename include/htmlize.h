@@ -21,13 +21,11 @@ struct config {
 	enum bool BOLD_OPEN;
 	enum bool ITALIC_OPEN;
 	enum bool CODE_OPEN;
-	enum bool CODEBLOCK_OPEN;
 	enum bool HTML_TAG_OPEN;
 	enum bool LINK_OPEN;
 	enum bool LINK_TEXT_OPEN;
 	enum bool TABLE_MODE;
 	enum bool LIST_MODE;
-	enum bool FOOTNOTE_MODE;
 };
 struct files {
 	FILE *src;

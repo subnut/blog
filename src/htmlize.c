@@ -8,12 +8,12 @@
  * string.h	- str*(), mem*()
  */
 
+#include "include/debug.h"
 #include "include/escape.h"
 #include "include/htmlize.h"
 #include "include/stoi.h"
 #include "include/urlencode.h"
 #include "constants.h"
-#define CONTEXT_LINES 2
 
 /*
  * Named Character References that will be recognized by htmlize()
@@ -32,39 +32,80 @@ static const char *named_references[] =
 	"&mdash", "&ndash",
 };
 
+/*
+ * Note that this function only checks from the beginning of the string. It
+ * does not match the whole string.
+ *
+ * i.e. this function in python would be -
+ *	def is_named_charref(given_str):
+ *		for i in range(0,len(named_references)):
+ *			if given_str.startswith(named_references[i]):
+ *				return True
+ *		else:
+ *			return False
+ */
 int
 is_named_charref(const char *given_str)
 {
 	for (int i=0; i < (sizeof(named_references)/sizeof(named_references[0])); i++)
-	{
 		if (!strncmp(given_str, named_references[i], strlen(named_references[i])))
 			return 1;
-	}
 	return 0;
 }
 
 
+static void shift_lines         (struct data *);
+static void get_next_line       (struct data *);
+static void parse_line          (struct data *);
+static int  CHECK_END           (struct data *);
+static int  BLOCKQUOTE          (struct data *);
+static int  HEADINGS            (struct data *);
+
+
+/**** [START] Utility functions ****/
 static inline void
-toggle(int *val)
+toggle(enum bool *val)
 {
-	++*val;
-	*val %= 2;
+	if (*val)
+		*val = false;
+	else
+		*val = true;
 }
 
 static void
 shift_lines(struct data *ptr)
 {
+	DPUTS("ENTER: shift_lines()\n");
 	for (int i = 0; i < ptr->nlines; i++)
 		memmove(ptr->lines[i], ptr->lines[i+1], MAX_LINE_LENGTH);
+	DPUTS("EXIT: shift_lines()\n");
 }
 
 static void
 get_next_line(struct data *ptr)
 {
+	DPUTS("ENTER: get_next_line()\n");
 	shift_lines(ptr);
 	if(fgets(ptr->lines[ptr->nlines - 1], MAX_LINE_LENGTH, ptr->files->src) == NULL)
-		/* Mark buffer as empty */
-		ptr->lines[ptr->nlines - 1][0] = '\0';
+		ptr->lines[ptr->nlines - 1][0] = '\0';	// Mark buffer as empty
+	DPUTS("EXIT: get_next_line()\n");
+}
+/**** [END] Utility functions ****/
+
+
+/**** [START] Line-wise functions ****/
+static int
+CHECK_END(struct data *ptr)
+{
+	DPUTS("INVOKE: CHECK_END()\n");
+	/* Returns 0 if END, 1 otherwise */
+	if (!memcmp(ptr->line, "", 1))
+		return 0;
+	if (!memcmp(ptr->line, "---\n", 5))
+		return 0;
+	if (!memcmp(ptr->line, "\\---\n", 6))
+		fputs("---\n", ptr->files->dest);
+	return 1;
 }
 
 static int
@@ -84,15 +125,150 @@ BLOCKQUOTE(struct data *ptr)
 			fputs_escaped(ptr->line, ptr->files->dest);
 			get_next_line(ptr);
 		}
+		get_next_line(ptr);
 		fputs("</pre>\n", ptr->files->dest);
 		return 0;
 	}
 	return 1;
 }
 
+static int
+FOOTNOTES(struct data *ptr)
+{
+	if (!memcmp(ptr->line, "\\^^^\n", 5))
+	{
+		fputs("^^^\n", ptr->files->dest);
+		return 0;
+	}
+	if (!memcmp(ptr->line, "^^^\n", 4))
+	{
+		DPUTS("ENTER FOOTNOTES() MODE\n");
+		fputs("<p id=\"footnotes\">\n", ptr->files->dest);
+		get_next_line(ptr);
+		while (CHECK_END(ptr))
+		{
+			get_next_line(ptr);
+		}
+		return 0;
+	}
+	return 1;
+}
+/**** [END] Line-wise functions ****/
+
+
+/**** [START] Character-wise functions ****/
+static int
+HEADINGS(struct data *ptr)
+{
+	/* If we aren't on the first character of the line, it ain't our job */
+	if (ptr->line != ptr->lines[CONTEXT_LINES])
+		return 1;
+
+	/* Huh? First character isn't a '#'? Hmm... */
+	if (ptr->line[0] != '#')
+	{
+		/* Has somebody escaped the heading using backslashes? */
+		if (ptr->line[0] == '\\' && ptr->line[1] == '#')
+		{
+			fputc('#', ptr->files->dest);
+			ptr->line += 2;	// +2 because '\\' and '#'
+			/* The above line is safe because currently,
+			 * ptr->line points to the first character of
+			 * the actual line, and we know that
+			 * MAX_LINE_LENGTH >= 3
+			 */
+			return 0;	// We did our job
+		}
+		else return 1;	// Not our business
+	}
+
+	static int H_LEVEL;
+	H_LEVEL = 0;
+	DPRINTF("H_LEVEL (before): %i\n", H_LEVEL);
+	while (ptr->line[0] == '#')
+	{
+		H_LEVEL++;
+		ptr->line++;
+	}
+	DPRINTF("H_LEVEL (after): %i\n", H_LEVEL);
+	while (ptr->line[0] == ' ')
+		ptr->line++;
+
+	/*
+	 * Create an ID for the heading
+	 *	- Alphabets and numbers are kept as-is
+	 *	- Spaces are transformed into '-'s
+	 *	- Anything else is discarded
+	 */
+	static char h_id[MAX_LINE_LENGTH];
+	for (int i=0; i < MAX_LINE_LENGTH; i++)
+		h_id[i] = '\0';
+	for (int i=0,j=0; i < MAX_LINE_LENGTH && ptr->line[i] != '\0'; i++)
+		if (isalnum(ptr->line[i]))
+			h_id[j++] = ptr->line[i];
+		else if (ptr->line[i] == ' ')
+			h_id[j++] = '-';
+
+	/* Print the opening HTML tags */
+	fprintf(ptr->files->dest,
+			"<h%i id=\"%s\"><a class=\"self-link\" href=\"#%s\">",
+			H_LEVEL, h_id, h_id);
+
+	/* Parse the remaining of the line */
+	parse_line(ptr);
+
+	/* Print the closing HTML tags */
+	fprintf(ptr->files->dest, "</a></h%u>\n", H_LEVEL);
+	return 0;
+}
+
+static int
+CHARREFS(struct data *ptr)
+{
+	/* For it to be a charref, the current character MUST be ampersand */
+	if (ptr->line[0] != '&')
+		return 1;
+	/* If the ampersand isn't the very first character in the current line,
+	 * then check whether the previous character was a backslash. If it
+	 * was, then it means that this ampersand was escaped. */
+	if ((ptr->line != ptr->lines[CONTEXT_LINES]) && ptr->line[-1] == '\\')
+		return 1;
+}
+
+static void
+parse_line(struct data *ptr)
+{
+	while (ptr->line[0] != '\n' && ptr->line[0] != '\0')
+	{
+		/* Check if the current character is worth anything to anyone */
+		if (!HEADINGS(ptr) || !CHARREFS(ptr) || !1) // XXX: Replace the 1 with any new function
+			continue;
+
+		/* Nobody cared. fputc_escaped() it and move on. */
+		fputc_escaped(ptr->line[0], ptr->files->dest);
+		ptr->line++;
+	}
+}
+/**** [END] Character-wise functions ****/
+
+
 int
 htmlize(FILE *src, FILE *dest)
 {
+	if (MAX_LINE_LENGTH < 5)
+	{
+		/*
+		 * To mark the end of current input, we need to read the string
+		 * "---\n" into the buffer. Since "---\n" is actually the array
+		 * {'-', '-', '-', '\n', '\0'}, which contains 5 elements, we
+		 * need to have MAX_LINE_LENGTH >= 5
+		 *
+		 * Since we don't, BAIL OUT!
+		 */
+		fputs("htmlize(): MAX_LINE_LENGTH too low", stderr);
+		return -1;
+	}
+
 	struct data data;
 	struct data *ptr;
 	ptr = &data;
@@ -107,13 +283,11 @@ htmlize(FILE *src, FILE *dest)
 	config.BOLD_OPEN	= false;
 	config.ITALIC_OPEN	= false;
 	config.CODE_OPEN	= false;
-	config.CODEBLOCK_OPEN	= false;
 	config.HTML_TAG_OPEN	= false;
 	config.LINK_OPEN	= false;
 	config.LINK_TEXT_OPEN	= false;
 	config.TABLE_MODE	= false;
 	config.LIST_MODE	= false;
-	config.FOOTNOTE_MODE	= false;
 
 	/* Calculate data.lines size and check if it is correct */
 	if ((CONTEXT_LINES*2 + 1) == (sizeof(data.lines)/sizeof(data.lines[0])))
@@ -128,7 +302,8 @@ htmlize(FILE *src, FILE *dest)
 
 	/* Initialize data.lines with empty lines */
 	for (int i = 0; i < data.nlines; i++)
-		memmove(data.lines[i], "", 1);
+		for (int j = 0; j < MAX_LINE_LENGTH; j++)
+			data.lines[i][j] = '\0';
 
 	/* Populate data.lines, but stop immediately at EOF */
 	for (int i = CONTEXT_LINES; i < data.nlines; i++)
@@ -140,10 +315,14 @@ htmlize(FILE *src, FILE *dest)
 	if (!memcmp(data.lines[CONTEXT_LINES], "", 1))
 		return 1;	// No input
 
-	while (memcmp(data.lines[CONTEXT_LINES], "", 1))
+	ptr->line = ptr->lines[CONTEXT_LINES];
+	while (CHECK_END(ptr))
 	{
-		ptr->line = ptr->lines[CONTEXT_LINES];
 		BLOCKQUOTE(ptr);
+		FOOTNOTES(ptr);
+
+		parse_line(ptr);
+
 		get_next_line(ptr);
 	}
 	return 0;
@@ -257,7 +436,7 @@ htmlize(FILE *src, FILE *dest)
 // 
 // 
 // 		// Footnotes
-// 		if (!memcmp(line, "===\n", 4))
+// 		if (!memcmp(line, "^^^\n", 4))
 // 		{
 // 			FOOTNOTE_MODE = 1;
 // 			fputs("<p id=\"footnotes\">\n", out);
@@ -416,12 +595,10 @@ htmlize(FILE *src, FILE *dest)
 // 				else if (line[i] == ' ')
 // 					h_id[j++] = '-';
 // 
-// 			char h_id_urlencoded[strlen(h_id)*3 + 1];
-// 			urlencode_s(h_id, h_id_urlencoded, sizeof(storage)/sizeof(storage[0]));
 // 			fprintf(
 // 					out,
 // 					"<h%i id=\"%s\"><a class=\"self-link\" href=\"#%s\">",
-// 					H_LEVEL, h_id_urlencoded, h_id_urlencoded
+// 					H_LEVEL, h_id, h_id
 // 				   );
 // 		}
 // 
