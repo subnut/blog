@@ -28,8 +28,8 @@ static const char INITIAL_TEXT[] = "\
         <meta charset=\"utf-8\"/>\n\
         <title>subnut's blog</title>\n\
         %s\n\
-        <link rel=\"stylesheet\" href=\"style.css\">\n\
-        <link rel=\"stylesheet\" href=\"recursive.css\">\n\
+        <link rel=\"stylesheet\" href=\"style.css\" media=\"screen\">\n\
+        <link rel=\"stylesheet\" href=\"recursive.css\" media=\"screen\">\n\
     </head>\n\
     <body class=\"blog-index\">\n\
         <header>\n\
