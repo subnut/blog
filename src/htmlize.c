@@ -52,44 +52,69 @@ toggle(enum bool *val)
 static void
 shift_lines(struct data *ptr)
 {
-	DPUTS("ENTER: shift_lines()\n");
 	for (int i = 0; i < ptr->nlines; i++)
 		memmove(ptr->lines[i], ptr->lines[i+1], MAX_LINE_LENGTH);
 	ptr->line = ptr->lines[CONTEXT_LINES];	// Reset ptr->lines
-	DPUTS("EXIT: shift_lines()\n");
 }
 
 static void
 get_next_line(struct data *ptr)
 {
-	DPUTS("ENTER: get_next_line()\n");
 	shift_lines(ptr);
-	if(fgets(ptr->lines[ptr->nlines - 1], MAX_LINE_LENGTH, ptr->files->src) == NULL)
+
+	/*
+	 * Iterate backwards from the end of ptr->lines upto ptr->line and
+	 * check if we've already reached the end of the blog before.
+	 * If we've already reached the end of blog before, then don't fgets()
+	 * anymore.
+	 *
+	 * This helps avoid the situation where we read more than we require.
+	 * Eg. Say the file descriptor points to a file like this -
+	 *	| Lorem ipsum
+	 *	| Ipsum Dolor
+	 *	| ---
+	 *	| Sit amet
+	 *	| Amet foobar
+	 * We need to read only upto the third line, and then exit. But, say
+	 * CONTEXT_LINES is set to 2. What happens? We read upto the 5th line!
+	 * And then, if any function uses the file descriptor again, it gets an
+	 * EOF, whereas it should have rightfully gotten the 4th line.
+	 *
+	 * ptr->lines	Start of the array of lines
+	 * ptr->nlines	Number of lines in the array
+	 *
+	 * ptr->lines + (ptr->nlines-1)
+	 *	 End of the array (-1 because indexing from 0, not 1)
+	 *
+	 * ptr->lines + (ptr->nlines-1) - 1
+	 *	 Second last line in the array ('cause after the shift_lines(),
+	 *	 the last line hasn't been initalized yet)
+	 */
+	for (char (*p)[MAX_LINE_LENGTH] = ptr->lines + ptr->nlines - 2;
+			*p != ptr->line; p--)
+		if (*p[0] == '\0')
+		{
+			/* We've already reached the end of blog.
+			 * Mark current buffer as empty. */
+			ptr->lines[ptr->nlines - 1][0] = '\0';
+			return;
+		}
+
+	/* Read a new line. If NULL, that means EOF, so mark buffer empty */
+	if (fgets(ptr->lines[ptr->nlines - 1], MAX_LINE_LENGTH, ptr->files->src) == NULL)
 		ptr->lines[ptr->nlines - 1][0] = '\0';	// Mark buffer as empty
-	DPUTS("EXIT: get_next_line()\n");
+
+	/* If current line marks End of blog, then mark buffer empty */
+	if (!memcmp(ptr->lines[ptr->nlines - 1], "---\n", 5))
+		ptr->lines[ptr->nlines - 1][0] = '\0';	// Mark buffer as empty
 }
 /**** [END] Utility functions ****/
 
 
 /**** [START] Line-wise functions ****/
 static int
-CHECK_END(struct data *ptr)
-{
-	DPUTS("INVOKE: CHECK_END()\n");
-	/* Returns 0 if END, 1 otherwise */
-	if (!memcmp(ptr->line, "", 1))
-		return 0;
-	if (!memcmp(ptr->line, "---\n", 5))
-		return 0;
-	if (!memcmp(ptr->line, "\\---\n", 6))
-		fputs("---\n", ptr->files->dest);
-	return 1;
-}
-
-static int
 LISTS(struct data *ptr)
 {
-	DPUTS(ptr->line);
 	if (ptr->line[0] == '\\')
 		if (!memcmp(ptr->line + 1, "<ul", 3) || !memcmp(ptr->line + 1, "<ol", 3))
 		{
@@ -175,7 +200,7 @@ FOOTNOTES(struct data *ptr)
 		DPUTS("ENTER FOOTNOTES() MODE\n");
 		fputs("<p id=\"footnotes\">\n", ptr->files->dest);
 		get_next_line(ptr);
-		while (CHECK_END(ptr))
+		while (ptr->line[0] != '\0')
 		{
 			get_next_line(ptr);
 		}
@@ -540,8 +565,15 @@ htmlize(FILE *src, FILE *dest)
 		return 1;	// No input
 
 	ptr->line = ptr->lines[CONTEXT_LINES];
-	while (CHECK_END(ptr))
+	while (ptr->line[0] != '\0')
 	{
+		if (!memcmp(ptr->line, "\\---\n", 6))
+		{
+			fputs("---\n", ptr->files->dest);
+			get_next_line(ptr);
+			continue;
+		}
+
 		LISTS(ptr);
 		CODEBLOCK(ptr);
 		FOOTNOTES(ptr);
