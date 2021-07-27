@@ -82,8 +82,7 @@ initial_html(FILE *in, FILE *out)
 	*(p = memchr(DATE_MODIFIED, '\n', MAX_LINE_LENGTH)) = '\0';
 
 	fprintf(out, INITIAL_HTML_PRE_SUBTITLE, TITLE, FAVICON, TITLE);
-	while (strcmp(fgets(BUFFER, MAX_LINE_LENGTH, in), "---\n"))  // ie. line != "---\n"
-		fputs_escaped(BUFFER, out);
+	htmlize(in, out);	// htmlize the subtitle text
 
 	/*
 	 * NOTE: This will not work -
