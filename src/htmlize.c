@@ -125,16 +125,14 @@ LISTS(struct data *ptr)
 	if (ptr->line[0] != '<')
 		return 1;
 
-	if (!(!memcmp(ptr->line, "<ul", 3) || !memcmp(ptr->line, "<ol", 3)))
+	if ((memcmp(ptr->line, "<ul", 3) && memcmp(ptr->line, "<ol", 3)))
 		return 1;
 
 	fputs(ptr->line, ptr->files->dest);
-	while (memcmp(ptr->line, "</ul", 4) || memcmp(ptr->line, "</ol", 4))
+	for (get_next_line(ptr);
+			ptr->line[0] != '\0' && (memcmp(ptr->line, "</ul", 4) && memcmp(ptr->line, "</ol", 4));
+			get_next_line(ptr))
 	{
-		get_next_line(ptr);
-		if (ptr->line[0] == '\0')
-			break;
-
 		char *hyphen;
 		if ((hyphen = memchr(ptr->line, '-', MAX_LINE_LENGTH)) != NULL)
 		{
@@ -177,10 +175,14 @@ CODEBLOCK(struct data *ptr)
 		get_next_line(ptr);
 		while (memcmp(ptr->line, "```", 3) && memcmp(ptr->line, "", 1))
 		{
+			if (!memcmp(ptr->line, "\\```", 4))
+			{
+				ptr->line += 4;
+				fputs("```", ptr->files->dest);
+			}
 			fputs_escaped(ptr->line, ptr->files->dest);
 			get_next_line(ptr);
 		}
-		get_next_line(ptr);
 		fputs("</pre>\n", ptr->files->dest);
 		return 0;
 	}
@@ -532,11 +534,9 @@ htmlize(FILE *src, FILE *dest)
 	data.config		= &config;
 	config.BOLD_OPEN	= false;
 	config.ITALIC_OPEN	= false;
-	config.HTML_TAG_OPEN	= false;
 	config.LINK_OPEN	= false;
 	config.LINK_TEXT_OPEN	= false;
 	config.TABLE_MODE	= false;
-	config.LIST_MODE	= false;
 
 	/* Calculate data.lines size and check if it is correct */
 	if ((CONTEXT_LINES*2 + 1) == (sizeof(data.lines)/sizeof(data.lines[0])))
@@ -574,14 +574,19 @@ htmlize(FILE *src, FILE *dest)
 			continue;
 		}
 
-		LISTS(ptr);
-		CODEBLOCK(ptr);
-		FOOTNOTES(ptr);
-
-		parse_line(ptr);
-		if (ptr->line[0] == '\n')
-			fputc('\n', ptr->files->dest);
-
+		/* Check if the current line is worth anything to anyone */
+		if (
+				   !CODEBLOCK(ptr)
+				|| !FOOTNOTES(ptr)
+				|| !LISTS(ptr)
+				|| !1 // XXX: Replace the 1 with any new function
+		   ) {;}
+		else
+		{
+			parse_line(ptr);
+			if (ptr->line[0] == '\n')
+				fputc('\n', ptr->files->dest);
+		}
 		get_next_line(ptr);
 	}
 	return 0;

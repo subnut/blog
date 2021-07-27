@@ -19,11 +19,9 @@ int	htmlize(FILE *, FILE *);
 struct config {
 	bool BOLD_OPEN;
 	bool ITALIC_OPEN;
-	bool HTML_TAG_OPEN;
 	bool LINK_OPEN;
 	bool LINK_TEXT_OPEN;
 	bool TABLE_MODE;
-	bool LIST_MODE;
 };
 struct files {
 	FILE *src;
