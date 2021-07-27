@@ -15,15 +15,15 @@
 
 int	htmlize(FILE *, FILE *);
 
-enum bool {false, true};
+#include <stdbool.h>
 struct config {
-	enum bool BOLD_OPEN;
-	enum bool ITALIC_OPEN;
-	enum bool HTML_TAG_OPEN;
-	enum bool LINK_OPEN;
-	enum bool LINK_TEXT_OPEN;
-	enum bool TABLE_MODE;
-	enum bool LIST_MODE;
+	bool BOLD_OPEN;
+	bool ITALIC_OPEN;
+	bool HTML_TAG_OPEN;
+	bool LINK_OPEN;
+	bool LINK_TEXT_OPEN;
+	bool TABLE_MODE;
+	bool LIST_MODE;
 };
 struct files {
 	FILE *src;

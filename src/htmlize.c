@@ -1,9 +1,11 @@
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
 /*
  * ctype.h	- isalnum(), isalpha(), etc.
+ * stbool.h	- bool, true, false
  * stdio.h	- printf(), fopen(), fprintf(), etc
  * string.h	- str*(), mem*()
  */
@@ -34,14 +36,13 @@
 static void shift_lines         (struct data *);
 static void get_next_line       (struct data *);
 static void parse_line          (struct data *);
-static int  CHECK_END           (struct data *);
-static int  CODEBLOCK          (struct data *);
+static int  CODEBLOCK           (struct data *);
 static int  HEADINGS            (struct data *);
 
 
 /**** [START] Utility functions ****/
 static inline void
-toggle(enum bool *val)
+toggle(bool *val)
 {
 	if (*val)
 		*val = false;
