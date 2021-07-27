@@ -53,7 +53,18 @@ toggle(bool *val)
 static void
 shift_lines(struct data *ptr)
 {
-	for (int i = 0; i < ptr->nlines; i++)
+	/*
+	 * We iterate upto (ptr->nlines - 2) because,
+	 * for i = (ptr->lines - 1),
+	 *     ptr->lines[i+1]
+	 * becomes
+	 *     ptr->lines[(ptr->nlines-1)+1]
+	 * which is the same as
+	 *     ptr->lines[ptr->nlines]
+	 * which does not exist (since ptr->nlines counts the number of lines
+	 * from 1, but the actual indexing starts from 0)
+	 */
+	for (int i = 0; i < ptr->nlines - 1; i++)
 		memmove(ptr->lines[i], ptr->lines[i+1], MAX_LINE_LENGTH);
 	ptr->line = ptr->lines[CONTEXT_LINES];	// Reset ptr->lines
 }
@@ -64,10 +75,9 @@ get_next_line(struct data *ptr)
 	shift_lines(ptr);
 
 	/*
-	 * Iterate backwards from the end of ptr->lines upto ptr->line and
-	 * check if we've already reached the end of the blog before.
-	 * If we've already reached the end of blog before, then don't fgets()
-	 * anymore.
+	 * Iterate from ptr->line to the end of ptr->lines and check if we've
+	 * already reached the end of the blog before.  If we've already
+	 * reached the end of blog before, then don't fgets() anymore.
 	 *
 	 * This helps avoid the situation where we read more than we require.
 	 * Eg. Say the file descriptor points to a file like this -
@@ -80,20 +90,9 @@ get_next_line(struct data *ptr)
 	 * CONTEXT_LINES is set to 2. What happens? We read upto the 5th line!
 	 * And then, if any function uses the file descriptor again, it gets an
 	 * EOF, whereas it should have rightfully gotten the 4th line.
-	 *
-	 * ptr->lines	Start of the array of lines
-	 * ptr->nlines	Number of lines in the array
-	 *
-	 * ptr->lines + (ptr->nlines-1)
-	 *	 End of the array (-1 because indexing from 0, not 1)
-	 *
-	 * ptr->lines + (ptr->nlines-1) - 1
-	 *	 Second last line in the array ('cause after the shift_lines(),
-	 *	 the last line hasn't been initalized yet)
 	 */
-	for (char (*p)[MAX_LINE_LENGTH] = ptr->lines + ptr->nlines - 2;
-			*p != ptr->line; p--)
-		if (*p[0] == '\0')
+	for (int i = CONTEXT_LINES; i < ptr->nlines; i++)
+		if (ptr->lines[i][0] == '\0')
 		{
 			/* We've already reached the end of blog.
 			 * Mark current buffer as empty. */
