@@ -318,8 +318,23 @@ HTML_TAGS(struct data *ptr)
 	if (ptr->line[0] != '<')
 	{
 		if (ptr->line[0] == '\\' && ptr->line[1] == '<' &&
-				(REMAINING_CHARS > 1 && !isalpha(ptr->line[2])))
+				(REMAINING_CHARS > 1 &&
+				 (isalpha(ptr->line[2]) || ptr->line[2] == '/')))
 		{
+			ptr->line++;	// for '\'
+			ptr->line++;	// for '<'
+			fputs("&lt;", ptr->files->dest);
+			while (ptr->line[0] != '>')
+			{
+				if (ptr->line[0] == '\0')
+					get_next_line(ptr);
+				if (ptr->line[0] == '\0')
+					break;
+
+				fputc_escaped(ptr->line[0], ptr->files->dest);
+				ptr->line++;
+			}
+			fputs("&gt;", ptr->files->dest);
 			ptr->line++;
 			return 0;	// We did our job
 		}
@@ -330,38 +345,17 @@ HTML_TAGS(struct data *ptr)
 	if (ptr->line[1] != '/' && !isalpha(ptr->line[1]))
 		return 1;
 
-	/* Check if the < was escaped */
-	if (ptr->line != ptr->lines[CONTEXT_LINES] && ptr->line[-1] == '\\')
-	{
-		fputc('<', ptr->files->dest);
-		ptr->line++;
-		return 0;
-	}
-
 	fputc('<', ptr->files->dest);
 	ptr->line++;
-	while (1)
+	while (ptr->line[0] != '>')
 	{
 		if (ptr->line[0] == '\0')
 			get_next_line(ptr);
 		if (ptr->line[0] == '\0')
 			break;
 
-		if (ptr->line[0] != '>')
-		{
-			if (ptr->line[0] == '\\' && ptr->line[1] == '>')
-			{
-				fputc('>', ptr->files->dest);
-				ptr->line += 2;
-			}
-			else
-			{
-				fputc_escaped(ptr->line[0], ptr->files->dest);
-				ptr->line++;
-			}
-			continue;
-		}
-		break;
+		fputc_escaped(ptr->line[0], ptr->files->dest);
+		ptr->line++;
 	}
 	fputc('>', ptr->files->dest);
 	ptr->line++;
