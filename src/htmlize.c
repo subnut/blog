@@ -129,7 +129,7 @@ LISTS(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 		char *hyphen;
 		if ((hyphen = memchr(ptr->line, '-', MAX_LINE_LENGTH)) != NULL)
 		{
-			while (ptr->line < hyphen)
+			while (ptr->line <= hyphen)
 				if (ptr->line[0] == ' ')
 				{
 					fputc(' ', ptr->files->dest);
@@ -140,6 +140,9 @@ LISTS(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 			{
 				fputs("<li>", ptr->files->dest);
 				ptr->line++;
+				/* Skip over the whitespaces, if any */
+				while (ptr->line[0] == ' ')
+					ptr->line++;
 			}
 			else if (ptr->line == hyphen - 1 && *ptr->line == '\\')
 				ptr->line++;
@@ -185,7 +188,7 @@ CODEBLOCK(struct data *ptr)
 }
 
 static int
-FOOTNOTES(struct data *ptr)	// TODO: Finish this
+FOOTNOTES(struct data *ptr)
 {
 	if (!memcmp(ptr->line, "\\^^^\n", 5))
 	{
@@ -194,13 +197,23 @@ FOOTNOTES(struct data *ptr)	// TODO: Finish this
 	}
 	if (!memcmp(ptr->line, "^^^\n", 4))
 	{
-		DPUTS("ENTER FOOTNOTES() MODE\n");
 		fputs("<p id=\"footnotes\">\n", ptr->files->dest);
-		get_next_line(ptr);
-		while (ptr->line[0] != '\0')
+		for (get_next_line(ptr); ptr->line[0] != '\0'; get_next_line(ptr))
 		{
-			get_next_line(ptr);
-			// TODO: Finish this :)
+			char *p;
+			if ((p = memchr(ptr->line, ':', REMAINING_CHARS)) != NULL)
+			{
+				*p = '\0';
+				fprintf(ptr->files->dest,
+						"<a class=\"footnote\" id=\"fn:%s\" href=\"#fnref:%s\">[%s]</a>",
+						ptr->line, ptr->line, ptr->line
+				       );
+				*p = ':';
+				ptr->line = p;
+			}
+			parse_line(ptr);
+			if (ptr->line[0] == '\n')
+				fputs("<br>\n", ptr->files->dest);
 		}
 		return 0;
 	}
@@ -210,6 +223,43 @@ FOOTNOTES(struct data *ptr)	// TODO: Finish this
 
 
 /**** [START] Character-wise functions ****/
+static int
+DUALSPACEBREAK(struct data *ptr)
+{
+	if (ptr->line[0] != ' ') return 1;
+	switch (REMAINING_CHARS)
+	{
+		case 1:
+			{
+				if (ptr->readahead[1][0] != ' ')
+					return 1;
+				if (ptr->readahead[1][1] != '\n')
+					return 1;
+				break;
+			}
+		case 2:
+			{
+				if (ptr->line[1] != ' ')
+					return 1;
+				if (ptr->readahead[1][0] != '\n')
+					return 1;
+				ptr->line++;
+				break;
+			}
+		default:
+			{
+				if (ptr->line[1] != ' ')
+					return 1;
+				if (ptr->line[2] != '\n')
+					return 1;
+				ptr->line += 2;
+				break;
+			}
+	}
+	fputs("<br>", ptr->files->dest);
+	return 0;
+}
+
 static int
 HEADINGS(struct data *ptr)
 {
@@ -325,8 +375,10 @@ HTML_TAGS(struct data *ptr)
 	if (ptr->line[0] != '<')
 	{
 		if (ptr->line[0] == '\\' && ptr->line[1] == '<' &&
-				(REMAINING_CHARS > 1 &&
-				 (isalpha(ptr->line[2]) || ptr->line[2] == '/')))
+				(REMAINING_CHARS > 1
+				 ? (isalpha(ptr->line[2]) || ptr->line[2] == '/')
+				 : (isalpha(ptr->readahead[1][0]) || ptr->readahead[1][0] == '/')
+				))
 		{
 			ptr->line++;	// for '\'
 			ptr->line++;	// for '<'
@@ -480,8 +532,44 @@ ITALIC(struct data *ptr)
 	return 0;
 }
 
+static int
+FOOTNOTE(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
+{
+	if (ptr->line[0] != '[')
+	{
+		if (ptr->line[0] == '\\' && REMAINING_CHARS > 2 && !memcmp(ptr->line + 1, "[^", 2))
+		{
+			fputs_escaped("[^", ptr->files->dest);
+			ptr->line += 3;
+			return 0;	// We did our job
+		}
+		else return 1;	// Not our business
+	}
+
+	/* Check if the [^ was escaped */
+	if (ptr->line != ptr->readahead[0] && ptr->line[-1] == '\\')
+	{
+		fputs_escaped("[^", ptr->files->dest);
+		ptr->line += 3;
+		return 0;
+	}
+
+	char *p;
+	p = memchr(ptr->line, ']', REMAINING_CHARS);
+	*p++ = '\0';
+	ptr->line += 2;	// 2 for "[^"
+
+	fprintf(ptr->files->dest,
+			"<a class=\"footnote\" id=\"fnref:%s\" href=\"#fn:%s\"><sup>[%s]</sup></a>",
+			ptr->line, ptr->line, ptr->line
+	       );
+
+	ptr->line = p;
+	return 0;
+}
+
 static void
-parse_line(struct data *ptr)	// MAX_LINE_LENGTH independent, except CHARREFS
+parse_line(struct data *ptr)
 {
 	while (ptr->line[0] != '\n')
 	{
@@ -500,6 +588,8 @@ parse_line(struct data *ptr)	// MAX_LINE_LENGTH independent, except CHARREFS
 				|| !CODE(ptr)
 				|| !BOLD(ptr)
 				|| !ITALIC(ptr)
+				|| !FOOTNOTE(ptr)
+				|| !DUALSPACEBREAK(ptr)
 				|| !1 // XXX: Replace the 1 with any new function
 		   )
 			continue;
@@ -514,6 +604,36 @@ parse_line(struct data *ptr)	// MAX_LINE_LENGTH independent, except CHARREFS
 
 int
 htmlize(FILE *src, FILE *dest)
+/*
+ * Things that are escaped using '\\' -
+ *	- \```
+ *	- \`code\`
+ *	- \*bold\*
+ *	- \_italic\_
+ *	- \# Headings
+ *	- \<HTML tags>
+ *	- \&...; HTML Char refs
+ *	- Footnotes\[^10]
+ *	- XXX: Lists are NOT escapable
+ *	- TODO: Table \| cells
+ *	- TODO: \!(ID)[Link text\]
+ */
+/*
+ * Things implemented -
+ *	- ```
+ *	- `code`
+ *	- *bold*
+ *	- _italic_
+ *	- # Headings
+ *	- HTML <tags>
+ *	- HTML Character references
+ *	- Lists
+ *	- Linebreak if two spaces at line end
+ *	- Footnotes[^10]
+ *	- TODO: <table>
+ *	- TODO: Links
+ *	- <br> at Blank lines with two spaces (FIXME: Support for automatic paragraphs, without two blankspaces)
+ */
 {
 	if (MAX_LINE_LENGTH < 5)
 	{
@@ -599,122 +719,6 @@ htmlize(FILE *src, FILE *dest)
 	return 0;
 }
 
-// void
-// htmlize(FILE *in, FILE *out)
-// /*
-//  * Things that are escaped using '\\' -
-//  *	- \```\n
-//  *	- \`code\`
-//  *	- \*bold\*
-//  *	- \_italic\_
-//  *	- \<HTML>
-//  *	- Table \| cells
-//  *	- \&nbsp; HTML Named char refs
-//  *	- \&#...; HTML Numeric char ref
-//  *	- \!(ID)[Link text\]
-//  *	- Footnotes\[^10]
-//  */
-// /*
-//  * Things implemented -
-//  *	- ```
-//  *	- `code`
-//  *	- *bold*
-//  *	- _italic_
-//  *	- <table>
-//  *	- # Headings
-//  *	- Lists
-//  *	- HTML <tags>
-//  *	- Linebreak if two spaces at line end
-//  *	- &nbsp;  named character references (names defined in constants.h)
-//  *	- &#...;  numeric character references
-//  *	- <br> at Blank lines with two spaces
-//  *	- Links
-//  *	- Footnotes[^10]
-//  */
-// {
-// 
-// #define HISTORY_SIZE 2
-// 	char lines[HISTORY_SIZE*2 + 1][MAX_LINE_LENGTH];
-// 	char *original_line = lines[HISTORY_SIZE + 1];
-// 	char *last_line = lines[HISTORY_SIZE];
-// 	char line[MAX_LINE_LENGTH];				// The buffer we shall work on
-// 
-// 	char links[MAX_LINKS][MAX_LINE_LENGTH];	// +1 because indexing starts at 0
-// 
-// 	enum bool {false, true};
-// 	enum bool BOLD_OPEN         = false;
-// 	enum bool ITALIC_OPEN       = false;
-// 	enum bool CODE_OPEN         = false;
-// 	enum bool CODEBLOCK_OPEN    = false;
-// 	enum bool HTML_TAG_OPEN     = false;
-// 	enum bool LINK_OPEN         = false;
-// 	enum bool LINK_TEXT_OPEN    = false;
-// 	enum bool TABLE_MODE        = false;
-// 	enum bool LIST_MODE         = false;
-// 	enum bool FOOTNOTE_MODE     = false;
-// 
-// 	unsigned int H_LEVEL = 0;
-// 
-// 	char *pch;	// (p)revious (ch)aracter
-// 	char *cch;	// (c)urrent  (ch)aracter
-// 	char *nch;	// (n)ext     (ch)aracter
-// 
-// 	for (;;)
-// 	{
-// 		// Save current line (unmodified) in last_line
-// 		memmove(last_line, original_line, MAX_LINE_LENGTH);
-// 
-// 		/*
-// 		 * Read and store a line from *in into line[]
-// 		 * Break loop if we've reached EOF (i.e. fgets() == NULL)
-// 		 */
-// 		if (fgets(line, MAX_LINE_LENGTH, in) == NULL)
-// 			break;
-// 
-// 		// Save the unmodified line into a buffer for future reference
-// 		memmove(original_line, line, MAX_LINE_LENGTH);
-// 
-// 		/*
-// 		 * NOTE: Always remember, CODEBLOCKs take precedence over anything else
-// 		 */
-// 
-// 		// For <pre> blocks
-// 		if (!memcmp(line, "\\```", 3))	// Escaped by a backslash
-// 		{
-// 			fputs("```\n", out);
-// 			continue;
-// 		}
-// 		if (!memcmp(line, "```", 3))
-// 		{
-// 			++CODEBLOCK_OPEN;
-// 			if (CODEBLOCK_OPEN %= 2)
-// 				fputs("<pre>\n", out);
-// 			else
-// 				fputs("</pre>\n", out);
-// 			continue;
-// 		}
-// 		if (CODEBLOCK_OPEN)
-// 		{
-// 			// Blindly escape everything and move on
-// 			fputs_escaped(line, out);
-// 			continue;
-// 		}
-// 
-// 
-// 		// End of blog
-// 		if (!memcmp(line, "---\n", 4))
-// 			break;
-// 
-// 
-// 		// Footnotes
-// 		if (!memcmp(line, "^^^\n", 4))
-// 		{
-// 			FOOTNOTE_MODE = 1;
-// 			fputs("<p id=\"footnotes\">\n", out);
-// 			continue;
-// 		}
-// 
-// 
 // 		// Link definition
 // 		if (!memcmp(line, "\t[", 2))
 // 		{
@@ -748,77 +752,6 @@ htmlize(FILE *src, FILE *dest)
 // 		}
 // 
 // 
-// 		// Blank line
-// 		if (!memcmp(line, "  \n", 3) || !memcmp(line, "\n", 2))
-// 		{
-// 			if (!memcmp(last_line, "\t[", 2))
-// 				/*
-// 				 * Last line was a link definition.
-// 				 * So, this empty line was just inserted for
-// 				 * readablity.  Ignore it.
-// 				 */
-// 				continue;
-// 
-// 			if (!memcmp(last_line, "\n", 2))
-// 				continue;
-// 
-// 			fputs("</p>\n<p>\n", out);
-// 			continue;
-// 		}
-// 
-// 
-// 		// Lists
-// 		if (!memcmp(line, "<ul", 3) || !memcmp(line, "<ol", 3))
-// 		{
-// 			LIST_MODE = 1;
-// 			fputs(line, out);
-// 			continue;
-// 		}
-// 		if (!memcmp(line, "</ul", 4) || !memcmp(line, "</ol", 4))
-// 		{
-// 			LIST_MODE = 0;
-// 			fputs(line, out);
-// 			continue;
-// 		}
-// 		if (LIST_MODE)
-// 		{
-// 			char *p;
-// 			if ((p = memchr(line, '-', MAX_LINE_LENGTH)) != NULL)
-// 			{
-// 				/*
-// 				 * Check if the found '-' is the first char of the line
-// 				 *
-// 				 * ie. check whether there exists any non-blankspace character
-// 				 * on this line before the '-' character we found
-// 				 */
-// 				char *i = p;
-// 				while (i > line)
-// 					if (!isblank(*--i))		// We found a non-blank character
-// 						break;				// break out
-// 
-// 				if (i == line)
-// 					/*
-// 					 * ie. we didn't "break" out of the previous loop
-// 					 * That means our '-' *is* the first character of the line
-// 					 * So, it should be turned into <li>
-// 					 */
-// 				{
-// 
-// 					/* Move the text forward by 3 spaces to make space for the <li> tag */
-// 					memmove(p+3, p, MAX_LINE_LENGTH-(p-line)-3);
-// 
-// 					/* Add the <li> tag */
-// 					memmove(p, "<li>", 4);	// 4, NOT 5, bcoz we DO NOT want the last \0
-// 
-// 					/* Remove extra whitespaces, if any */
-// 					p += 4;		// p now points to the char just after the <li> tag
-// 					while (*p == ' ')
-// 						memmove(p, p + 1, MAX_LINE_LENGTH-(p-line));
-// 				}
-// 			}
-// 		}
-// 
-// 
 // 		// Tables
 // 		if (!memcmp(line, "<table", 6))
 // 		{
@@ -834,88 +767,10 @@ htmlize(FILE *src, FILE *dest)
 // 		}
 // 
 // 
-// 		// Headings (NOTE: starts from h2)
-// 		if (line[0] == '#')
-// 		{
-// 			// Calculate H_LEVEL
-// 			H_LEVEL = 1;
-// 			while (line[H_LEVEL++] == '#') {;}
-// 
-// 			// Remove leading #'s and spaces
-// 			memmove(&line[0], &line[H_LEVEL - 1], MAX_LINE_LENGTH - (H_LEVEL - 1));	// #'s
-// 			while (line[0] == ' ')													// spaces
-// 				memmove(line, line + 1, MAX_LINE_LENGTH - 1);
-// 
-// 			/*
-// 			 * Create an ID for the heading
-// 			 *	- Alphabets and numbers are kept as-is
-// 			 *	- Spaces are transformed into '-'s
-// 			 *	- Anything else is discarded
-// 			 */
-// 			char h_id[MAX_LINE_LENGTH] = "";
-// 			for (int i=0,j=0; i < MAX_LINE_LENGTH; i++)
-// 				if (line[i] == '\0')
-// 					/*
-// 					 * NOTE: because of the way we initialized h_id,
-// 					 * all of the characters in the array are initialized to '\0'
-// 					 * So, we don't need to add the \0 terminator here
-// 					 */
-// 					break;
-// 				else if (isalnum(line[i]))
-// 					h_id[j++] = line[i];
-// 				else if (line[i] == ' ')
-// 					h_id[j++] = '-';
-// 
-// 			fprintf(
-// 					out,
-// 					"<h%i id=\"%s\"><a class=\"self-link\" href=\"#%s\">",
-// 					H_LEVEL, h_id, h_id
-// 				   );
-// 		}
-// 
-// 
-// 		// Footnotes
-// 		if (FOOTNOTE_MODE)
-// 		{
-// 			char *id_end;
-// 			char  id[MAX_LINE_LENGTH];
-// 
-// 			id_end = memchr(line, ':', MAX_LINE_LENGTH);
-// 			if (id_end == NULL)
-// 				continue;
-// 
-// 			*id_end = '\0';
-// 			memmove(id, line, MAX_LINE_LENGTH);
-// 			*id_end = ':';
-// 
-// 			fprintf(out, "<a class=\"footnote\" id=\"fn:%s\" href=\"#fnref:%s\">[%s]</a>",
-// 					id, id, id);
-// 
-// 			memmove(line, id_end, MAX_LINE_LENGTH - (id_end-line));	// Skip till ':'
-// 
-// 			/* no continue */
-// 		}
-// 
-// 
-// 
 // 		// Line prefix for tables
 // 		if (TABLE_MODE)
 // 			fputs("<tr><td>", out);
 // 
-// 
-// 
-// 		/* Initialize variables to avoid undefined behaviour */
-// 		pch = line;
-// 		cch = line;
-// 		nch = line;
-// 		/*
-// 		 * Yes, I know the values are nonsense
-// 		 * But at least it's _known_ nonsense
-// 		 *
-// 		 * If we access it while it's undefined, it will
-// 		 *   - either SEGFAULT (in which case debugging it is easy)
-// 		 *   - or *silently* input _unknown_ nonsense into outfile!
-// 		 */
 // 
 // 		/* iterate over the stored line[] */
 // 		for (int index = 1; index < MAX_LINE_LENGTH; index++)
@@ -944,100 +799,10 @@ htmlize(FILE *src, FILE *dest)
 // 			}
 // 
 // 
-// 			// Heading tag close
-// 			if (H_LEVEL && *cch == '\n')
-// 			{
-// 				fprintf(out, "</a></h%u>\n", H_LEVEL);
-// 				H_LEVEL = 0;
-// 				continue;
-// 			}
-// 
-// 
-// 			/*
-// 			 * NOTE: CODE shall always come first
-// 			 */
-// 
-// 			// `code`
-// 			if (!CODE_OPEN && *cch == '`' && !(isalnum(*pch) && isalnum(*nch)) && *pch != '\\')
-// 			{
-// 				CODE_OPEN = 1;
-// 				fputs("<code>", out);
-// 				continue;
-// 			}
-// 			if (CODE_OPEN && *cch == '`' && *pch != '\\')
-// 			{
-// 				CODE_OPEN = 0;
-// 				fputs("</code>", out);
-// 				continue;
-// 			}
-// 			if (CODE_OPEN)
-// 			{
-// 				// Nothing to see here, just escape and move along
-// 				fputc_escaped(*cch, out);
-// 				continue;
-// 			}
-// 
-// 
 // 			// Linebreak if two spaces at line end
 // 			if (*cch == '\n' && *pch == ' ' && *(pch-1) == ' ')
 // 			{
 // 				fputs("<br>\n", out);
-// 				continue;
-// 			}
-// 
-// 
-// 			// HTML <tags>
-// 			if ((*cch == '<') && (*nch == '/' || isalpha(*nch)) && *pch != '\\')
-// 			{
-// 				HTML_TAG_OPEN = 1;
-// 				fputc('<', out);
-// 				continue;
-// 			}
-// 			if (HTML_TAG_OPEN && *cch == '>')
-// 			{
-// 				HTML_TAG_OPEN = 0;
-// 				fputc('>', out);
-// 				continue;
-// 			}
-// 			if (HTML_TAG_OPEN)
-// 			{
-// 				// Nothing needs escaping, fputc() and move on
-// 				fputc(*cch, out);
-// 				continue;
-// 			}
-// 
-// 
-// 			// HTML Character references
-// 			if (*cch == '&' && (*nch == '#' || is_named_charref(cch)))
-// 			{
-// 				if (*pch == '\\')		// ie. it has been escaped
-// 					fputs("&amp;", out);
-// 				else
-// 					fputc('&', out);
-// 				continue;
-// 			}
-// 
-// 
-// 			// *bold*
-// 			if (*cch == '*' && !(isalnum(*pch) && isalnum(*nch)) && *pch != '\\')
-// 			{
-// 				++BOLD_OPEN;
-// 				if (BOLD_OPEN %= 2)
-// 					fputs("<strong>", out);
-// 				else
-// 					fputs("</strong>", out);
-// 				continue;
-// 			}
-// 
-// 
-// 			// _italic_
-// 			if (*cch == '_' && !(isalnum(*pch) && isalnum(*nch)) && *pch != '\\')
-// 			{
-// 				++ITALIC_OPEN;
-// 				if (ITALIC_OPEN %= 2)
-// 					fputs("<em>", out);
-// 				else
-// 					fputs("</em>", out);
 // 				continue;
 // 			}
 // 
@@ -1104,30 +869,7 @@ htmlize(FILE *src, FILE *dest)
 // 				continue;
 // 			}
 // 
-// 
-// 			// Footnotes	[^1]
-// 			if (*cch == '[' && *nch == '^' && *pch != '\\')
-// 			{
-// 				char *p;
-// 				char id[MAX_LINE_LENGTH];
-// 
-// 				*(p = memchr(cch, ']', MAX_LINE_LENGTH - (cch-line))) = '\0';
-// 				memmove(id, cch+2, MAX_LINE_LENGTH - (cch-line)); // +2 for '[^'
-// 				*p = ']';
-// 
-// 				fprintf(out,
-// 					"<a class=\"footnote\" id=\"fnref:%s\" href=\"#fn:%s\"><sup>[%s]</sup></a>",
-// 					id, id, id
-// 					);
-// 
-// 				/* skip till the character just after the ']' */
-// 				nch = p + 1;
-// 				cch = p;
-// 				index = p - line;
-// 
-// 				continue;
-// 			}
-// 
+//
 // 			// Table cells
 // 			if (TABLE_MODE)
 // 			{
@@ -1145,16 +887,6 @@ htmlize(FILE *src, FILE *dest)
 // 				}
 // 			}
 // 
-// 
-// 			// For footnotes
-// 			if (FOOTNOTE_MODE && *cch == '\n')
-// 			{
-// 				fputs("<br>\n", out);
-// 				break;
-// 			}
-// 
-// 			// It's just a simple, innocent character
-// 			fputc_escaped(*cch, out);
 // 		}
 // 	}
 // }
