@@ -24,13 +24,13 @@
  * Useful for safely incrementing ptr->line without going out-of-bounds.
  * Or for doing memcmp().
  *
- * (MAX_LINE_LENGTH - 1)			Total number of indices
- * (ptr->line - ptr->lines[CONTEXT_LINES])	Current index
+ * (MAX_LINE_LENGTH - 1)		Total number of indices
+ * (ptr->line - ptr->readahead[0])	Current index
  *
  * - 1	'cause the last index is occupied by the trailing '\0'
  */
 #define REMAINING_CHARS \
-	((int)((MAX_LINE_LENGTH - 1) - (ptr->line - ptr->lines[CONTEXT_LINES]) - 1))
+	((int)((MAX_LINE_LENGTH - 1) - (ptr->line - ptr->readahead[0]) - 1))
 
 
 static void shift_lines         (struct data *);
@@ -53,20 +53,12 @@ toggle(bool *val)
 static void
 shift_lines(struct data *ptr)
 {
-	/*
-	 * We iterate upto (ptr->nlines - 2) because,
-	 * for i = (ptr->lines - 1),
-	 *     ptr->lines[i+1]
-	 * becomes
-	 *     ptr->lines[(ptr->nlines-1)+1]
-	 * which is the same as
-	 *     ptr->lines[ptr->nlines]
-	 * which does not exist (since ptr->nlines counts the number of lines
-	 * from 1, but the actual indexing starts from 0)
-	 */
-	for (int i = 0; i < ptr->nlines - 1; i++)
-		memmove(ptr->lines[i], ptr->lines[i+1], MAX_LINE_LENGTH);
-	ptr->line = ptr->lines[CONTEXT_LINES];	// Reset ptr->lines
+	for (int i = HISTORY - 1; i >= 0; i--)
+		memmove(ptr->history[i], ptr->history[i - 1], MAX_LINE_LENGTH);
+	memmove(ptr->history[0], ptr->readahead[0], MAX_LINE_LENGTH);	// Copy to history
+	for (int i = 1; i < READAHEAD; i++)
+		memmove(ptr->readahead[i - 1], ptr->readahead[i], MAX_LINE_LENGTH);
+	ptr->line = ptr->readahead[0];	// Reset ptr->line
 }
 
 static void
@@ -75,9 +67,9 @@ get_next_line(struct data *ptr)
 	shift_lines(ptr);
 
 	/*
-	 * Iterate from ptr->line to the end of ptr->lines and check if we've
-	 * already reached the end of the blog before.  If we've already
-	 * reached the end of blog before, then don't fgets() anymore.
+	 * Iterate over ptr->readahead and check if we've already reached the
+	 * end of the blog before.  If we've already reached the end of blog
+	 * before, then don't fgets() anymore.
 	 *
 	 * This helps avoid the situation where we read more than we require.
 	 * Eg. Say the file descriptor points to a file like this -
@@ -87,40 +79,42 @@ get_next_line(struct data *ptr)
 	 *	| Sit amet
 	 *	| Amet foobar
 	 * We need to read only upto the third line, and then exit. But, say
-	 * CONTEXT_LINES is set to 2. What happens? We read upto the 5th line!
+	 * READAHEAD is set to 2. What happens? We read upto the 5th line!
 	 * And then, if any function uses the file descriptor again, it gets an
 	 * EOF, whereas it should have rightfully gotten the 4th line.
 	 */
-	for (int i = CONTEXT_LINES; i < ptr->nlines; i++)
-		if (ptr->lines[i][0] == '\0')
+	for (int i = READAHEAD - 1; i > 0; i--)
+		if (ptr->readahead[i][0] == '\0')
 		{
 			/* We've already reached the end of blog.
-			 * Mark current buffer as empty. */
-			ptr->lines[ptr->nlines - 1][0] = '\0';
+			 * Mark next buffer as empty. */
+			ptr->readahead[READAHEAD][0] = '\0';
 			return;
 		}
 
 	/* Read a new line. If NULL, that means EOF, so mark buffer empty */
-	if (fgets(ptr->lines[ptr->nlines - 1], MAX_LINE_LENGTH, ptr->files->src) == NULL)
-		ptr->lines[ptr->nlines - 1][0] = '\0';	// Mark buffer as empty
+	if (fgets(ptr->readahead[READAHEAD-1], MAX_LINE_LENGTH, ptr->files->src) == NULL)
+		ptr->readahead[READAHEAD-1][0] = '\0';	// Mark buffer as empty
 
 	/* If current line marks End of blog, then mark buffer empty */
-	if (!memcmp(ptr->lines[ptr->nlines - 1], "---\n", 5))
-		ptr->lines[ptr->nlines - 1][0] = '\0';	// Mark buffer as empty
+	if (!memcmp(ptr->readahead[READAHEAD-1], "---\n", 5))
+		ptr->readahead[READAHEAD-1][0] = '\0';	// Mark buffer as empty
 }
 /**** [END] Utility functions ****/
 
 
 /**** [START] Line-wise functions ****/
 static int
-LISTS(struct data *ptr)
+LISTS(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 {
+	/* YAGNI
 	if (ptr->line[0] == '\\')
 		if (!memcmp(ptr->line + 1, "<ul", 3) || !memcmp(ptr->line + 1, "<ol", 3))
 		{
 			ptr->line++;
 			return 0;
 		}
+	*/
 
 	if (ptr->line[0] != '<')
 		return 1;
@@ -129,9 +123,8 @@ LISTS(struct data *ptr)
 		return 1;
 
 	fputs(ptr->line, ptr->files->dest);
-	for (get_next_line(ptr);
-			ptr->line[0] != '\0' && (memcmp(ptr->line, "</ul", 4) && memcmp(ptr->line, "</ol", 4));
-			get_next_line(ptr))
+	get_next_line(ptr);
+	while (ptr->line[0] != '\0' && (memcmp(ptr->line, "</ul", 4) && memcmp(ptr->line, "</ol", 4)))
 	{
 		char *hyphen;
 		if ((hyphen = memchr(ptr->line, '-', MAX_LINE_LENGTH)) != NULL)
@@ -155,6 +148,8 @@ LISTS(struct data *ptr)
 		parse_line(ptr);
 		if (ptr->line[0] == '\n')
 			fputc('\n', ptr->files->dest);
+
+		get_next_line(ptr);
 	}
 	fputs(ptr->line, ptr->files->dest);
 	return 0;
@@ -190,7 +185,7 @@ CODEBLOCK(struct data *ptr)
 }
 
 static int
-FOOTNOTES(struct data *ptr)
+FOOTNOTES(struct data *ptr)	// TODO: Finish this
 {
 	if (!memcmp(ptr->line, "\\^^^\n", 5))
 	{
@@ -205,6 +200,7 @@ FOOTNOTES(struct data *ptr)
 		while (ptr->line[0] != '\0')
 		{
 			get_next_line(ptr);
+			// TODO: Finish this :)
 		}
 		return 0;
 	}
@@ -218,7 +214,7 @@ static int
 HEADINGS(struct data *ptr)
 {
 	/* If we aren't on the first character of the line, it ain't our job */
-	if (ptr->line != ptr->lines[CONTEXT_LINES])
+	if (ptr->line != ptr->readahead[0])
 		return 1;
 
 	/* Huh? First character isn't a '#'? Hmm... */
@@ -252,11 +248,22 @@ HEADINGS(struct data *ptr)
 	static char h_id[MAX_LINE_LENGTH];
 	for (int i=0; i < MAX_LINE_LENGTH; i++)
 		h_id[i] = '\0';
-	for (int i=0,j=0; i < MAX_LINE_LENGTH && ptr->line[i] != '\0'; i++)
-		if (isalnum(ptr->line[i]))
-			h_id[j++] = ptr->line[i];
-		else if (ptr->line[i] == ' ')
-			h_id[j++] = '-';
+	{
+		/* The enclosing braces ensure that the variables declared
+		 * inside them don't leak out of this scope (ie. they don't
+		 * leak out of the enclosing braces) */
+		char *line;
+		int index;
+		index = 0;
+		line = ptr->readahead[index++];
+		for (int i=0,j=0; line[i] != '\n'; i++)
+			if (isalnum(line[i]))
+				h_id[j++] = line[i];
+			else if (line[i] == ' ')
+				h_id[j++] = '-';
+			else if (line[i] == '\0')
+				line = ptr->readahead[index++];
+	}
 
 	/* Print the opening HTML tags */
 	fprintf(ptr->files->dest,
@@ -277,7 +284,7 @@ HEADINGS(struct data *ptr)
 }
 
 static int
-CHARREFS(struct data *ptr)
+CHARREFS(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 {
 
 	char *line;
@@ -354,7 +361,7 @@ HTML_TAGS(struct data *ptr)
 		if (ptr->line[0] == '\0')
 			break;
 
-		fputc_escaped(ptr->line[0], ptr->files->dest);
+		fputc(ptr->line[0], ptr->files->dest);
 		ptr->line++;
 	}
 	fputc('>', ptr->files->dest);
@@ -376,7 +383,7 @@ CODE(struct data *ptr)
 	}
 
 	/* Check if the ` was escaped */
-	if (ptr->line != ptr->lines[CONTEXT_LINES] && ptr->line[-1] == '\\')
+	if (ptr->line != ptr->readahead[0] && ptr->line[-1] == '\\')
 	{
 		fputc('`', ptr->files->dest);
 		ptr->line++;
@@ -427,7 +434,7 @@ BOLD(struct data *ptr)
 	}
 
 	/* Check if the * was escaped */
-	if (ptr->line != ptr->lines[CONTEXT_LINES] && ptr->line[-1] == '\\')
+	if (ptr->line != ptr->readahead[0] && ptr->line[-1] == '\\')
 	{
 		fputc('*', ptr->files->dest);
 		ptr->line++;
@@ -457,7 +464,7 @@ ITALIC(struct data *ptr)
 	}
 
 	/* Check if the * was escaped */
-	if (ptr->line != ptr->lines[CONTEXT_LINES] && ptr->line[-1] == '\\')
+	if (ptr->line != ptr->readahead[0] && ptr->line[-1] == '\\')
 	{
 		fputc('_', ptr->files->dest);
 		ptr->line++;
@@ -474,10 +481,17 @@ ITALIC(struct data *ptr)
 }
 
 static void
-parse_line(struct data *ptr)
+parse_line(struct data *ptr)	// MAX_LINE_LENGTH independent, except CHARREFS
 {
-	while (ptr->line[0] != '\n' && ptr->line[0] != '\0')
+	while (ptr->line[0] != '\n')
 	{
+		/* If we hit the end of the string, get_next_line */
+		if (ptr->line[0] == '\0')
+			get_next_line(ptr);
+		/* If we still have '\0', that means we've got EOF */
+		if (ptr->line[0] == '\0')
+			break;
+
 		/* Check if the current character is worth anything to anyone */
 		if (
 				   !HEADINGS(ptr)
@@ -532,33 +546,32 @@ htmlize(FILE *src, FILE *dest)
 	config.LINK_TEXT_OPEN	= false;
 	config.TABLE_MODE	= false;
 
-	/* Calculate data.lines size and check if it is correct */
-	if ((CONTEXT_LINES*2 + 1) == (sizeof(data.lines)/sizeof(data.lines[0])))
-		data.nlines = sizeof(data.lines)/sizeof(data.lines[0]);
-	else
-	{
-		fputs("FATAL: htmlize(): (CONTEXT_LINES*2 + 1) != (sizeof(data.lines)/sizeof(data.lines[0]))\n", stderr);
-		fprintf(stderr, "CONTEXT_LINES*2 + 1 = %i\n", CONTEXT_LINES*2 + 1);
-		fprintf(stderr, "sizeof(data.lines)/sizeof(data.lines[0]) = %i\n", (int)(sizeof(data.lines)/sizeof(data.lines[0])));
-		return -10;
-	}
-
-	/* Initialize data.lines with empty lines */
-	for (int i = 0; i < data.nlines; i++)
+	/* Initialize with empty lines */
+	for (int i = 0; i < READAHEAD; i++)
 		for (int j = 0; j < MAX_LINE_LENGTH; j++)
-			data.lines[i][j] = '\0';
+			data.readahead[i][j] = '\0';
+	for (int i = 0; i < HISTORY; i++)
+		for (int j = 0; j < MAX_LINE_LENGTH; j++)
+			data.history[i][j] = '\0';
 
-	/* Populate data.lines, but stop immediately at EOF */
-	for (int i = CONTEXT_LINES; i < data.nlines; i++)
-		if (fgets(data.lines[i], MAX_LINE_LENGTH, src) == NULL)
+	/* Populate data.readahead */
+	for (int i = 0; i < READAHEAD; i++)
+	{
+		if (fgets(data.readahead[i], MAX_LINE_LENGTH, src) == NULL)
 			break;
+		if (!memcmp(data.readahead[i], "---\n", 5))
+		{
+			data.readahead[i][0] = '\0';	// Mark as empty
+			break;
+		}
+	}
 
 	/* If the first line we read is empty, that means we hit EOF as-soon-as
 	 * we started reading. ie. We received no input. */
-	if (!memcmp(data.lines[CONTEXT_LINES], "", 1))
+	if (!memcmp(data.readahead[0], "", 1))
 		return 1;	// No input
 
-	ptr->line = ptr->lines[CONTEXT_LINES];
+	ptr->line = ptr->readahead[0];
 	while (ptr->line[0] != '\0')
 	{
 		if (!memcmp(ptr->line, "\\---\n", 6))

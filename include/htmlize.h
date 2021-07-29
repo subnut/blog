@@ -1,21 +1,11 @@
 #ifndef HTMLIZE_H
 #define HTMLIZE_H
 
-#ifndef MAX_LINKS
-#define MAX_LINKS 50
-#endif
-
-#ifndef MAX_LINE_LENGTH
-#define MAX_LINE_LENGTH 500
-#endif
-
-#ifndef CONTEXT_LINES
-#define CONTEXT_LINES 2
-#endif
-
 int	htmlize(FILE *, FILE *);
 
 #include <stdbool.h>
+#include "constants.h"
+
 struct config {
 	bool BOLD_OPEN;
 	bool ITALIC_OPEN;
@@ -28,11 +18,11 @@ struct files {
 	FILE *dest;
 };
 struct data {
-	struct config *config;
-	struct files  *files;
-	char *line;	// Pointer to the current line
-	char lines[CONTEXT_LINES*2 + 1][MAX_LINE_LENGTH];
-	size_t nlines;	// Number of lines (expected to be CONTEXT_LINES*2 + 1)
+	struct config	*config;
+	struct files	*files;
+	char *line;
+	char history[HISTORY][MAX_LINE_LENGTH];
+	char readahead[READAHEAD][MAX_LINE_LENGTH];
 };
 
 #endif /* HTMLIZE_H */

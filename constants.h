@@ -5,6 +5,10 @@
 #define SOURCE_DIR "raw"
 #define DEST_DIR   "docs"
 
+/* Configuration for htmlize() */
+#define READAHEAD 30
+#define HISTORY   5
+
 /*
  * Needed for htmlize()
  * NOTE: The effective values are actually one less than what is defined here.
