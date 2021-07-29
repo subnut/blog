@@ -105,6 +105,30 @@ get_next_line(struct data *ptr)
 
 /**** [START] Line-wise functions ****/
 static int
+TABLE(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
+{
+	if (ptr->line[0] != '<')
+		return 1;
+
+	if (memcmp(ptr->line, "<table", 6))
+		return 1;
+
+	ptr->config->TABLE_MODE = true;
+	fputs(ptr->line, ptr->files->dest);
+	for (get_next_line(ptr); ptr->line[0] != '\0' && memcmp(ptr->line, "</table", 7); get_next_line(ptr))
+	{
+		fputs("<tr><td>", ptr->files->dest);
+		parse_line(ptr);
+		if (ptr->line[0] == '\n')
+			fputs("</td></tr>\n", ptr->files->dest);
+	}
+	fputs(ptr->line, ptr->files->dest);
+	ptr->config->TABLE_MODE = false;
+	return 0;
+
+}
+
+static int
 LISTS(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 {
 	/* YAGNI
@@ -422,6 +446,35 @@ HTML_TAGS(struct data *ptr)
 }
 
 static int
+TABLEROW(struct data *ptr)
+{
+	if (!ptr->config->TABLE_MODE)
+		return 1;
+
+	if (ptr->line[0] != '|')
+	{
+		if (ptr->line[0] == '\\' && ptr->line[1] == '|')
+		{
+			ptr->line++;
+			return 0;	// We did our job
+		}
+		else return 1;	// Not our business
+	}
+
+	/* Check if the | was escaped */
+	if (ptr->line != ptr->readahead[0] && ptr->line[-1] == '\\')
+	{
+		fputc('|', ptr->files->dest);
+		ptr->line++;
+		return 0;
+	}
+
+	fputs("</td><td>", ptr->files->dest);
+	ptr->line++;
+	return 0;
+}
+
+static int
 CODE(struct data *ptr)
 {
 	if (ptr->line[0] != '`')
@@ -589,6 +642,7 @@ parse_line(struct data *ptr)
 				|| !BOLD(ptr)
 				|| !ITALIC(ptr)
 				|| !FOOTNOTE(ptr)
+				|| !TABLEROW(ptr)
 				|| !DUALSPACEBREAK(ptr)
 				|| !1 // XXX: Replace the 1 with any new function
 		   )
@@ -614,8 +668,8 @@ htmlize(FILE *src, FILE *dest)
  *	- \<HTML tags>
  *	- \&...; HTML Char refs
  *	- Footnotes\[^10]
+ *	- Table \| cells
  *	- XXX: Lists are NOT escapable
- *	- TODO: Table \| cells
  *	- TODO: \!(ID)[Link text\]
  */
 /*
@@ -630,7 +684,7 @@ htmlize(FILE *src, FILE *dest)
  *	- Lists
  *	- Linebreak if two spaces at line end
  *	- Footnotes[^10]
- *	- TODO: <table>
+ *	- <table>
  *	- TODO: Links
  *	- <br> at Blank lines with two spaces (FIXME: Support for automatic paragraphs, without two blankspaces)
  */
@@ -706,6 +760,7 @@ htmlize(FILE *src, FILE *dest)
 				   !CODEBLOCK(ptr)
 				|| !FOOTNOTES(ptr)
 				|| !LISTS(ptr)
+				|| !TABLE(ptr)
 				|| !1 // XXX: Replace the 1 with any new function
 		   ) {;}
 		else
@@ -750,26 +805,6 @@ htmlize(FILE *src, FILE *dest)
 // 			memmove(links[id], href, MAX_LINE_LENGTH - (href-line));
 // 			continue;
 // 		}
-// 
-// 
-// 		// Tables
-// 		if (!memcmp(line, "<table", 6))
-// 		{
-// 			TABLE_MODE = 1;
-// 			fputs(line, out);
-// 			continue;
-// 		}
-// 		if (TABLE_MODE && !memcmp(line, "</table", 7))
-// 		{
-// 			TABLE_MODE = 0;
-// 			fputs(line, out);
-// 			continue;
-// 		}
-// 
-// 
-// 		// Line prefix for tables
-// 		if (TABLE_MODE)
-// 			fputs("<tr><td>", out);
 // 
 // 
 // 		/* iterate over the stored line[] */
@@ -868,25 +903,6 @@ htmlize(FILE *src, FILE *dest)
 // 				fputs("</a>", out);
 // 				continue;
 // 			}
-// 
-//
-// 			// Table cells
-// 			if (TABLE_MODE)
-// 			{
-// 				if (*cch == '|' && *pch != '\\')
-// 				{
-// 					/* Cell separator */
-// 					fputs("</td><td>", out);
-// 					continue;
-// 				}
-// 				if (*cch == '\n')
-// 				{
-// 					/* Table row ends here */
-// 					fputs("</td></tr>\n", out);
-// 					continue;
-// 				}
-// 			}
-// 
 // 		}
 // 	}
 // }
