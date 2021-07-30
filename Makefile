@@ -3,7 +3,7 @@
 .POSIX:
 .SUFFIXES:
 .SUFFIXES: .c .o
-.c.o: ; $(CC) $(__CFLAGS__) $(__CPPFLAGS__) -c "$<" -o "$*.o"
+.c.o: ; "$(CC)" $(__CFLAGS__) $(__CPPFLAGS__) -c "$<" -o "$*.o"
 
 __CFLAGS__    = -Wall -O2 $(CFLAGS)
 __CPPFLAGS__  = -I. $(CPPFLAGS)
@@ -24,7 +24,7 @@ blogify: $(blogify_deps)
 htmlize: $(htmlize_deps)
 
 index blogify htmlize:
-	$(CC) $(__LDFLAGS__) -o $@ $($@_deps)
+	"$(CC)" $(__LDFLAGS__) -o $@ $($@_deps)
 
 # Rebuild these if constants.h is changed
 src/index.o src/blogify.o src/htmlize.o: constants.h
