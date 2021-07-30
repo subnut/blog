@@ -86,9 +86,14 @@ get_next_line(struct data *ptr)
 	for (int i = READAHEAD - 1; i > 0; i--)
 		if (ptr->readahead[i][0] == '\0')
 		{
-			/* We've already reached the end of blog.
-			 * Mark next buffer as empty. */
-			ptr->readahead[READAHEAD][0] = '\0';
+			/*
+			 * We've already reached the end of blog.
+			 * Mark next buffer as empty.
+			 *
+			 * Since indexing starts from 0, the newest buffer will
+			 * be buffer with index (READAHEAD - 1)
+			 */
+			ptr->readahead[READAHEAD-1][0] = '\0';
 			return;
 		}
 
