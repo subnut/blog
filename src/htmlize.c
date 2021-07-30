@@ -100,10 +100,97 @@ get_next_line(struct data *ptr)
 	if (!memcmp(ptr->readahead[READAHEAD-1], "---\n", 5))
 		ptr->readahead[READAHEAD-1][0] = '\0';	// Mark buffer as empty
 }
+
+static int
+print_linkdef(struct data *ptr)
+{
+	char *id;
+	char link_id[MAX_LINE_LENGTH];
+	memset(link_id, '\0', MAX_LINE_LENGTH);
+	id = link_id;	// *id shall point to the start of link_id
+
+	while (ptr->line[0] != ')')
+	{
+		if (ptr->line[0] == '\0')
+			get_next_line(ptr);
+		if (ptr->line[0] == '\0')
+			break;
+		*id++ = *ptr->line++;
+	}
+	ptr->line++;
+
+	fputs("<a href=\"", ptr->files->dest);
+	for (int i = 1; i < READAHEAD; i++)
+	{
+		if (strnlen(ptr->readahead[i], 4) < 3)
+			continue;
+
+		char *line;
+		line = ptr->readahead[i] + 2;	// +2 for "\t["
+		if (!memcmp(line, link_id, strlen(link_id)))
+		{
+			line += strlen(link_id);	// skip over the link_id
+			line += 2;	// +2 for "]:"
+
+			/* Trim any whitespaces (padding) */
+			while (line[0] == ' ')
+			{
+				line++;
+				if (line[0] == '\0')
+					line = ptr->readahead[++i];
+			}
+
+			while (line[0] != '\n')
+			{
+				if (line[0] == '\0')
+					line = ptr->readahead[++i];
+				if (line[0] == '\0')
+					break;
+				if (i == READAHEAD)
+					break;
+				fputc(line[0], ptr->files->dest);
+				line++;
+			}
+			break;
+		}
+	}
+	fputs("\" ", ptr->files->dest);
+	while (ptr->line[0] != '[')
+	{
+		if (ptr->line[0] == '\0')
+			get_next_line(ptr);
+		if (ptr->line[0] == '\0')
+			break;
+		fputc(ptr->line[0], ptr->files->dest);
+		ptr->line++;
+	}
+	fputc('>', ptr->files->dest);
+	return 0;
+}
 /**** [END] Utility functions ****/
 
 
 /**** [START] Line-wise functions ****/
+/*
+ * Line wise functions check if this line is of their importance.
+ * If no, then they return 1;
+ * If yes, then they do their job and return 0;
+ *
+ * NOTE: They DO NOT get_next_line, that's the job of the caller.
+ */
+
+static int
+LINKDEF(struct data *ptr)
+{
+	if (ptr->line != ptr->readahead[0])	// We must be at start of line
+		return 1;
+	if (memcmp(ptr->line, "\t[", 2) != 0)
+		return 1;
+	while (memchr(ptr->line, '\n', MAX_LINE_LENGTH) == NULL)
+		get_next_line(ptr);
+	return 0;
+}
+
 static int
 TABLE(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 {
@@ -247,21 +334,29 @@ FOOTNOTES(struct data *ptr)
 
 
 /**** [START] Character-wise functions ****/
+/*
+ * Character wise functions check if this character is of their importance.
+ * If no, then they return 1;
+ * If yes, then they do their job and return 0;
+ *
+ * NOTE: They DO change ptr->line to point to the first character that they
+ * aren't associated with. That means, the caller doesn't have to increment
+ * ptr->line
+ */
+
 static int
 DUALSPACEBREAK(struct data *ptr)
 {
 	if (ptr->line[0] != ' ') return 1;
 	switch (REMAINING_CHARS)
 	{
-		case 1:
+		case 0:
 			{
-				if (ptr->readahead[1][0] != ' ')
-					return 1;
-				if (ptr->readahead[1][1] != '\n')
+				if (memcmp(ptr->readahead[1], " \n", 2) != 0)
 					return 1;
 				break;
 			}
-		case 2:
+		case 1:
 			{
 				if (ptr->line[1] != ' ')
 					return 1;
@@ -320,16 +415,18 @@ HEADINGS(struct data *ptr)
 	 *	- Anything else is discarded
 	 */
 	static char h_id[MAX_LINE_LENGTH];
-	for (int i=0; i < MAX_LINE_LENGTH; i++)
-		h_id[i] = '\0';
+	memset(h_id, '\0', MAX_LINE_LENGTH);
 	{
 		/* The enclosing braces ensure that the variables declared
 		 * inside them don't leak out of this scope (ie. they don't
 		 * leak out of the enclosing braces) */
-		char *line;
+
 		int index;
-		index = 0;
-		line = ptr->readahead[index++];
+		index = 1;
+
+		char *line;
+		line = ptr->line;
+
 		for (int i=0,j=0; line[i] != '\n'; i++)
 			if (isalnum(line[i]))
 				h_id[j++] = line[i];
@@ -621,6 +718,98 @@ FOOTNOTE(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 	return 0;
 }
 
+static int
+LINKS(struct data *ptr)
+{
+	if (ptr->config->LINK_OPEN == false)
+	{
+		if (ptr->line[0] != '!')
+		{
+			if (ptr->line[0] != '\\')
+				return 1;
+			else
+			{
+				switch (REMAINING_CHARS)
+				{
+					case 0:
+						{
+							if (memcmp(ptr->readahead[1], "!(", 2) != 0)
+								return 1;
+							break;
+						}
+					case 1:
+						{
+							if (ptr->line[1] != '!')
+								return 1;
+							if (ptr->readahead[1][0] != '(')
+								return 1;
+							ptr->line++;
+							break;
+						}
+					default:
+						{
+							if (ptr->line[1] != '!')
+								return 1;
+							if (ptr->line[2] != '(')
+								return 1;
+							ptr->line += 2;
+							break;
+						}
+				}
+				fputs_escaped("!(", ptr->files->dest);
+			}
+		}
+
+		ptr->line++;
+		switch (REMAINING_CHARS)
+		{
+			case 0:
+				{
+					if (ptr->readahead[1][0] != '(')
+						return 1;
+					get_next_line(ptr);
+					ptr->line++;
+					break;
+				}
+			default:
+				{
+					if (ptr->line[0] != '(')
+						return 1;
+					ptr->line++;
+					break;
+				}
+		}
+
+		print_linkdef(ptr);
+		ptr->config->LINK_OPEN = true;
+		while (ptr->line[0] != '[')
+		{
+			if (ptr->line[0] == '\0')
+				get_next_line(ptr);
+			if (ptr->line[0] == '\0')
+				break;
+			ptr->line++;
+		}
+		ptr->line++;
+		return 0;
+	}
+	else
+	{
+		if (ptr->line[0] != ']')
+			return 1;
+		if (ptr->line != ptr->readahead[0] && ptr->line[-1] == '\\')
+		{
+			fputc(']', ptr->files->dest);
+			ptr->line++;
+			return 0;
+		}
+		fputs("</a>", ptr->files->dest);
+		ptr->config->LINK_OPEN = false;
+		ptr->line++;
+		return 0;
+	}
+}
+
 static void
 parse_line(struct data *ptr)
 {
@@ -641,6 +830,7 @@ parse_line(struct data *ptr)
 				|| !CODE(ptr)
 				|| !BOLD(ptr)
 				|| !ITALIC(ptr)
+				|| !LINKS(ptr)
 				|| !FOOTNOTE(ptr)
 				|| !TABLEROW(ptr)
 				|| !DUALSPACEBREAK(ptr)
@@ -669,8 +859,8 @@ htmlize(FILE *src, FILE *dest)
  *	- \&...; HTML Char refs
  *	- Footnotes\[^10]
  *	- Table \| cells
+ *	- \!(ID)[Link text\]
  *	- XXX: Lists are NOT escapable
- *	- TODO: \!(ID)[Link text\]
  */
 /*
  * Things implemented -
@@ -685,8 +875,8 @@ htmlize(FILE *src, FILE *dest)
  *	- Linebreak if two spaces at line end
  *	- Footnotes[^10]
  *	- <table>
- *	- TODO: Links
- *	- <br> at Blank lines with two spaces (FIXME: Support for automatic paragraphs, without two blankspaces)
+ *	- Links
+ *	- <br> at Blank lines with two spaces (FIXME: Support for automatic paragraphs, without two blankspaces	XXX: Use the ptr->history and ptr->readahead for determining that.)
  */
 {
 	if (MAX_LINE_LENGTH < 5)
@@ -717,16 +907,13 @@ htmlize(FILE *src, FILE *dest)
 	config.BOLD_OPEN	= false;
 	config.ITALIC_OPEN	= false;
 	config.LINK_OPEN	= false;
-	config.LINK_TEXT_OPEN	= false;
 	config.TABLE_MODE	= false;
 
 	/* Initialize with empty lines */
 	for (int i = 0; i < READAHEAD; i++)
-		for (int j = 0; j < MAX_LINE_LENGTH; j++)
-			data.readahead[i][j] = '\0';
+		memset(data.readahead[i], '\0', MAX_LINE_LENGTH);
 	for (int i = 0; i < HISTORY; i++)
-		for (int j = 0; j < MAX_LINE_LENGTH; j++)
-			data.history[i][j] = '\0';
+		memset(data.history[i], '\0', MAX_LINE_LENGTH);
 
 	/* Populate data.readahead */
 	for (int i = 0; i < READAHEAD; i++)
@@ -761,6 +948,7 @@ htmlize(FILE *src, FILE *dest)
 				|| !FOOTNOTES(ptr)
 				|| !LISTS(ptr)
 				|| !TABLE(ptr)
+				|| !LINKDEF(ptr)
 				|| !1 // XXX: Replace the 1 with any new function
 		   ) {;}
 		else
@@ -773,138 +961,5 @@ htmlize(FILE *src, FILE *dest)
 	}
 	return 0;
 }
-
-// 		// Link definition
-// 		if (!memcmp(line, "\t[", 2))
-// 		{
-// 			int id;
-// 			char *p;
-// 			char *href;
-// 			char *start;
-// 			char *end;
-// 
-// 			start = line + 2;	// +2 for the '\t['
-// 			*(end = memchr(line, ']', MAX_LINE_LENGTH-1)) = '\0'; // mark the end
-// 			id = stoi(start);
-// 
-// 			if (id > MAX_LINKS)
-// 			{
-// 				fprintf(stderr,
-// 						"link index %i is bigger than MAX_LINKS (%i)",
-// 						id, MAX_LINKS);
-// 				continue;
-// 			}
-// 
-// 			href = end + 2;							// +2 for the ']:'
-// 			while (*href == ' ' || *href == '\t')	// Skip whitespaces, if any
-// 				href++;
-// 
-// 			/* Turn the trailing newline into string-terminator */
-// 			*(p = memchr(href, '\n', MAX_LINE_LENGTH - (href-line))) = '\0';
-// 
-// 			memmove(links[id], href, MAX_LINE_LENGTH - (href-line));
-// 			continue;
-// 		}
-// 
-// 
-// 		/* iterate over the stored line[] */
-// 		for (int index = 1; index < MAX_LINE_LENGTH; index++)
-// 		{
-// 			pch = cch;
-// 			cch = nch;
-// 			nch = line + index;
-// 
-// 			if (*cch == '\0')	// we've reached end of string
-// 				break;			// stop iterating
-// 
-// 
-// 			if (*cch == '\\')
-// 			{
-// 				if (
-// 						(*nch == '`' || *nch == '*' || *nch == '_')
-// 						|| (!HTML_TAG_OPEN && *nch == '<')
-// 						|| (TABLE_MODE && *nch == '|')
-// 						|| (!LINK_OPEN && *nch == '!' && *(nch + 1) == '(')
-// 						|| (*nch == '&' && (*(nch + 1) == '#' || is_named_charref(nch)))
-// 						|| (*nch == '[' && *(nch + 1) == '^')
-// 				   ) {;} // print nothing
-// 				else
-// 					fputc('\\', out);
-// 				continue;
-// 			}
-// 
-// 
-// 			// Linebreak if two spaces at line end
-// 			if (*cch == '\n' && *pch == ' ' && *(pch-1) == ' ')
-// 			{
-// 				fputs("<br>\n", out);
-// 				continue;
-// 			}
-// 
-// 
-// 			// Links	!(ID) attribute="value" [text]
-// 			if (*cch == '!' && *nch == '(' && *pch != '\\' && !LINK_OPEN)
-// 			{
-// 				LINK_OPEN = 1;
-// 
-// 				/* Mark string end for stoi() computation */
-// 				char *p = memchr(nch, ')', MAX_LINE_LENGTH - index);
-// 				*p = '\0';
-// 
-// 				int link_id = stoi(nch + 1);	// +1 for '('
-// 				if (link_id > MAX_LINKS)
-// 				{
-// 					fprintf(stderr,
-// 							"link index %i is bigger than MAX_LINKS (%i)",
-// 							link_id, MAX_LINKS);
-// 					continue;
-// 				}
-// 				else
-// 					fprintf(out, "<a href=\"%s\" ", links[link_id]);
-// 
-// 				/* Skip the characters we have interpreted just now and continue looping */
-// 				nch = p + 1;			// nch now point at char after the ')' in "!(id)"
-// 				index = nch - line;		// since (nch = line + index)
-// 				continue;
-// 			}
-// 			if (LINK_OPEN)
-// 			{
-// 				if (*cch == '[')
-// 				{
-// 					/*
-// 					 * !(ID)     [Text]
-// 					 * <a href=ID>Text</a>
-// 					 *           ↑
-// 					 *           |
-// 					 */
-// 					fputc('>', out);
-// 					LINK_OPEN = 0;
-// 					LINK_TEXT_OPEN = 1;
-// 				}
-// 				else
-// 				{
-// 					/*
-// 					 * LINK_OPEN means we are inside the < and >
-// 					 * So, we mustn't escape anything
-// 					 */
-// 					fputc(*cch, out);
-// 				}
-// 				continue;
-// 			}
-// 			if (LINK_TEXT_OPEN && *cch == ']' && *nch != '\\')
-// 			{
-// 				/*
-// 				 * !(ID)     [Text]
-// 				 * <a href=ID>Text</a>
-// 				 *                ↑
-// 				 *                |
-// 				 */
-// 				LINK_TEXT_OPEN = 0;
-// 				fputs("</a>", out);
-// 				continue;
-// 			}
-// 		}
-// 	}
-// }
 
 // vim:fdm=syntax:sw=8:sts=8:ts=8:nowrap:

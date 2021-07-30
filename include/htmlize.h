@@ -10,7 +10,6 @@ struct config {
 	bool BOLD_OPEN;
 	bool ITALIC_OPEN;
 	bool LINK_OPEN;
-	bool LINK_TEXT_OPEN;
 	bool TABLE_MODE;
 };
 struct files {
