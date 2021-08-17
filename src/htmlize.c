@@ -41,6 +41,15 @@ static int  HEADINGS            (struct data *);
 
 
 /**** [START] Utility functions ****/
+static inline size_t
+strnlen(const char *str, size_t maxlen)
+{
+	/* strnlen is defined in POSIX, not in C standard */
+	char *p;
+	p = memchr(str, '\0', maxlen);
+	return p == NULL ? maxlen : (size_t)(p - str);
+}
+
 static inline void
 toggle(bool *val)
 {
