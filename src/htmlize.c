@@ -729,7 +729,7 @@ ITALIC(struct data *ptr)
 static int
 FOOTNOTE(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 {
-	if (ptr->line[0] != '[')
+	if (!(ptr->line[0] == '[' && ptr->line[1] == '^'))
 	{
 		if (ptr->line[0] == '\\' && REMAINING_CHARS > 2 && !memcmp(ptr->line + 1, "[^", 2))
 		{
@@ -744,7 +744,7 @@ FOOTNOTE(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 	if (ptr->line != ptr->readahead[0] && ptr->line[-1] == '\\')
 	{
 		fputs_escaped("[^", ptr->files->dest);
-		ptr->line += 3;
+		ptr->line += 2;
 		return 0;
 	}
 
