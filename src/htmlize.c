@@ -435,19 +435,35 @@ HEADINGS(struct data *ptr)
 		 * inside them don't leak out of this scope (ie. they don't
 		 * leak out of the enclosing braces) */
 
-		int index;
-		index = 1;
+		int readahead_index;
+		readahead_index = 0;
 
 		char *line;
 		line = ptr->line;
 
-		for (int i=0,j=0; line[i] != '\n'; i++)
-			if (isalnum(line[i]))
-				h_id[j++] = line[i];
-			else if (line[i] == ' ')
-				h_id[j++] = '-';
-			else if (line[i] == '\0')
-				line = ptr->readahead[index++];
+		char *chr;
+		chr = line;
+
+		int i;	// Current index of h_id
+		i = 0;
+
+		while (*chr != '\n' && i < MAX_LINE_LENGTH)
+		{
+			if (*chr == '\0')
+			{
+				line = ptr->readahead[++readahead_index],
+				chr = line;
+				continue;
+			}
+
+			else if (*chr == ' ')
+				h_id[i++] = '-';
+
+			else if (isalnum(*chr))
+				h_id[i++] = *chr;
+
+			chr++;
+		}
 	}
 
 	/* Print the opening HTML tags */
