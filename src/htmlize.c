@@ -35,9 +35,23 @@
 
 static void shift_lines         (struct data *);
 static void get_next_line       (struct data *);
-static void parse_line          (struct data *);
+static int  print_linkdef       (struct data *);
+static int  LINKDEF             (struct data *);
+static int  TABLE               (struct data *);
+static int  LISTS               (struct data *);
 static int  CODEBLOCK           (struct data *);
+static int  FOOTNOTES           (struct data *);
+static int  DUALSPACEBREAK      (struct data *);
 static int  HEADINGS            (struct data *);
+static int  CHARREFS            (struct data *);
+static int  HTML_TAGS           (struct data *);
+static int  TABLEROW            (struct data *);
+static int  CODE                (struct data *);
+static int  BOLD                (struct data *);
+static int  ITALIC              (struct data *);
+static int  FOOTNOTE            (struct data *);
+static int  LINKS               (struct data *);
+static void parse_line          (struct data *);
 
 
 /**** [START] Utility functions ****/
@@ -991,5 +1005,6 @@ htmlize(FILE *src, FILE *dest)
 	}
 	return 0;
 }
+
 
 // vim:fdm=syntax:sw=8:sts=8:ts=8:nowrap:
