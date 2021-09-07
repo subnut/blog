@@ -6,8 +6,8 @@
 #define DEST_DIR   "docs"
 
 /* Configuration for htmlize() */
-#define READAHEAD 30
-#define HISTORY   5
+#define READAHEAD_LINES 30
+#define HISTORY_LINES   5
 
 /*
  * Needed for htmlize()
