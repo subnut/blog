@@ -76,12 +76,23 @@ toggle(bool *val)
 static void
 shift_lines(struct data *ptr)
 {
+	/*
+	 * We use memcpy() since it is guaranteed that there is no overlap
+	 */
+
+	/* Shift all history lines backward */
 	for (int i = HISTORY - 1; i >= 0; i--)
-		memmove(ptr->history[i], ptr->history[i - 1], MAX_LINE_LENGTH);
-	memmove(ptr->history[0], ptr->readahead[0], MAX_LINE_LENGTH);	// Copy to history
+		memcpy(ptr->history[i], ptr->history[i - 1], MAX_LINE_LENGTH);
+
+	/* Copy current line to history */
+	memcpy(ptr->history[0], ptr->readahead[0], MAX_LINE_LENGTH);
+
+	/* Move one line ahead in the readahead buffer */
 	for (int i = 1; i < READAHEAD; i++)
-		memmove(ptr->readahead[i - 1], ptr->readahead[i], MAX_LINE_LENGTH);
-	ptr->line = ptr->readahead[0];	// Reset ptr->line
+		memcpy(ptr->readahead[i - 1], ptr->readahead[i], MAX_LINE_LENGTH);
+
+	/* Reset ptr->line, in case it had been messed with */
+	ptr->line = ptr->readahead[0];
 }
 
 static void
