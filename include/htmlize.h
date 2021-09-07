@@ -10,7 +10,7 @@ int	htmlize(FILE *, FILE *);
 /*
  * stdio.h	-	FILE
  * stdbool.h	-	bool
- * constants.h	-	HISTORY, READAHEAD
+ * constants.h	-	HISTORY_LINES, READAHEAD_LINES
  */
 
 struct config {
@@ -29,8 +29,8 @@ struct data {
 	struct config	*config;
 	struct files	*files;
 	char		*line;
-	char		 history[HISTORY][MAX_LINE_LENGTH];
-	char		 readahead[READAHEAD][MAX_LINE_LENGTH];
+	char		 history[HISTORY_LINES][MAX_LINE_LENGTH];
+	char		 readahead[READAHEAD_LINES][MAX_LINE_LENGTH];
 };
 
 #endif /* HTMLIZE_H */

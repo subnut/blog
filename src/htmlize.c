@@ -81,14 +81,14 @@ shift_lines(struct data *ptr)
 	 */
 
 	/* Shift all history lines backward */
-	for (int i = HISTORY - 1; i >= 0; i--)
+	for (int i = HISTORY_LINES - 1; i >= 0; i--)
 		memcpy(ptr->history[i], ptr->history[i - 1], MAX_LINE_LENGTH);
 
 	/* Copy current line to history */
 	memcpy(ptr->history[0], ptr->readahead[0], MAX_LINE_LENGTH);
 
 	/* Move one line ahead in the readahead buffer */
-	for (int i = 1; i < READAHEAD; i++)
+	for (int i = 1; i < READAHEAD_LINES; i++)
 		memcpy(ptr->readahead[i - 1], ptr->readahead[i], MAX_LINE_LENGTH);
 
 	/* Reset ptr->line, in case it had been messed with */
@@ -113,11 +113,11 @@ get_next_line(struct data *ptr)
 	 *	| Sit amet
 	 *	| Amet foobar
 	 * We need to read only upto the third line, and then exit. But, say
-	 * READAHEAD is set to 2. What happens? We read upto the 5th line!
+	 * READAHEAD_LINES is set to 2. What happens? We read upto the 5th line!
 	 * And then, if any function uses the file descriptor again, it gets an
 	 * EOF, whereas it should have rightfully gotten the 4th line.
 	 */
-	for (int i = READAHEAD - 1; i > 0; i--)
+	for (int i = READAHEAD_LINES - 1; i > 0; i--)
 		if (ptr->readahead[i][0] == '\0')
 		{
 			/*
@@ -125,19 +125,19 @@ get_next_line(struct data *ptr)
 			 * Mark next buffer as empty.
 			 *
 			 * Since indexing starts from 0, the newest buffer will
-			 * be buffer with index (READAHEAD - 1)
+			 * be buffer with index (READAHEAD_LINES - 1)
 			 */
-			ptr->readahead[READAHEAD-1][0] = '\0';
+			ptr->readahead[READAHEAD_LINES-1][0] = '\0';
 			return;
 		}
 
 	/* Read a new line. If NULL, that means EOF, so mark buffer empty */
-	if (fgets(ptr->readahead[READAHEAD-1], MAX_LINE_LENGTH, ptr->files->src) == NULL)
-		ptr->readahead[READAHEAD-1][0] = '\0';	// Mark buffer as empty
+	if (fgets(ptr->readahead[READAHEAD_LINES-1], MAX_LINE_LENGTH, ptr->files->src) == NULL)
+		ptr->readahead[READAHEAD_LINES-1][0] = '\0';	// Mark buffer as empty
 
 	/* If current line marks End of blog, then mark buffer empty */
-	if (!memcmp(ptr->readahead[READAHEAD-1], "---\n", 5))
-		ptr->readahead[READAHEAD-1][0] = '\0';	// Mark buffer as empty
+	if (!memcmp(ptr->readahead[READAHEAD_LINES-1], "---\n", 5))
+		ptr->readahead[READAHEAD_LINES-1][0] = '\0';	// Mark buffer as empty
 }
 
 static int
@@ -159,7 +159,7 @@ print_linkdef(struct data *ptr)
 	ptr->line++;
 
 	fputs("<a href=\"", ptr->files->dest);
-	for (int i = 1; i < READAHEAD; i++)
+	for (int i = 1; i < READAHEAD_LINES; i++)
 	{
 		if (strnlen(ptr->readahead[i], 4) < 3)
 			continue;
@@ -185,7 +185,7 @@ print_linkdef(struct data *ptr)
 					line = ptr->readahead[++i];
 				if (line[0] == '\0')
 					break;
-				if (i == READAHEAD)
+				if (i == READAHEAD_LINES)
 					break;
 				fputc(line[0], ptr->files->dest);
 				line++;
@@ -965,13 +965,13 @@ htmlize(FILE *src, FILE *dest)
 	config.TABLE_MODE	= false;
 
 	/* Initialize with empty lines */
-	for (int i = 0; i < READAHEAD; i++)
+	for (int i = 0; i < READAHEAD_LINES; i++)
 		memset(data.readahead[i], '\0', MAX_LINE_LENGTH);
-	for (int i = 0; i < HISTORY; i++)
+	for (int i = 0; i < HISTORY_LINES; i++)
 		memset(data.history[i], '\0', MAX_LINE_LENGTH);
 
 	/* Populate data.readahead */
-	for (int i = 0; i < READAHEAD; i++)
+	for (int i = 0; i < READAHEAD_LINES; i++)
 	{
 		if (fgets(data.readahead[i], MAX_LINE_LENGTH, src) == NULL)
 			break;
