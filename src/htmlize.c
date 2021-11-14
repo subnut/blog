@@ -19,20 +19,6 @@
 #include "include/urlencode.h"
 
 
-/*
- * A macro to get the number of characters remaining in the string.
- * Useful for safely incrementing ptr->line without going out-of-bounds.
- * Or for doing memcmp().
- *
- * (MAX_LINE_LENGTH - 1)		Total number of indices
- * (ptr->line - ptr->readahead[0])	Current index
- *
- * - 1	'cause the last index is occupied by the trailing '\0'
- */
-#define REMAINING_CHARS \
-	((int)((MAX_LINE_LENGTH - 1) - (ptr->line - ptr->readahead[0]) - 1))
-
-
 static void shift_lines         (struct data *);
 static void get_next_line       (struct data *);
 static int  print_linkdef       (struct data *);
@@ -55,22 +41,10 @@ static void parse_line          (struct data *);
 
 
 /**** [START] Utility functions ****/
-static inline size_t
-strnlen(const char *str, size_t maxlen)
-{
-	/* strnlen is defined in POSIX, not in C standard */
-	char *p;
-	p = memchr(str, '\0', maxlen);
-	return p == NULL ? maxlen : (size_t)(p - str);
-}
-
 static inline void
 toggle(bool *val)
 {
-	if (*val)
-		*val = false;
-	else
-		*val = true;
+	*val = *val ? false : true;
 }
 
 static void
@@ -82,14 +56,20 @@ shift_lines(struct data *ptr)
 
 	/* Shift all history lines backward */
 	for (int i = HISTORY_LINES - 1; i >= 0; i--)
-		memcpy(ptr->history[i], ptr->history[i - 1], MAX_LINE_LENGTH);
+		if (ptr->history[i-1] != NULL)
+			memcpy(ptr->history[i], ptr->history[i-1],
+				ptr->history[i-1] - ptr->history[i]);
 
 	/* Copy current line to history */
-	memcpy(ptr->history[0], ptr->readahead[0], MAX_LINE_LENGTH);
+	ptr->history[0] = ptr->history[0] == NULL ? ptr->buffer : ptr->history[0];
+	memmove(ptr->history[0], ptr->readahead[0],
+		ptr->readahead[0] - ptr->history[0]);
 
 	/* Move one line ahead in the readahead buffer */
 	for (int i = 1; i < READAHEAD_LINES; i++)
-		memcpy(ptr->readahead[i - 1], ptr->readahead[i], MAX_LINE_LENGTH);
+		if (ptr->readahead[i] != NULL)
+			memcpy(ptr->readahead[i-1], ptr->readahead[i],
+				ptr->readahead[i] - ptr->readahead[i-1]);
 
 	/* Reset ptr->line, in case it had been messed with */
 	ptr->line = ptr->readahead[0];
@@ -118,7 +98,7 @@ get_next_line(struct data *ptr)
 	 * EOF, whereas it should have rightfully gotten the 4th line.
 	 */
 	for (int i = READAHEAD_LINES - 1; i > 0; i--)
-		if (ptr->readahead[i][0] == '\0')
+		if (ptr->readahead[i] == NULL)
 		{
 			/*
 			 * We've already reached the end of blog.
@@ -127,22 +107,25 @@ get_next_line(struct data *ptr)
 			 * Since indexing starts from 0, the newest buffer will
 			 * be buffer with index (READAHEAD_LINES - 1)
 			 */
-			ptr->readahead[READAHEAD_LINES-1][0] = '\0';
+			ptr->readahead[READAHEAD_LINES-1] = NULL;
 			return;
 		}
 
-	/* Read a new line. If NULL, that means EOF, so mark buffer empty */
-	if (fgets(ptr->readahead[READAHEAD_LINES-1], MAX_LINE_LENGTH, ptr->files->src) == NULL)
-		ptr->readahead[READAHEAD_LINES-1][0] = '\0';	// Mark buffer as empty
+	/* Read a new line */
+	{
+		char *new = ptr->readahead[READAHEAD_LINES-1];
+		new = fgets(new, ptr->bufend - new, ptr->files->src);
+	}
 
 	/* If current line marks End of blog, then mark buffer empty */
 	if (!memcmp(ptr->readahead[READAHEAD_LINES-1], "---\n", 5))
-		ptr->readahead[READAHEAD_LINES-1][0] = '\0';	// Mark buffer as empty
+		ptr->readahead[READAHEAD_LINES-1] = NULL;	// Mark buffer as empty
 }
 
 static int
 print_linkdef(struct data *ptr)
 {
+	/*
 	char *id;
 	char link_id[MAX_LINE_LENGTH];
 	memset(link_id, '\0', MAX_LINE_LENGTH);
@@ -150,60 +133,42 @@ print_linkdef(struct data *ptr)
 
 	while (ptr->line[0] != ')')
 	{
-		if (ptr->line[0] == '\0')
+		if (ptr->line == NULL)
 			get_next_line(ptr);
-		if (ptr->line[0] == '\0')
+		if (ptr->line == NULL)
 			break;
 		*id++ = *ptr->line++;
 	}
 	ptr->line++;
+	*/
 
 	fputs("<a href=\"", ptr->files->dest);
 	for (int i = 1; i < READAHEAD_LINES; i++)
 	{
-		if (strnlen(ptr->readahead[i], 4) < 3)
+		if ((strchr(ptr->readahead[i], '\n') - ptr->readahead[i]) < 3)
 			continue;
 
 		char *line;
 		line = ptr->readahead[i] + 2;	// +2 for "\t["
-		if (!memcmp(line, link_id, strlen(link_id)))
+
+		char *p;
+		*(p = strchr(ptr->line, ')')) = '\0';
+		if (!memcmp(line, ptr->line, strlen(ptr->line)))
 		{
-			line += strlen(link_id);	// skip over the link_id
-			line += 2;	// +2 for "]:"
+			line += strlen(ptr->line);	// skip over the link_id
+			line += 2;			// +2 for "]:"
 
 			/* Trim any whitespaces (padding) */
 			while (line[0] == ' ')
-			{
 				line++;
-				if (line[0] == '\0')
-					line = ptr->readahead[++i];
-			}
 
 			while (line[0] != '\n')
-			{
-				if (line[0] == '\0')
-					line = ptr->readahead[++i];
-				if (line[0] == '\0')
-					break;
-				if (i == READAHEAD_LINES)
-					break;
-				fputc(line[0], ptr->files->dest);
-				line++;
-			}
-			break;
+				fputc((line++)[0], ptr->files->dest);
 		}
+		*p = ')';
+		ptr->line = p+1;
 	}
 	fputs("\" ", ptr->files->dest);
-	while (ptr->line[0] != '[')
-	{
-		if (ptr->line[0] == '\0')
-			get_next_line(ptr);
-		if (ptr->line[0] == '\0')
-			break;
-		fputc(ptr->line[0], ptr->files->dest);
-		ptr->line++;
-	}
-	fputc('>', ptr->files->dest);
 	return 0;
 }
 /**** [END] Utility functions ****/
@@ -241,7 +206,7 @@ TABLE(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 
 	ptr->config->TABLE_MODE = true;
 	fputs(ptr->line, ptr->files->dest);
-	for (get_next_line(ptr); ptr->line[0] != '\0' && memcmp(ptr->line, "</table", 7); get_next_line(ptr))
+	for (get_next_line(ptr); ptr->line != NULL && memcmp(ptr->line, "</table", 7); get_next_line(ptr))
 	{
 		fputs("<tr><td>", ptr->files->dest);
 		parse_line(ptr);
@@ -274,7 +239,7 @@ LISTS(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 
 	fputs(ptr->line, ptr->files->dest);
 	get_next_line(ptr);
-	while (ptr->line[0] != '\0' && (memcmp(ptr->line, "</ul", 4) && memcmp(ptr->line, "</ol", 4)))
+	while (ptr->line != NULL && (memcmp(ptr->line, "</ul", 4) && memcmp(ptr->line, "</ol", 4)))
 	{
 		char *hyphen;
 		if ((hyphen = memchr(ptr->line, '-', MAX_LINE_LENGTH)) != NULL)
@@ -348,10 +313,10 @@ FOOTNOTES(struct data *ptr)
 	if (!memcmp(ptr->line, "^^^\n", 4))
 	{
 		fputs("<p id=\"footnotes\">\n", ptr->files->dest);
-		for (get_next_line(ptr); ptr->line[0] != '\0'; get_next_line(ptr))
+		for (get_next_line(ptr); ptr->line != NULL; get_next_line(ptr))
 		{
 			char *p;
-			if ((p = memchr(ptr->line, ':', REMAINING_CHARS)) != NULL)
+			if ((p = memchr(ptr->line, ':', ptr->bufend - ptr->line)) != NULL)
 			{
 				*p = '\0';
 				fprintf(ptr->files->dest,
@@ -386,35 +351,11 @@ FOOTNOTES(struct data *ptr)
 static int
 DUALSPACEBREAK(struct data *ptr)
 {
-	if (ptr->line[0] != ' ') return 1;
-	switch (REMAINING_CHARS)
-	{
-		case 0:
-			{
-				if (memcmp(ptr->readahead[1], " \n", 2) != 0)
-					return 1;
-				break;
-			}
-		case 1:
-			{
-				if (ptr->line[1] != ' ')
-					return 1;
-				if (ptr->readahead[1][0] != '\n')
-					return 1;
-				ptr->line++;
-				break;
-			}
-		default:
-			{
-				if (ptr->line[1] != ' ')
-					return 1;
-				if (ptr->line[2] != '\n')
-					return 1;
-				ptr->line += 2;
-				break;
-			}
-	}
-	fputs("<br>", ptr->files->dest);
+	if (memcmp(ptr->line, "  \n", 3) != 0)
+		return 1;
+
+	fputs("<br>\n", ptr->files->dest);
+	ptr->line += 3;
 	return 0;
 }
 
@@ -518,7 +459,7 @@ CHARREFS(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 
 	/* It's either "&...;" or "\&...;".
 	 * So, if we can't find '&' and ';', it's not a charref */
-	if ((end = memchr(ptr->line, ';', REMAINING_CHARS)) == NULL)
+	if ((end = memchr(ptr->line, ';', strchr(ptr->line, '\n') - ptr->line)) == NULL)
 		return 1;
 	if (ptr->line[0] == '&')
 		line = ptr->line;
@@ -527,7 +468,7 @@ CHARREFS(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 	else
 		return 1;
 
-	if (!is_charref(line, REMAINING_CHARS))
+	if (!is_charref(line, end - line))
 	{
 		for (char *p = line; p <= end; p++)
 			if(ptr->line[0] == '\\')
@@ -551,19 +492,18 @@ HTML_TAGS(struct data *ptr)
 	if (ptr->line[0] != '<')
 	{
 		if (ptr->line[0] == '\\' && ptr->line[1] == '<' &&
-				(REMAINING_CHARS > 1
-				 ? (isalpha(ptr->line[2]) || ptr->line[2] == '/')
-				 : (isalpha(ptr->readahead[1][0]) || ptr->readahead[1][0] == '/')
-				))
+				(isalpha(ptr->line[2]) ||
+				 (ptr->line[2] == '/' && isalpha(ptr->line[3]))
+				 ))
 		{
 			ptr->line++;	// for '\'
 			ptr->line++;	// for '<'
 			fputs("&lt;", ptr->files->dest);
 			while (ptr->line[0] != '>')
 			{
-				if (ptr->line[0] == '\0')
+				if (ptr->line == NULL)
 					get_next_line(ptr);
-				if (ptr->line[0] == '\0')
+				if (ptr->line == NULL)
 					break;
 
 				fputc_escaped(ptr->line[0], ptr->files->dest);
@@ -584,9 +524,9 @@ HTML_TAGS(struct data *ptr)
 	ptr->line++;
 	while (ptr->line[0] != '>')
 	{
-		if (ptr->line[0] == '\0')
+		if (ptr->line == NULL)
 			get_next_line(ptr);
-		if (ptr->line[0] == '\0')
+		if (ptr->line == NULL)
 			break;
 
 		fputc(ptr->line[0], ptr->files->dest);
@@ -651,9 +591,9 @@ CODE(struct data *ptr)
 	ptr->line++;
 	while (1)
 	{
-		if (ptr->line[0] == '\0')
+		if (ptr->line == NULL)
 			get_next_line(ptr);
-		if (ptr->line[0] == '\0')
+		if (ptr->line == NULL)
 			break;
 
 		if (ptr->line[0] != '`')
@@ -742,7 +682,7 @@ FOOTNOTE(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 {
 	if (!(ptr->line[0] == '[' && ptr->line[1] == '^'))
 	{
-		if (ptr->line[0] == '\\' && REMAINING_CHARS > 2 && !memcmp(ptr->line + 1, "[^", 2))
+		if (ptr->line[0] == '\\' && !memcmp(ptr->line + 1, "[^", 2))
 		{
 			fputs_escaped("[^", ptr->files->dest);
 			ptr->line += 3;
@@ -760,7 +700,7 @@ FOOTNOTE(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 	}
 
 	char *p;
-	p = memchr(ptr->line, ']', REMAINING_CHARS);
+	p = memchr(ptr->line, ']', ptr->bufend - ptr->line);
 	*p++ = '\0';
 	ptr->line += 2;	// 2 for "[^"
 
@@ -784,67 +724,24 @@ LINKS(struct data *ptr)
 				return 1;
 			else
 			{
-				switch (REMAINING_CHARS)
-				{
-					case 0:
-						{
-							if (memcmp(ptr->readahead[1], "!(", 2) != 0)
-								return 1;
-							break;
-						}
-					case 1:
-						{
-							if (ptr->line[1] != '!')
-								return 1;
-							if (ptr->readahead[1][0] != '(')
-								return 1;
-							ptr->line++;
-							break;
-						}
-					default:
-						{
-							if (ptr->line[1] != '!')
-								return 1;
-							if (ptr->line[2] != '(')
-								return 1;
-							ptr->line += 2;
-							break;
-						}
-				}
+				if (memcmp(ptr->line, "!(", 2) != 0)
+					return 1;
+
+				ptr->line += 2;
 				fputs_escaped("!(", ptr->files->dest);
 			}
 		}
 
 		ptr->line++;
-		switch (REMAINING_CHARS)
-		{
-			case 0:
-				{
-					if (ptr->readahead[1][0] != '(')
-						return 1;
-					get_next_line(ptr);
-					ptr->line++;
-					break;
-				}
-			default:
-				{
-					if (ptr->line[0] != '(')
-						return 1;
-					ptr->line++;
-					break;
-				}
-		}
+		if (ptr->line[0] != '(')
+			return 1;
+		ptr->line++;
 
 		print_linkdef(ptr);
 		ptr->config->LINK_OPEN = true;
 		while (ptr->line[0] != '[')
-		{
-			if (ptr->line[0] == '\0')
-				get_next_line(ptr);
-			if (ptr->line[0] == '\0')
-				break;
-			ptr->line++;
-		}
+			fputc((ptr->line++)[0], ptr->files->dest);
+		fputc('>', ptr->files->dest);
 		ptr->line++;
 		return 0;
 	}
@@ -871,10 +768,10 @@ parse_line(struct data *ptr)
 	while (ptr->line[0] != '\n')
 	{
 		/* If we hit the end of the string, get_next_line */
-		if (ptr->line[0] == '\0')
+		if (ptr->line == NULL)
 			get_next_line(ptr);
 		/* If we still have '\0', that means we've got EOF */
-		if (ptr->line[0] == '\0')
+		if (ptr->line == NULL)
 			break;
 
 		/* Check if the current character is worth anything to anyone */
@@ -964,14 +861,16 @@ htmlize(FILE *src, FILE *dest)
 	config.LINK_OPEN	= false;
 	config.TABLE_MODE	= false;
 
-	/* Initialize with empty lines */
-	for (int i = 0; i < READAHEAD_LINES; i++)
-		memset(data.readahead[i], '\0', MAX_LINE_LENGTH);
+	/* Initialize */
+	memset(data.buffer, '\0', BUFFER_SIZE);
+	data.bufend = data.buffer + BUFFER_SIZE;
 	for (int i = 0; i < HISTORY_LINES; i++)
-		memset(data.history[i], '\0', MAX_LINE_LENGTH);
-
-	/* Populate data.readahead */
+		data.history[i] = NULL;
 	for (int i = 0; i < READAHEAD_LINES; i++)
+		data.readahead[i] = NULL;
+
+	/* Populate */
+	for (int i = 0; i < READAHEAD_LINES;)
 	{
 		if (fgets(data.readahead[i], MAX_LINE_LENGTH, src) == NULL)
 			break;
@@ -988,7 +887,7 @@ htmlize(FILE *src, FILE *dest)
 		return 1;	// No input
 
 	ptr->line = ptr->readahead[0];
-	while (ptr->line[0] != '\0')
+	while (ptr->line != NULL)
 	{
 		if (!memcmp(ptr->line, "\\---\n", 6))
 		{

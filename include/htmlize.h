@@ -28,9 +28,13 @@ struct files {
 struct data {
 	struct config	*config;
 	struct files	*files;
-	char		*line;
-	char		 history[HISTORY_LINES][MAX_LINE_LENGTH];
-	char		 readahead[READAHEAD_LINES][MAX_LINE_LENGTH];
+	char		*line;	// points to readahead[0]
+	char		*history[HISTORY_LINES];
+	char		*readahead[READAHEAD_LINES];
+
+#define BUFFER_SIZE ((HISTORY_LINES + READAHEAD_LINES) * MAX_LINE_LENGTH)
+	char		 buffer[BUFFER_SIZE];
+	char		*bufend; // = buffer + BUFFER_SIZE
 };
 
 #endif /* HTMLIZE_H */
