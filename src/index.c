@@ -143,7 +143,7 @@ main(int argc, const char **argv)
 		char DATE_CREATED_str[15];
 		char url[FILENAME_MAX*3 + 1];
 
-		urlencode_s(filenames[i], url);
+		urlencode_s(filenames.names[i], url, FILENAME_MAX*3+1);
 		date_to_text(DATE_CREATED, DATE_CREATED_str);
 
 		/*
