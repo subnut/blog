@@ -1,15 +1,16 @@
-/*
- * TODO: Allow HTML character references in TITLE
- * (tip: use "include/charref.h")
- */
-#include <stdio.h>
-#include <string.h>
+#define _POSIX_C_SOURCE 200809L
 #include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /*
- * stdio.h  - fopen, fclose
- * string.h - memcmp, memchr
+ * _POSIX_C_SOURCE - strdup, getline
+ *
  * dirent.h - opendir, readdir
+ * stdio.h  - fopen, fclose
+ * string.h - memcmp, memchr, strdup, strlen
+ * stdlib.h - free, EXIT_{SUCCESS,FAILURE}
  */
 
 #include "constants.h"
@@ -57,53 +58,62 @@ main(int argc, const char **argv)
 	DIR *dir;
 	FILE *outfile;
 	struct dirent *dirent;
-	char filenames[MAX_FILES + 1][FILENAME_MAX + 1];	// +1 because index starts at 0
 
-	// Mark all records as empty
-	for (int i=1; i <= MAX_FILES; i++)
-		*filenames[i] = '\0';
+	struct {
+		int maxindex;
+		char **names;	// Array of strings
+	} filenames;
+
+	if ((filenames.names = calloc(1, sizeof(char*))) == NULL)
+		return perror("calloc error"),
+			   EXIT_FAILURE;
+
+	filenames.maxindex = 0;
+	filenames.names[0] = NULL;
 
 	if (cd(DEST_DIR))
-		return 1;
+		return perror("cd error"),
+			   EXIT_FAILURE;
 
 	outfile = fopen("index.html", "w");
 	fprintf(outfile, INITIAL_TEXT, FAVICON);
 
 	if ((dir = opendir(".")) == NULL)
-	{
-		fprintf(stderr, "index: opendir error");
-		return 1;
-	}
+		return perror("opendir error:"),
+			   EXIT_FAILURE;
+
 	while ((dirent = readdir(dir)) != NULL)
 	{
 		char *name = dirent->d_name;
-		if (
-				name[0] == '.'		// ie. ., .., and hidden files
-				|| name[0] == '0'	// ie. 0-draft, 0-format, etc.
-				|| memcmp(strrchr(name, '.'), ".html", 5)	// not *.html
-				|| !memcmp(name, "index.html", 10)
-		   )
-			continue;
+		if (name[0] == '.'		// ie. ., .., and hidden files
+			|| name[0] == '0'	// ie. 0-draft, 0-format, etc.
+			|| memcmp(strrchr(name, '.'), ".html", 5)	// not *.html
+			|| !memcmp(name, "index.html", 10)
+		) continue;
 
-		char *p = memchr(name, '-', FILENAME_MAX);	// defined in stdio.h
-		*p = '\0';
+		char *name_allocd;
+		if ((name_allocd = strdup(name)) == NULL)
+			return perror("strdup error"),
+				   EXIT_FAILURE;
 
-		int num = stoi(name);
+		char *p;
+		*(p = strchr(name_allocd, '-')) = '\0';
+		int num = stoi(name_allocd);
 		*p = '-';
 
-		strcpy(filenames[num], name);
+		if (num > filenames.maxindex)
+		{
+			if ((filenames.names = realloc(filenames.names, (num+1) * sizeof(char*))) == NULL)
+				return perror("realloc error"),
+					   EXIT_FAILURE;
+			for (int i = filenames.maxindex+1; i <= num; i++)
+				filenames.names[i] = NULL;
+			filenames.maxindex = num;
+		}
+		filenames.names[num] = name_allocd;
 	}
 	closedir(dir);
 
-
-	FILE *file;
-
-	/*
-	 * Title.
-	 * +7 for the leading "TITLE: "
-	 * +2 for the trailing '\n' and '\0'
-	 */
-	char TITLE[MAX_TITLE_LENGTH + 9];
 
 	/*
 	 * Date published.
@@ -113,38 +123,54 @@ main(int argc, const char **argv)
 	 */
 	char DATE_CREATED[20];
 
-	for (int i=1; *filenames[i]!='\0' && i<=MAX_FILES ; i++)
+	FILE *infile;	// input file
+	char *Title;
+	size_t _ = 0;
+	for (int i=1; i <= filenames.maxindex; i++)
 	{
-		/* Skip if filename is invalid */
-		if ((file = fopen(filenames[i], "r")) == NULL)
+		/* Skip if NULL */
+		if (filenames.names[i] == NULL)
 			continue;
 
+		/* Open file for reading */
+		if ((infile = fopen(filenames.names[i], "r")) == NULL)
+			return perror("Failed to open infile"),
+				   EXIT_FAILURE;
+
 		/* Remove first line */
-        char first_line[6];
-		fgets(first_line, 6, file);	// "<!--\n" +1 for '\0'
+        char first_line[6];	// 6 because "<!--\n" has a trailing '\0'
+		if (fgets(first_line, 6, infile) == NULL)
+			return fprintf(stderr, "Error while reading from file %s\n", filenames.names[i]),
+				   EXIT_FAILURE;
 
 		/* Title */
-		fgets(TITLE, MAX_TITLE_LENGTH, file);
-		memmove(TITLE, TITLE + 6, MAX_TITLE_LENGTH - 6);	// Remove "TITLE:"
-		while (*TITLE == ' ')
-			memmove(TITLE, TITLE + 1, MAX_TITLE_LENGTH - 1);
-		*(strrchr(TITLE, '\n')) = '\0';
+		if (getline(&Title, &_, infile) == -1)
+			return perror("getline error"),
+				   EXIT_FAILURE;
+		memmove(Title, Title + 6, strlen(Title) - 6);	// Remove "TITLE:"
+		while (*Title == ' ')
+			memmove(Title, Title + 1, strlen(Title) - 1);
+		*(strrchr(Title, '\n')) = '\0';
 
 		/* Date created */
-		fgets(DATE_CREATED, 20, file);
-		memmove(DATE_CREATED, DATE_CREATED + 9, 20 - 9);	// Remove "DATE_CREATED:"
+		if (fgets(DATE_CREATED, 20, infile) == NULL)
+			return fprintf(stderr, "Error while reading from file %s\n", filenames.names[i]),
+				   EXIT_FAILURE;
+		memmove(DATE_CREATED, DATE_CREATED + 9, 20 - 9);	// Remove "CREATED:"
 		while (*DATE_CREATED == ' ')
-			memmove(DATE_CREATED, TITLE + 1, 20 - 1);
+			memmove(DATE_CREATED, DATE_CREATED + 1, 20 - 1);
 
 		/* Done reading from file */
-		fclose(file);
+		fclose(infile);
 
 
 		char DATE_CREATED_str[15];
 		char url[FILENAME_MAX*3 + 1];
 
-		urlencode_s(filenames.names[i], url, FILENAME_MAX*3+1);
 		date_to_text(DATE_CREATED, DATE_CREATED_str);
+		urlencode_s(filenames.names[i], url, FILENAME_MAX*3+1);
+		free(filenames.names[i]);
+		filenames.names[i] = NULL;
 
 		/*
 		fprintf(outfile,
@@ -157,7 +183,7 @@ main(int argc, const char **argv)
 				"    </td>\n"
 				"</tr>\n",
 				url,
-				TITLE,
+				Title,
 				DATE_CREATED_str
 			 );
 		*/
@@ -167,7 +193,11 @@ main(int argc, const char **argv)
 				"    <td class=\"blog-index-name\">\n"
 				"        <a href=\"%s\">",
 				url);
-		fputs_escaped(TITLE, outfile);
+
+		fputs_escaped_allow_charrefs(Title, outfile);
+		free(Title);
+		Title = NULL;
+
 		fprintf(outfile,                  "</a>\n"
 				"    </td>\n"
 				"    <td class=\"blog-index-date\">\n"
@@ -176,17 +206,12 @@ main(int argc, const char **argv)
 				"</tr>\n",
 				DATE_CREATED_str
 			 );
-
-#ifdef PRINT_FILENAMES
-		printf("%i:\t%s\n", i, filenames[i]);
-#endif /* PRINT_FILENAMES */
-
 	}
 
 	fprintf(outfile, FINAL_TEXT, FOOTER);
 	fclose(outfile);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 // vim:noet:ts=4:sts=0:sw=0:fdm=syntax:nowrap
