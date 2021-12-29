@@ -9,14 +9,6 @@
 #define READAHEAD_LINES 30
 #define HISTORY_LINES   5
 
-/*
- * Needed for htmlize()
- * NOTE: The effective values are actually one less than what is defined here.
- *       Please adjust the values accordingly.
- */
-#define MAX_LINKS       50
-#define MAX_LINE_LENGTH 500
-
 
 #define FAVICON "<link rel=icon href=\"data:image/png;base64,\n\
 iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAnXAAAJ1wGxbhe3AAAA\n\
@@ -30,6 +22,7 @@ K9+gqT8yDY27oO56k/tEcHC5Uc6coe5wxH3QbJQDEPRgqMWvdAuAYfQ2eXN2edktgFj7p51QW0uA\n\
 lvaXA3DNduyOrEzHypf/kmWCfdjWEUDVkNbj/Vbwvj3A0q6dwkhH4e0VbT+NEZwsMZwsDyDTX1o4\n\
 P23yMA/gLhZLArjjovl2i43NEgzjLLYmCq7jhS0mnPM90T3T6zemFFVQZGM2gAAAAABJRU5ErkJg\n\
 gg==\">"
+
 
 #define FOOTER  "<footer>\n\
                 <hr>\n\
