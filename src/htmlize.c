@@ -527,7 +527,7 @@ CHARREFS(struct data *ptr)	// XXX: MAX_LINE_LENGTH dependent
 	else
 		return 1;
 
-	if (!is_charref(line, REMAINING_CHARS))
+	if (is_charref(line, REMAINING_CHARS))
 	{
 		for (char *p = line; p <= end; p++)
 			if(ptr->line[0] == '\\')
