@@ -70,8 +70,10 @@ get_next_line(struct data *data)
 	 */
 	for (int i = READAHEAD_LINES-1; i>0; i--)
 		if (data->lines->readahead[i] == NULL || strncmp(data->lines->readahead[i], "---\n", 4) == 0)
-			return (data->lines->readahead[READAHEAD_LINES-1] = NULL),
-				   EXIT_SUCCESS;
+		{
+			data->lines->readahead[READAHEAD_LINES-1] = NULL;
+			goto success;
+		}
 
 	/* Read next line */
 	static size_t _ = 0;
@@ -97,6 +99,9 @@ get_next_line(struct data *data)
 				   EXIT_FAILURE;
 	}
 
+success:
+	/* Reset lines.curline to lines.readahead[0] */
+	data->lines->curline = data->lines->readahead[0];
 	return EXIT_SUCCESS;
 }
 
@@ -148,17 +153,13 @@ htmlize(FILE *src, FILE *dest)
 					   EXIT_FAILURE;
 			else break;
 	}
-
-
-	// XXX: temp, for testing.
 	lines.curline = lines.readahead[0];
-	while (lines.curline != NULL)
+
+	/* Iterate over the lines */
+	while (get_next_line(&data) == EXIT_SUCCESS && lines.curline != NULL)
 	{
-		puts("printf");
-		printf("%p: %s", lines.curline, lines.curline);
-		puts("get_next_line");
-		get_next_line(&data);
-		lines.curline = lines.readahead[0];
+		// XXX: For testing
+		fputs(lines.curline, files.out);
 	}
 
 	return EXIT_SUCCESS;
