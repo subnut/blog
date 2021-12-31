@@ -355,11 +355,21 @@ htmlize(FILE *src, FILE *dest)
 				/* We've reached EOF, so break. */
 				break;
 		}
+		if (strncmp(lines.readahead[i], "---\n", 4) == 0)
+		{
+			/*
+			 * We have reached the "---\n" that marks the end of our parsing.
+			 * Don't proceed further.
+			 */
+			for (i++; i < READAHEAD_LINES; i++)
+				lines.readahead[i] = NULL;	// Mark the remaining lines as NULL
+			break;
+		}
 	}
 	lines.curline = lines.readahead[0];
 
 	/* Iterate over the lines */
-	while (get_next_line(&data), lines.curline != NULL)
+	for (; lines.curline != NULL; get_next_line(&data))
 	{
 		// XXX: For testing
 		fputs(lines.curline, files.out);
