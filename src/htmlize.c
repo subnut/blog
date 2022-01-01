@@ -1,4 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
+#include "include/htmlize.h"
+
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -6,7 +8,7 @@
 #include <string.h>
 
 /*
- * _POSIX_C_SOURCE  - getline
+ * _POSIX_C_SOURCE  - getline, strndup
  * ctype.h			- isdigit, isspace
  * stdbool.h        - bool, true, false
  * stdio.h          - getline, FILE
@@ -15,7 +17,10 @@
  */
 
 #include "constants.h"
-#include "include/htmlize.h"
+#include "include/escape.h"
+
+#define streql(s1, s2) (strcmp(s1, s2) == 0)
+#define strneql(s1, s2, n) (strncmp(s1, s2, n) == 0)
 
 /* Struct definitions */
 struct config {
@@ -53,18 +58,13 @@ struct linkdef {
 static void get_next_line			(struct data *);
 static void free_links_recursively	(struct data *);
 static int _LINKDEF					(struct data *);
+static int _PREFORMATTED			(struct data *);
 static int _LINK					(struct data *);
 
-/*
- * Functions shall be of the form -
- * 	static int _name(struct data *)
- *
- * Functions shall return 0 if it did nothing, and 1 if it did something.
- * So,
- * 	for (i=0;something;i++)
- * 		if ((functions[i])(&data))
- * 			continue;
- */
+static int (*LINEWISE_FUNCTIONS[])(struct data *) = {
+	&_PREFORMATTED,
+	&_LINKDEF,
+};
 
 static void
 get_next_line(struct data *data)
@@ -101,7 +101,7 @@ get_next_line(struct data *data)
 	 * then set new line to NULL and return.
 	 */
 	for (int i = READAHEAD_LINES-1; i>0; i--)
-		if (data->lines->readahead[i] == NULL || strncmp(data->lines->readahead[i], "---\n", 4) == 0)
+		if (data->lines->readahead[i] == NULL || strneql(data->lines->readahead[i], "---\n", 4))
 		{
 			data->lines->readahead[READAHEAD_LINES-1] = NULL;
 			goto success;
@@ -159,6 +159,17 @@ free_links_recursively(struct data *data)
 }
 #undef free
 
+/*
+ * Functions shall be of the form -
+ * 	static int _name(struct data *)
+ *
+ * Functions shall return 0 if it did nothing, and 1 if it did something.
+ * So,
+ * 	for (i=0;something;i++)
+ * 		if ((functions[i])(&data))
+ * 			continue;
+ */
+
 static int
 _LINKDEF(struct data *data)
 {
@@ -203,7 +214,8 @@ _LINKDEF(struct data *data)
 	if (href[0] == '\0') return 0;	// EOL reached! ie. No link given, only id!
 	end = strrchr(curline, '\0');
 	while (end > href && isspace(end[-1])) end--;
-	href = strndup(href, end - href);
+	if ((href = strndup(href, end - href)) == NULL)
+		exit((perror("strndup failed"), EXIT_FAILURE));
 
 	/* Extract id */
 	id = curline + 2;	// \t[
@@ -223,8 +235,6 @@ _LINKDEF(struct data *data)
 	 * Separate id into index and subindex, if applicable */
 	index = atoi(id);
 	decimal = strchr(id, '.');	// NULL if no decimal point
-	if (decimal != NULL)
-		subindex = atoi(decimal+1);	// +1 because atoi needs pointer to start of integer
 
 	/* allocate enough space for data->links->linkdefs[index] */
 	if (data->links->maxindex < index)
@@ -257,6 +267,8 @@ _LINKDEF(struct data *data)
 	/* If there is a subindex */
 	if (decimal != NULL)
 	{
+		subindex = atoi(decimal+1);	// +1 because atoi needs pointer to start of integer
+
 		/* Check if we have been scammed */
 		if (data->links->linkdefs[index] != NULL)
 		{
@@ -305,6 +317,78 @@ nope:
 	free(href);
 	return 0;
 }
+
+static int
+_PREFORMATTED(struct data *data)
+#define curline data->lines->curline
+{
+	/*
+	 * ```			=> <pre> ... </pre>
+	 * ```samp		=> <pre><samp> ... </code><samp>
+	 * ```code html	=> <pre><code class="language-html"> ... </code><pre>
+	 */
+
+	if (!strneql(curline, "```", 3))
+		return 0;
+
+	curline += 3;	// For "```"
+	fputs("<pre>", data->files->out);
+
+	static enum {
+		NONE,
+		SAMP,
+		CODE
+	} modifier = NONE;
+
+	if (!isspace(*curline))
+	{
+		if (streql(curline, "samp\n"))
+		{
+			fputs("<samp>", data->files->out);
+			modifier = SAMP;
+		}
+		else if (strneql(curline, "code", 4))
+		{
+			curline += 4;	// For "code"
+			modifier = CODE;
+			if (*curline != '\n')
+			{
+				/* Skip over all whitespaces */
+				while (isspace(*curline))
+					curline++;
+
+				char *p;
+				*(p = strchr(curline, '\n')) = '\0';
+				fprintf(data->files->out, "<code class=\"lanugage-%s\">", curline);
+				*p = '\n';
+			}
+			else
+				fputs("<code>", data->files->out);
+		}
+	}
+
+	while (get_next_line(data), curline != NULL && !streql(curline, "```\n"))
+		fputs_escaped(curline, data->files->out);
+
+	switch (modifier)
+	{
+		case CODE:
+			fputs("</code>", data->files->out);
+			break;
+		case SAMP:
+			fputs("</samp>", data->files->out);
+			break;
+		case NONE:
+			break;
+	}
+	fputs("</pre>\n", data->files->out);
+
+	if (streql(curline, "```\n"))
+		get_next_line(data);
+
+	return 1;
+}
+#undef curline
 
 int
 htmlize(FILE *src, FILE *dest)
@@ -355,7 +439,7 @@ htmlize(FILE *src, FILE *dest)
 				/* We've reached EOF, so break. */
 				break;
 		}
-		if (strncmp(lines.readahead[i], "---\n", 4) == 0)
+		if (strneql(lines.readahead[i], "---\n", 4))
 		{
 			/*
 			 * We have reached the "---\n" that marks the end of our parsing.
@@ -371,7 +455,9 @@ htmlize(FILE *src, FILE *dest)
 	/* Iterate over the lines */
 	for (; lines.curline != NULL; get_next_line(&data))
 	{
-		// XXX: For testing
+		for (int i = 0; i < (sizeof(LINEWISE_FUNCTIONS)/sizeof(LINEWISE_FUNCTIONS[0])); i++)
+			if ((LINEWISE_FUNCTIONS[i])(&data))
+				continue;
 		fputs(lines.curline, files.out);
 	}
 
