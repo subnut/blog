@@ -59,11 +59,14 @@ static void get_next_line			(struct data *);
 static void free_links_recursively	(struct data *);
 static int _LINKDEF					(struct data *);
 static int _PREFORMATTED			(struct data *);
-static int _LINK					(struct data *);
+static int _CODE					(struct data *);
 
 static int (*LINEWISE_FUNCTIONS[])(struct data *) = {
 	&_PREFORMATTED,
 	&_LINKDEF,
+};
+static int (*CHARWISE_FUNCTIONS[])(struct data *) = {
+	&_CODE,
 };
 
 static void
@@ -235,6 +238,8 @@ _LINKDEF(struct data *data)
 	 * Separate id into index and subindex, if applicable */
 	index = atoi(id);
 	decimal = strchr(id, '.');	// NULL if no decimal point
+	if (decimal != NULL)
+		subindex = atoi(decimal+1);	// +1 because atoi needs pointer to start of integer
 
 	/* allocate enough space for data->links->linkdefs[index] */
 	if (data->links->maxindex < index)
@@ -267,8 +272,6 @@ _LINKDEF(struct data *data)
 	/* If there is a subindex */
 	if (decimal != NULL)
 	{
-		subindex = atoi(decimal+1);	// +1 because atoi needs pointer to start of integer
-
 		/* Check if we have been scammed */
 		if (data->links->linkdefs[index] != NULL)
 		{
@@ -390,6 +393,27 @@ _PREFORMATTED(struct data *data)
 }
 #undef curline
 
+static int
+_CODE(struct data *data)
+#define curline data->lines->curline
+{
+	if (*curline != '`')
+		return 0;
+
+	fputs("<code>", data->files->out);
+	for (curline++; *curline != '`'; curline++)
+	{
+		if (*curline == '\0') get_next_line(data);
+		if (curline == NULL) break;
+		fputc_escaped(*curline, data->files->out);
+	}
+	fputs("</code>", data->files->out);
+	if (*curline == '`') curline++;
+
+	return 1;
+}
+#undef curline
+
 int
 htmlize(FILE *src, FILE *dest)
 {
@@ -458,7 +482,23 @@ htmlize(FILE *src, FILE *dest)
 		for (int i = 0; i < (sizeof(LINEWISE_FUNCTIONS)/sizeof(LINEWISE_FUNCTIONS[0])); i++)
 			if ((LINEWISE_FUNCTIONS[i])(&data))
 				continue;
-		fputs(lines.curline, files.out);
+
+		while (*lines.curline != '\0')
+		{
+			/* Check if somebody cares */
+			for (int i = 0; i < (sizeof(CHARWISE_FUNCTIONS)/sizeof(CHARWISE_FUNCTIONS[0])); i++)
+				if ((CHARWISE_FUNCTIONS[i])(&data))
+					goto somebody_did_something;
+
+			/* Nobody cares */
+			fputc_escaped(*lines.curline, files.out);
+			lines.curline++;
+
+somebody_did_something:
+			/* No need to lines.curline++, as it has already been done by the
+			 * somebody who did something */
+			continue;
+		}
 	}
 
 	free_links_recursively(&data);
