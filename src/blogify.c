@@ -1,24 +1,31 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <dirent.h>
-#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /*
- * dirent.h	- opendir(), readdir()
- * errno.h	- if opendir() fails, show proper error msg
- * stdio.h	- printf(), fopen(), fprintf(), etc
- * string.h	- str*(), mem*()
+ * _POSIX_C_SOURCE - getline, strdup
+ *
+ * dirent.h	- opendir, readdir
+ * stdio.h	- getline, perror, printf, fopen, fprintf, etc
+ * stdlib.h	- free, exit, EXIT_FAILURE
+ * string.h	- strrchr, strlen
+ * unistd.h	- chdir
  */
 
 #include "constants.h"
-#include "include/cd.h"
 #include "include/date_to_text.h"
 #include "include/escape.h"
 #include "include/htmlize.h"
 
-#define cd(x) \
-        cd(x, argv)
-
+#define streql(s1, s2) (strcmp(s1, s2) == 0)
+#define cd(dir) \
+	if (chdir(dir)) \
+	return perror("chdir error"), \
+	EXIT_FAILURE
 
 static const char INITIAL_HTML_PRE_SUBTITLE[] = "\
 <html>\n\
@@ -60,15 +67,28 @@ static const char FINAL_HTML[] = "\
 static void
 initial_html(FILE *in, FILE *out)
 {
-	char TITLE[MAX_LINE_LENGTH];
-	char DATE_CREATED[MAX_LINE_LENGTH];
-	char DATE_MODIFIED[MAX_LINE_LENGTH];
-	char BUFFER[MAX_LINE_LENGTH];
+	// Ephermal variables
+	char *p;
+	size_t _;
 
-	fgets(TITLE,         MAX_LINE_LENGTH, in);
-	fgets(DATE_CREATED,  MAX_LINE_LENGTH, in);
-	fgets(DATE_MODIFIED, MAX_LINE_LENGTH, in);
-	fgets(BUFFER,        MAX_LINE_LENGTH, in);	// ---\n
+	// Valuable variables
+	char *TITLE;
+	char *DATE_CREATED;
+	char *DATE_MODIFIED;
+
+#define getline(a) \
+	if (getline(a, (_=0, &_), in) == -1) \
+	exit((perror("getline error"), EXIT_FAILURE))
+
+	getline(&TITLE);
+	getline(&DATE_CREATED);
+	getline(&DATE_MODIFIED);
+
+#undef getline
+
+	/* Fetch the remaining "---\n" */
+	char BUFFER[5];
+	fgets(BUFFER, 5, in);
 
 	fputs("<!--\n", out);
 	fprintf(out, "TITLE: %s", TITLE);
@@ -76,45 +96,21 @@ initial_html(FILE *in, FILE *out)
 	fprintf(out, "MODIFIED: %s", DATE_MODIFIED);
 	fputs("-->\n", out);
 
-	char *p;
-	*(p = memchr(TITLE,			'\n', MAX_LINE_LENGTH)) = '\0';
-	*(p = memchr(DATE_CREATED,	'\n', MAX_LINE_LENGTH)) = '\0';
-	*(p = memchr(DATE_MODIFIED, '\n', MAX_LINE_LENGTH)) = '\0';
+	*(p = strrchr(TITLE,			'\n')) = '\0';
+	*(p = strrchr(DATE_CREATED,		'\n')) = '\0';
+	*(p = strrchr(DATE_MODIFIED,	'\n')) = '\0';
 
 	fprintf(out, INITIAL_HTML_PRE_SUBTITLE, TITLE, FAVICON, TITLE);
 	htmlize(in, out);	// htmlize the subtitle text
 
-	/*
-	 * NOTE: This will not work -
-	 *
-	 * 		char buffer[15];
-	 *
-	 * 		fprintf(out, INITIAL_HTML_POST_SUBTITLE,
-	 * 				date_to_text(DATE_CREATED, buffer),
-	 * 				date_to_text(DATE_MODIFIED, buffer)
-	 * 			   );
-	 *
-	 * Why? Because both date_to_text() invocations shall return a
-	 * pointer to the same buffer, and both shall operate on that same buffer.
-	 *
-	 * So, when fprintf() starts formatting the string, it finds the buffer's
-	 * value to be what the last invocation of date_to_text() had put in it.
-	 * (ie. the string form of DATE_MODIFIED)
-	 *
-	 * This will cause both "Date created" and "Last modified" table fields to
-	 * show the value of DATE_MODIFIED.
-	 *
-	 *
-	 * The solution?
-	 * Use different buffers for DATE_CREATED and DATE_MODIFIED
-	 */
-
-	char DATE_CREATED_str[15];
-	char DATE_MODIFIED_str[15];
 	fprintf(out, INITIAL_HTML_POST_SUBTITLE,
-			date_to_text(DATE_CREATED, DATE_CREATED_str),
-			date_to_text(DATE_MODIFIED, DATE_MODIFIED_str)
+			date_to_text(DATE_CREATED),
+			date_to_text(DATE_MODIFIED)
 		   );
+
+	free(TITLE);
+	free(DATE_CREATED);
+	free(DATE_MODIFIED);
 }
 
 
@@ -136,47 +132,44 @@ main(int argc, const char **argv)
 	struct dirent *dirent;
 
 	if ((dir = opendir(SOURCE_DIR)) == NULL)
-	{
-		switch (errno)
-		{
-			case ENOENT:
-				fprintf(stderr, "%s: directory not found: %s\n",	*argv, SOURCE_DIR);
-				break;
-			case ENOTDIR:
-				fprintf(stderr, "%s: not a directory: %s\n",		*argv, SOURCE_DIR);
-				break;
-			case EACCES:
-				fprintf(stderr, "%s: permission denied: %s\n",		*argv, SOURCE_DIR);
-				break;
-			default:
-				fprintf(stderr, "%s: opendir error: %s\n",			*argv, SOURCE_DIR);
-				break;
-		}
-		return 1;
-	}
+		return perror("opendir error"),
+			   EXIT_FAILURE;
 
 	while ((dirent = readdir(dir)) != NULL)
 	{
 		char *name = dirent->d_name;
-		if (!memcmp(strrchr(name, '.'), SOURCE_EXT, strlen(SOURCE_EXT)))
+		if (streql(strrchr(name, '.'), SOURCE_EXT))
 		{
 			/* Copy name to new_name */
-			char new_name[FILENAME_MAX];
-			memmove(new_name, name, strlen(name)+1);	// +1 for \0
+			char *new_name;
+			if ((new_name = strdup(name)) == NULL)
+				return perror("strdup error"),
+					   EXIT_FAILURE;
+
+			/* Ensure enough space available */
+			if (strlen(SOURCE_EXT) < strlen(".html"))
+				if ((new_name = realloc(new_name,
+								sizeof(new_name[0]) * (
+									strlen(new_name)
+									- strlen(SOURCE_EXT)
+									+ strlen(".html")
+									)
+								)
+					) == NULL)
+					return perror("realloc error"),
+						   EXIT_FAILURE;
 
 			/* Change extension to .html */
 			char *p = strrchr(new_name, '.');
 			memmove(p, ".html", 6);		// 6, because ".html" has \0 at end
 
 			/* Open source file */
-			if (cd(SOURCE_DIR))
-				return 1;
+			cd(SOURCE_DIR);
 			sfp = fopen(name, "r");
 			cd("..");
 
 			/* Open destination file */
-			if (cd(DEST_DIR))
-				return 1;
+			cd(DEST_DIR);
 			dfp = fopen(new_name, "w");
 			cd("..");
 

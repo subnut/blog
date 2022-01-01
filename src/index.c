@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /*
  * _POSIX_C_SOURCE - strdup, getline
@@ -11,17 +12,13 @@
  * stdio.h  - fopen, fclose
  * string.h - memcmp, memchr, strdup, strlen
  * stdlib.h - free, EXIT_{SUCCESS,FAILURE}
+ * unistd.h - chdir
  */
 
 #include "constants.h"
-#include "include/cd.h"
 #include "include/date_to_text.h"
 #include "include/escape.h"
-#include "include/stoi.h"
 #include "include/urlencode.h"
-
-#define cd(x) \
-        cd(x, argv)
 
 static const char INITIAL_TEXT[] = "\
 <html>\n\
@@ -71,8 +68,8 @@ main(int argc, const char **argv)
 	filenames.maxindex = 0;
 	filenames.names[0] = NULL;
 
-	if (cd(DEST_DIR))
-		return perror("cd error"),
+	if (chdir(DEST_DIR))
+		return perror("chdir error"),
 			   EXIT_FAILURE;
 
 	outfile = fopen("index.html", "w");
@@ -96,36 +93,24 @@ main(int argc, const char **argv)
 			return perror("strdup error"),
 				   EXIT_FAILURE;
 
-		char *p;
-		*(p = strchr(name_allocd, '-')) = '\0';
-		int num = stoi(name_allocd);
-		*p = '-';
-
-		if (num > filenames.maxindex)
+		int index = atoi(name);	// Will ignore the '-' in the name automatically.
+		if (index > filenames.maxindex)
 		{
-			if ((filenames.names = realloc(filenames.names, (num+1) * sizeof(char*))) == NULL)
+			if ((filenames.names = realloc(filenames.names, (index+1) * sizeof(char*))) == NULL)
 				return perror("realloc error"),
 					   EXIT_FAILURE;
-			for (int i = filenames.maxindex+1; i <= num; i++)
+			for (int i = filenames.maxindex+1; i <= index; i++)
 				filenames.names[i] = NULL;
-			filenames.maxindex = num;
+			filenames.maxindex = index;
 		}
-		filenames.names[num] = name_allocd;
+		filenames.names[index] = name_allocd;
 	}
 	closedir(dir);
 
-
-	/*
-	 * Date published.
-	 * 10 for the "YYYY/MM/DD"
-	 * +9 for the leading "CREATED:"
-	 * +1 for the trailing '\0'
-	 */
-	char DATE_CREATED[20];
-
-	FILE *infile;	// input file
-	char *Title;
-	size_t _ = 0;
+	size_t _;
+	char *TITLE;
+	char *CREATED;
+	FILE *file;
 	for (int i=1; i <= filenames.maxindex; i++)
 	{
 		/* Skip if NULL */
@@ -133,84 +118,68 @@ main(int argc, const char **argv)
 			continue;
 
 		/* Open file for reading */
-		if ((infile = fopen(filenames.names[i], "r")) == NULL)
-			return perror("Failed to open infile"),
+		if ((file = fopen(filenames.names[i], "r")) == NULL)
+			return perror("Failed to open file"),
 				   EXIT_FAILURE;
 
 		/* Remove first line */
         char first_line[6];	// 6 because "<!--\n" has a trailing '\0'
-		if (fgets(first_line, 6, infile) == NULL)
+		if (fgets(first_line, 6, file) == NULL)
 			return fprintf(stderr, "Error while reading from file %s\n", filenames.names[i]),
 				   EXIT_FAILURE;
 
-		/* Title */
-		if (getline(&Title, &_, infile) == -1)
+		/* TITLE */
+		_ = 0; TITLE = NULL;
+		if (getline(&TITLE, &_, file) == -1)
 			return perror("getline error"),
 				   EXIT_FAILURE;
-		memmove(Title, Title + 6, strlen(Title) - 6);	// Remove "TITLE:"
-		while (*Title == ' ')
-			memmove(Title, Title + 1, strlen(Title) - 1);
-		*(strrchr(Title, '\n')) = '\0';
+		memmove(TITLE, TITLE + 6, strlen(TITLE) - 6);	// Remove "TITLE:"
+		while (*TITLE == ' ')
+			memmove(TITLE, TITLE + 1, strlen(TITLE) - 1);
+		*(strrchr(TITLE, '\n')) = '\0';
 
 		/* Date created */
-		if (fgets(DATE_CREATED, 20, infile) == NULL)
-			return fprintf(stderr, "Error while reading from file %s\n", filenames.names[i]),
+		_ = 0; CREATED = NULL;
+		if (getline(&CREATED, &_, file) == -1)
+			return perror("getline error"),
 				   EXIT_FAILURE;
-		memmove(DATE_CREATED, DATE_CREATED + 9, 20 - 9);	// Remove "CREATED:"
-		while (*DATE_CREATED == ' ')
-			memmove(DATE_CREATED, DATE_CREATED + 1, 20 - 1);
+		memmove(CREATED, CREATED + 9, strlen(CREATED) - 9);	// Remove "CREATED:"
+		while (*CREATED == ' ')
+			memmove(CREATED, CREATED + 1, strlen(CREATED) - 1);
+		*(strrchr(CREATED, '\n')) = '\0';
 
 		/* Done reading from file */
-		fclose(infile);
+		fclose(file);
 
-
-		char DATE_CREATED_str[15];
-		char url[FILENAME_MAX*3 + 1];
-
-		date_to_text(DATE_CREATED, DATE_CREATED_str);
-		urlencode_s(filenames.names[i], url, FILENAME_MAX*3+1);
+		/* Make filename from URL */
+		char *url;
+		url = malloc(strlen(filenames.names[i])*3 + 1); // +1 for trailing '\0'
+		urlencode_s(filenames.names[i], url, strlen(filenames.names[i])*3+1);
 		free(filenames.names[i]);
 		filenames.names[i] = NULL;
-
-		/*
-		fprintf(outfile,
-				"<tr>\n"
-				"    <td class=\"blog-index-name\">\n"
-				"        <a href=\"%s\">%s</a>\n"
-				"    </td>\n"
-				"    <td class=\"blog-index-date\">\n"
-				"        %s\n"
-				"    </td>\n"
-				"</tr>\n",
-				url,
-				Title,
-				DATE_CREATED_str
-			 );
-		*/
 
 		fprintf(outfile,
 				"<tr>\n"
 				"    <td class=\"blog-index-name\">\n"
 				"        <a href=\"%s\">",
 				url);
-
-		fputs_escaped_allow_charrefs(Title, outfile);
-		free(Title);
-		Title = NULL;
-
+		fputs_escaped_allow_charrefs(TITLE, outfile);
 		fprintf(outfile,                  "</a>\n"
 				"    </td>\n"
 				"    <td class=\"blog-index-date\">\n"
 				"        %s\n"
 				"    </td>\n"
 				"</tr>\n",
-				DATE_CREATED_str
-			 );
+				date_to_text(CREATED)
+			   );
+
+		free(url);
+		free(TITLE);
+		free(CREATED);
 	}
 
 	fprintf(outfile, FINAL_TEXT, FOOTER);
 	fclose(outfile);
-
 	return EXIT_SUCCESS;
 }
 

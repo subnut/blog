@@ -3,22 +3,25 @@
 .SUFFIXES: .c .o
 .c.o: ; $(CC) -Wall -I. $(CFLAGS) -c $< -o $*.o
 
-index_deps    =  src/index.o    src/cd.o src/date_to_text.o src/stoi.o src/escape.o src/urlencode.o
-blogify_deps  =  src/blogify.o  src/cd.o src/date_to_text.o src/stoi.o src/escape.o src/urlencode.o src/charref.o src/htmlize.o
-htmlize_deps  =  .htmlize.o                                 src/stoi.o src/escape.o src/urlencode.o src/charref.o src/htmlize.o
-
 all: index blogify htmlize
 clean: clean_objects clean_executables
 
 clean_objects:     ; rm -f src/*.o .htmlize.o
 clean_executables: ; rm -f index blogify htmlize
 
-index:   $(index_deps)
-blogify: $(blogify_deps)
-htmlize: $(htmlize_deps)
+htmlize_deps	= src/htmlize.o src/charref.o src/escape.o
+index_sources   = src/index.o src/date_to_text.o src/escape.o src/urlencode.o
+blogify_sources = $(htmlize_deps) src/blogify.o src/date_to_text.o
+htmlize_sources = $(htmlize_deps) .htmlize.o
+
+index:   $(index_sources)
+blogify: $(blogify_sources)
+htmlize: $(htmlize_sources)
 
 index blogify htmlize:
-	$(CC) $(LDFLAGS) -o $@ $($@_deps)
+	$(CC) $(LDFLAGS) -o $@ $($@_sources)
 
-# Rebuild these if constants.h is changed
-src/index.o src/blogify.o src/htmlize.o: constants.h
+# Rebuild these if constants.h has changed
+src/index.o:   constants.h
+src/blogify.o: constants.h
+src/htmlize.o: constants.h
