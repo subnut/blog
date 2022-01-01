@@ -184,7 +184,7 @@ _LINKDEF(struct data *data)
 	 * |
 	 *
 	 * Only [1.1] and [1] are valid link IDs. [1.1.1] is invalid.
-	 * If [1] is defined, [1.1] should not be defined, and vice-versa. (TODO: error out)
+	 * If [1] is defined, [1.1] should not be defined, and vice-versa.
 	 * A link defined once can be used only once. After that, it is undefined.
 	 *
 	 * So, if we define [1], and then we use [1] somewhere, and then we define
