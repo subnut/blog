@@ -9,6 +9,11 @@ LDFLAGS = -s
 all: index blogify htmlize
 clean: clean_objects clean_executables
 
+debug: all_debug
+all_debug: index_debug blogify_debug htmlize_debug
+index_debug blogify_debug htmlize_debug:
+	@$(MAKE) $(@:_debug=) CFLAGS=-ggdb LDFLAGS=
+
 clean_objects:		; rm -f src/*.o .htmlize.o
 clean_executables:	; rm -f index blogify htmlize
 
