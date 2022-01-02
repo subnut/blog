@@ -1,3 +1,5 @@
+#include "include/charref.h"
+
 #include <ctype.h>
 #include <string.h>
 
@@ -5,8 +7,6 @@
  * ctype.h	- isalnum(), isalpha(), etc.
  * string.h	- str*(), mem*()
  */
-
-#include "include/charref.h"
 
 static const char *named_references[] =
 /*

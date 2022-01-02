@@ -1,5 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
 
+#include "constants.h"
+#include "include/date_to_text.h"
+#include "include/escape.h"
+#include "include/htmlize.h"
+
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,11 +20,6 @@
  * string.h	- strrchr, strlen
  * unistd.h	- chdir
  */
-
-#include "constants.h"
-#include "include/date_to_text.h"
-#include "include/escape.h"
-#include "include/htmlize.h"
 
 #define streql(s1, s2) (strcmp(s1, s2) == 0)
 #define cd(dir) \

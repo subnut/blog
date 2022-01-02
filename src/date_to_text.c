@@ -1,3 +1,5 @@
+#include "include/date_to_text.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

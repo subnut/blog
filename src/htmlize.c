@@ -1,6 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
 #include "include/htmlize.h"
 
+#include "constants.h"
+#include "include/escape.h"
+
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -15,9 +18,6 @@
  * stdlib.h			- free, atoi, exit, EXIT_SUCCESS, EXIT_FAILURE
  * string.h			- strncmp, strchr, strrchr
  */
-
-#include "constants.h"
-#include "include/escape.h"
 
 #define streql(s1, s2) (strcmp(s1, s2) == 0)
 #define strneql(s1, s2, n) (strncmp(s1, s2, n) == 0)

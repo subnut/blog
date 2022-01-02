@@ -1,7 +1,8 @@
+#include "include/urlencode.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "include/urlencode.h"
 
 /*
  * ctype.h  - isalnum

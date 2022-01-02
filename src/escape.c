@@ -1,7 +1,15 @@
 #define _POSIX_C_SOURCE 200809L	// For strdup() in string.h
+#include "include/escape.h"
+
+#include "include/charref.h"
+
 #include <stdio.h>
 #include <string.h>
-#include "include/charref.h"
+
+/*
+ * stdio.h	- FILE, fputs, fputc
+ * string.h	- strndup, strlen
+ */
 
 void
 fputc_escaped(const char c, FILE *stream)

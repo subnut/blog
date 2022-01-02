@@ -1,4 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
+
+#include "constants.h"
+#include "include/date_to_text.h"
+#include "include/escape.h"
+#include "include/urlencode.h"
+
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,11 +20,6 @@
  * stdlib.h - free, EXIT_{SUCCESS,FAILURE}
  * unistd.h - chdir
  */
-
-#include "constants.h"
-#include "include/date_to_text.h"
-#include "include/escape.h"
-#include "include/urlencode.h"
 
 static const char INITIAL_TEXT[] = "\
 <html>\n\
