@@ -13,9 +13,9 @@
 /*
  * _POSIX_C_SOURCE  - getline, strndup
  * ctype.h			- isdigit, isspace
- * stdbool.h        - bool, true, false
- * stdio.h          - getline, FILE
- * stdlib.h			- free, atoi, exit, EXIT_SUCCESS, EXIT_FAILURE
+ * stdbool.h		- bool, true, false
+ * stdio.h			- getline, FILE
+ * stdlib.h			- free, strtol, exit, EXIT_SUCCESS, EXIT_FAILURE
  * string.h			- strncmp, strchr, strrchr
  */
 
@@ -40,23 +40,19 @@ struct data {
 	struct config *config;
 	struct lines  *lines;
 	struct files  *files;
-	struct links  *links;
+	struct link   *links;
 };
-struct links {
-	int maxindex;				// Also see src/index.c
-	struct linkdef **linkdefs;	// Array of pointers to struct linkdef
-};
-struct linkdef {
-	enum { LINK, LINKARRAY } type;
-	union {
-		char *link;
-		struct links *links;
-	};
+struct link {
+	int maxindex;
+	char *link;
+	struct link **links;
 };
 
 /* Function prototypes */
+static char *get_linkdef			(struct link *, const char *);
+static void set_linkdef				(struct link *, const char *, char *);
+static void free_links_recursively	(struct link *);
 static void get_next_line			(struct data *);
-static void free_links_recursively	(struct data *);
 static int _LINKDEF					(struct data *);
 static int _PREFORMATTED			(struct data *);
 static int _CODE					(struct data *);
@@ -68,6 +64,86 @@ static int (*LINEWISE_FUNCTIONS[])(struct data *) = {
 static int (*CHARWISE_FUNCTIONS[])(struct data *) = {
 	&_CODE,
 };
+
+static char *
+get_linkdef(struct link *links, const char *id)
+{
+	// TODO: Utilize readahead ?
+}
+
+static void
+set_linkdef(struct link *links, const char *id, char *href)
+{
+	int index;
+	char *end;
+	index = (int)strtol(id, &end, 10);
+
+	if (index == 0)
+		exit((fputs("Invalid link ID. ID must not be zero.\n", stderr), EXIT_FAILURE));
+
+	if (links->maxindex == 0)
+	{
+		/* Allocate */
+		if ((links->links = calloc(index + 1, sizeof(struct link *))) == NULL)
+			exit((perror("calloc failed"), EXIT_FAILURE));
+
+		/* Initialize */
+		links->link = NULL;
+		links->maxindex = index;
+		for (int i = 0; i <= index; i++)
+			links->links[i] = NULL;
+	}
+	else if (links->maxindex < index)
+	{
+		/* Allocate new indices */
+		if ((links->links = realloc(links->links, (index + 1) * sizeof(struct link *))) == NULL)
+			exit((perror("realloc failed"), EXIT_FAILURE));
+
+		/* Initialize new indices */
+		for (int i = links->maxindex + 1; i <= index; i++)
+			links->links[i] = NULL;
+		links->maxindex = index;
+	}
+
+	if (*end == ']')
+	{
+		if (links->links[index] != NULL)
+			exit((fputs("link already defined. please use it before defining again.\n", stderr), EXIT_FAILURE));
+
+		/* Allocate */
+		if ((links->links[index] = malloc(sizeof(struct link))) == NULL)
+			exit((perror("malloc failed"), EXIT_FAILURE));
+
+		/* Initialize */
+		links->links[index]->maxindex = 0;
+		links->links[index]->links = NULL;
+		links->links[index]->link = href;
+	}
+	else /* (*end == '.') */
+		set_linkdef(links->links[index], end + 1, href);
+}
+
+static void
+free_links_recursively(struct link *links)
+#define free(ptr) { free(ptr); ptr = NULL; }
+{
+	if (links->link != NULL)
+		free(links->link);
+
+	if (links->maxindex == 0)
+		return;
+
+	for (int index = 0; index <= links->maxindex; index++)
+	{
+		if (links->links[index] == NULL) continue;
+		else
+		{
+			free_links_recursively(links->links[index]);
+			free(links->links[index]);
+		}
+	}
+}
+#undef free
 
 static void
 get_next_line(struct data *data)
@@ -138,30 +214,6 @@ success:
 	data->lines->curline = data->lines->readahead[0];
 }
 
-static void
-free_links_recursively(struct data *data)
-#define free(ptr) { free(ptr); ptr = NULL; }
-{
-	for (int index = 0; index <= data->links->maxindex; index++)
-	{
-		if (data->links->linkdefs[index] == NULL)
-			continue;
-
-		if (data->links->linkdefs[index]->type == LINK)
-			free(data->links->linkdefs[index]->link)
-		else /* data->links->linkdefs[index]->type == LINK */
-			for (int subindex = 0; subindex <= data->links->linkdefs[index]->links->maxindex; subindex++)
-			{
-				if (data->links->linkdefs[index]->links->linkdefs[subindex] == NULL) continue;
-				free(data->links->linkdefs[index]->links->linkdefs[subindex]->link)
-				free(data->links->linkdefs[index]->links->linkdefs[subindex])
-			}
-		free(data->links->linkdefs[index])
-	}
-	free(data->links->linkdefs)
-}
-#undef free
-
 /*
  * Functions shall be of the form -
  * 	static int _name(struct data *)
@@ -175,6 +227,7 @@ free_links_recursively(struct data *data)
 
 static int
 _LINKDEF(struct data *data)
+#define curline data->lines->curline
 {
 	/*
 	 * Linkdefs shall be of the form:
@@ -194,17 +247,9 @@ _LINKDEF(struct data *data)
 	 * [1.1], it is valid. No errors shall be shown.
 	 */
 
-	// Ephermal variables
-	char *end;
-	char *decimal;
-	int index;
-	int subindex;
-
-	// Valuable variables
 	char *id;
+	char *end;
 	char *href;
-
-#define curline data->lines->curline
 
 	/* Check if current line is a valid linkdef */
 	if (curline[0] != '\t')		return 0;
@@ -220,7 +265,7 @@ _LINKDEF(struct data *data)
 	if ((href = strndup(href, end - href)) == NULL)
 		exit((perror("strndup failed"), EXIT_FAILURE));
 
-	/* Extract id */
+	/* Validate id */
 	id = curline + 2;	// \t[
 	end = strchr(id, ']');
 	if (end[-1] == '.')	// [1.] is not allowed, only [1] or [1.1]
@@ -228,98 +273,16 @@ _LINKDEF(struct data *data)
 	for (char *c = id; c < end; c++)
 		if (*c != '.' && !isdigit(*c))	// Only numbers and '.' allowed
 			goto nope;
-	if (strchr(id, '.') != NULL)
-		if (strchr(id, '.') != strrchr(id, '.'))	// Only one '.' allowed
-			goto nope;
 
-#undef curline
-
-	/* Convert id from string to integer.
-	 * Separate id into index and subindex, if applicable */
-	index = atoi(id);
-	decimal = strchr(id, '.');	// NULL if no decimal point
-	if (decimal != NULL)
-		subindex = atoi(decimal+1);	// +1 because atoi needs pointer to start of integer
-
-	/* allocate enough space for data->links->linkdefs[index] */
-	if (data->links->maxindex < index)
-	{
-		if (realloc(data->links->linkdefs, (index+1) * sizeof(struct linkdef *)) == NULL)
-			exit((perror("realloc failed"), EXIT_FAILURE));
-		for (int i = data->links->maxindex + 1; i <= index; i++)
-			data->links->linkdefs[i] = NULL;
-		data->links->maxindex = index;
-	}
-
-	/* If there is no subindex */
-	if (decimal == NULL)
-	{
-		if (data->links->linkdefs[index] != NULL)
-			exit((fprintf(stderr, data->links->linkdefs[index]->type == LINK
-									? "link [%d] already defined\n"
-									: "link [%d.*] already defined\n"
-							, index), EXIT_FAILURE));
-
-		if ((data->links->linkdefs[index] = calloc(1, sizeof(struct linkdef))) == NULL)
-			exit((perror("calloc failed"), EXIT_FAILURE));
-
-		data->links->linkdefs[index]->type = LINK;
-		data->links->linkdefs[index]->link = href;
-
-		goto done;
-	}
-
-	/* If there is a subindex */
-	if (decimal != NULL)
-	{
-		/* Check if we have been scammed */
-		if (data->links->linkdefs[index] != NULL)
-		{
-			if (data->links->linkdefs[index]->type == LINK)
-				exit((fprintf(stderr, "link [%d] already defined, can't define [%d.%d]\n",
-								index, index, subindex), EXIT_FAILURE));
-
-			if (subindex < data->links->linkdefs[index]->links->maxindex
-					&& data->links->linkdefs[index]->links->linkdefs[subindex] != NULL)
-				exit((fprintf(stderr, "link [%d.%d] already defined\n",
-								index, subindex), EXIT_FAILURE));
-		}
-
-		/* Ensure enough space for all of us */
-		if (data->links->linkdefs[index] == NULL)
-		{
-			if ((data->links->linkdefs[index] = calloc(1, sizeof(struct linkdef))) == NULL)
-				exit((perror("calloc failed"), EXIT_FAILURE));
-			data->links->linkdefs[index]->type = LINKARRAY;
-			if ((data->links->linkdefs[index]->links = malloc(sizeof(struct links))) == NULL)
-				exit((perror("malloc failed"), EXIT_FAILURE));
-			data->links->linkdefs[index]->links->maxindex = subindex;
-			for (int i = 0; i <= subindex; i++)
-				data->links->linkdefs[index]->links->linkdefs[i] = NULL;
-		}
-		else /* data->links->linkdefs[index] != NULL */
-		{
-			if (data->links->linkdefs[index]->links->maxindex < subindex)
-				if (realloc(data->links->linkdefs[index]->links->linkdefs,
-							(subindex+1) * sizeof(struct linkdef *)) == NULL)
-					exit((perror("realloc failed"), EXIT_FAILURE));
-			for (int i = data->links->linkdefs[index]->links->maxindex + 1; i <= subindex; i++)
-				data->links->linkdefs[index]->links->linkdefs[i] = NULL;
-			data->links->linkdefs[index]->links->maxindex = subindex;
-		}
-		data->links->linkdefs[index]->links->linkdefs[subindex]->type = LINK;
-		data->links->linkdefs[index]->links->linkdefs[subindex]->link = href;
-
-		goto done;
-	}
-
-done:
+	/* Set */
+	set_linkdef(data->links, id, href);
 	return 1;
 
 nope:
 	free(href);
 	return 0;
 }
+#undef curline
 
 static int
 _PREFORMATTED(struct data *data)
@@ -421,15 +384,13 @@ htmlize(FILE *src, FILE *dest)
 	struct config config;
 	struct lines lines;
 	struct files files;
-	struct links links;
+	struct link links;
 	struct data data;
 
 	/* Populate links */
-	if ((links.linkdefs = calloc(1, sizeof(struct linkdef *))) == NULL)
-		return perror("calloc error"),
-			   EXIT_FAILURE;
+	links.link = NULL;
 	links.maxindex = 0;
-	links.linkdefs[0] = NULL;
+	links.links = NULL;
 
 	/* Populate config */
 	config.bolded = false;
@@ -501,7 +462,7 @@ somebody_did_something:
 		}
 	}
 
-	free_links_recursively(&data);
+	free_links_recursively(data.links);
 	return EXIT_SUCCESS;
 }
 
