@@ -11,7 +11,7 @@
 #include <string.h>
 
 /*
- * _POSIX_C_SOURCE  - getline, strndup
+ * _POSIX_C_SOURCE	- getline, strndup
  * ctype.h			- isdigit, isspace
  * stdbool.h		- bool, true, false
  * stdio.h			- getline, FILE
@@ -186,7 +186,7 @@ static void
 get_next_line(struct data *data)
 {
 	/* Structure of data -
-	 *	readahead[READAHEAD_LINES-1]	<-- input
+	 * 	readahead[READAHEAD_LINES-1]	<-- input
 	 * 	readahead[READAHEAD_LINES-2]
 	 * 	readahead[READAHEAD_LINES-3]
 	 * 	...
@@ -504,9 +504,8 @@ somebody_did_something:
 }
 
 /*
- * SYNTAX -
- * 	*bold*
- * 	_italic_
+ * IDEAS:
+ *	- If link not found in data->links, then search readahead for it?
  */
 
 /* vim:set noet nowrap ts=4 sts=4 sw=4 fdm=syntax: */
