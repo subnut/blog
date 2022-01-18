@@ -50,6 +50,7 @@ struct link {
 
 /* Function prototypes */
 static char *get_linkdef			(struct link *, const char *);
+static void free_linkdef			(struct link *, const char *);
 static void set_linkdef				(struct link *, const char *, char *);
 static void free_links_recursively	(struct link *);
 static void get_next_line			(struct data *);
@@ -68,7 +69,43 @@ static int (*CHARWISE_FUNCTIONS[])(struct data *) = {
 static char *
 get_linkdef(struct link *links, const char *id)
 {
-	// TODO: Utilize readahead ?
+	/* Validate id */
+	{
+		char *end;
+		if ((end = strchr(id, ']')) == NULL)
+			goto invalid;
+
+		for (const char *c = id; c < end; c++)
+			if (*c != '.' && !isdigit(*c))	// Only numbers and '.' allowed
+				goto invalid;
+	}
+
+	int index;
+	char *end;
+	index = (int)strtol(id, &end, 10);
+
+	if (index == 0)
+	{
+		fputs("ID must not be zero.", stderr);
+		goto invalid;
+	}
+
+	if (links->maxindex < index)
+		exit((fputs("Link not defined\n", stderr), EXIT_FAILURE));
+
+	if (*end == ']')
+		return links->links[index]->link;
+	else /* (*end == '.') */
+		return get_linkdef(links->links[index], end + 1);
+
+invalid:
+	exit((fputs("Invalid link ID.\n", stderr), EXIT_FAILURE));
+}
+
+static void
+free_linkdef(struct link *links, const char *id)
+{
+	// TODO. Free linkdef. And free its parent structure if it becomes empty.
 }
 
 static void
