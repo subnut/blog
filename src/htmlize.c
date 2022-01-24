@@ -20,7 +20,7 @@
  */
 
 #define perror(str) \
-	(fprintf(stderr,"%d:%s:%s():",__LINE__,__FILE__,__func__), perror(str))
+	(fprintf(stderr,"%d:%s:%s(): ",__LINE__,__FILE__,__func__), perror(str))
 
 #define streql(s1, s2) (strcmp(s1, s2) == 0)
 #define strneql(s1, s2, n) (strncmp(s1, s2, n) == 0)
@@ -240,11 +240,13 @@ set_linkdef_(struct link *links, const char *id, char *href)
 	if (*end == ']')
 	{
 		if (links->links[index] != NULL)
-			return LINK_DEFINED;
+			if (links->links[index]->link != NULL)
+				return LINK_DEFINED;
 
-		/* Allocate */
-		if ((links->links[index] = malloc(sizeof(struct link))) == NULL)
-			exit((perror("malloc failed"), EXIT_FAILURE));
+		/* Allocate if required */
+		if (links->links[index] == NULL)
+			if ((links->links[index] = malloc(sizeof(struct link))) == NULL)
+				exit((perror("malloc failed"), EXIT_FAILURE));
 
 		/* Initialize */
 		links->links[index]->maxindex = 0;
@@ -252,7 +254,14 @@ set_linkdef_(struct link *links, const char *id, char *href)
 		links->links[index]->link = href;
 	}
 	else /* (*end == '.') */
+	{
+		/* Allocate if required */
+		if (links->links[index] == NULL)
+			if ((links->links[index] = malloc(sizeof(struct link))) == NULL)
+				exit((perror("malloc failed"), EXIT_FAILURE));
+
 		return set_linkdef_(links->links[index], end + 1, href);
+	}
 
 	return EXIT_SUCCESS;
 }
@@ -380,38 +389,29 @@ _LINKDEF(struct data *data)
 	 * |	[2.10]:hey-im-a-link
 	 * |
 	 *
-	 * Only [1.1] and [1] are valid link IDs. [1.1.1] is invalid.
-	 * If [1] is defined, [1.1] should not be defined, and vice-versa.
 	 * A link defined once can be used only once. After that, it is undefined.
-	 *
-	 * So, if we define [1], and then we use [1] somewhere, and then we define
-	 * [1.1], it is valid. No errors shall be shown.
+	 * A link already defined cannot be redefined without using it first.
 	 */
 
 	char *id;
 	char *end;
 	char *href;
 
-	/* Check if current line is a valid linkdef */
-	if (curline[0] != '\t')		return 0;
-	if (curline[1] != '[')		return 0;
-	if (!isdigit(curline[2]))	return 0;
+	if (curline[0] != '\t')						return 0;
+	if (curline[1] != '[')						return 0;
+	if ((href = strchr(curline, ':')) == NULL)	return 0;
 
-	/* Extract href and strdup it */
-	if ((href = strchr(curline, ':')) == NULL) return 0;
-	while (isspace(href[0])) href++;
+	while (isspace(href[0])) href++;	// ltrim
 	if (href[0] == '\0') return 0;	// EOL reached! ie. No link given, only id!
 	end = strrchr(curline, '\0');
-	while (end > href && isspace(end[-1])) end--;
+	while (end > href && isspace(end[-1])) end--;	// rtrim
 	if ((href = strndup(href, end - href)) == NULL)
 		exit((perror("strndup failed"), EXIT_FAILURE));
 
-	/* Validate id */
 	id = curline + 2;	// \t[
 	if (!valid_linkid(id))
 		exit(EXIT_FAILURE);
 
-	/* Set */
 	set_linkdef(data->links, id, href);
 	return 1;
 }
@@ -574,24 +574,28 @@ htmlize(FILE *src, FILE *dest)
 	{
 		for (int i = 0; i < (sizeof(LINEWISE_FUNCTIONS)/sizeof(LINEWISE_FUNCTIONS[0])); i++)
 			if ((LINEWISE_FUNCTIONS[i])(&data))
-				continue;
+				goto LINEWISE_FUNCTION_did_something;
 
 		while (*lines.curline != '\0')
 		{
 			/* Check if somebody cares */
 			for (int i = 0; i < (sizeof(CHARWISE_FUNCTIONS)/sizeof(CHARWISE_FUNCTIONS[0])); i++)
 				if ((CHARWISE_FUNCTIONS[i])(&data))
-					goto somebody_did_something;
+					goto CHARWISE_FUNCTION_did_something;
 
 			/* Nobody cares */
 			fputc_escaped(*lines.curline, files.out);
 			lines.curline++;
 
-somebody_did_something:
+CHARWISE_FUNCTION_did_something:
 			/* No need to lines.curline++, as it has already been done by the
-			 * somebody who did something */
+			 * CHARWISE_FUNCTION who did something */
 			continue;
 		}
+
+LINEWISE_FUNCTION_did_something:
+		/* Skip everything else and proceed to next line */
+		continue;
 	}
 
 	free_links_recursively(data.links);
