@@ -163,6 +163,12 @@ main(int argc, const char **argv)
 			char *p = strrchr(new_name, '.');
 			memmove(p, ".html", 6);		// 6, because ".html" has \0 at end
 
+
+#ifdef PRINT_FILENAMES
+			printf("%s -> %s\n", name, new_name);
+			fflush(stdout);
+#endif
+
 			/* Open source file */
 			cd(SOURCE_DIR);
 			sfp = fopen(name, "r");
@@ -177,10 +183,6 @@ main(int argc, const char **argv)
 			process_file(sfp, dfp);
 			fclose(sfp);
 			fclose(dfp);
-
-#ifdef PRINT_FILENAMES
-			printf("%s -> %s\n", name, new_name);
-#endif /* PRINT_FILENAMES */
 		}
 	}
 	closedir(dir);
