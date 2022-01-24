@@ -19,8 +19,15 @@
  * string.h			- strncmp, strchr, strrchr
  */
 
+#define perror(str) \
+	(fprintf(stderr,"%d:%s:%s():",__LINE__,__FILE__,__func__), perror(str))
+
 #define streql(s1, s2) (strcmp(s1, s2) == 0)
 #define strneql(s1, s2, n) (strncmp(s1, s2, n) == 0)
+
+#define LINK_DEFINED		11
+#define LINK_UNDEFINED		12
+static int local_errno;
 
 /* Struct definitions */
 struct config {
@@ -49,9 +56,13 @@ struct link {
 };
 
 /* Function prototypes */
+static int  valid_linkid			(const char *);
 static char *get_linkdef			(struct link *, const char *);
+static char *get_linkdef_			(struct link *, const char *);
 static void free_linkdef			(struct link *, const char *);
+static void free_linkdef_			(struct link *, const char *);
 static void set_linkdef				(struct link *, const char *, char *);
+static int  set_linkdef_			(struct link *, const char *, char *);
 static void free_links_recursively	(struct link *);
 static void get_next_line			(struct data *);
 static int _LINKDEF					(struct data *);
@@ -66,44 +77,111 @@ static int (*CHARWISE_FUNCTIONS[])(struct data *) = {
 	&_CODE,
 };
 
+static int
+valid_linkid(const char *id)
+#define failprintf(...) { fprintf(__VA_ARGS__); return 0; }
+{
+	char *end;
+	end = strchr(id, ']');
+
+	/* If no terminating ']', it's not an ID */
+	if (end == NULL)
+		failprintf(stderr, "Not a link id: %s\n", id);
+
+
+	/* ID can consist of digits and '.' only */
+	for (const char *c = id; c < end; c++)
+		if (*c != '.' && !isdigit(*c))	// Only numbers and '.' allowed
+			failprintf(stderr,
+					"Invalid link id: [%s]\n"
+					"Only digits and dot (.) allowed\n",
+					strndup(id, end-id));
+
+
+	/* Check all sub-indexes */
+	const char *ptr;
+	ptr = id;
+
+	int index;
+	index = (int)strtol(ptr, &end, 10);
+	while (*end != ']' && index > 0 && end != ptr)
+	{
+		ptr = end + 1;
+		index = (int)strtol(ptr, &end, 10);
+	}
+
+	if (end == ptr)	// [X..Y] or [.X.Y] or [X.Y.]
+		failprintf(stderr,
+				"Invalid link id: [%s]\n"
+				"Please ensure all indexes are specified\n",
+				strndup(id, strchr(id,']')-id));
+
+	if (index < 0)
+		failprintf(stderr,
+				"Invalid link id: [%s]\n"
+				"Please ensure all indexes are positive\n",
+				strndup(id, strchr(id,']')-id));
+
+	if (index == 0) // [X.0.Y] or [0] or [0.Y]
+		failprintf(stderr,
+				"Invalid link id: [%s]\n"
+				"Please ensure all indexes are non-zero\n",
+				strndup(id, strchr(id,']')-id));
+
+	/* ID is valid */
+	return 1;
+}
+#undef failprintf
+
 static char *
 get_linkdef(struct link *links, const char *id)
 {
-	/* Validate id */
+	if (!valid_linkid(id))
+		exit(EXIT_FAILURE);
+
+	char *retval;
+	retval = get_linkdef_(links, id);
+	if (retval != NULL)
+		return retval;
+
+	switch (local_errno)
 	{
-		char *end;
-		if ((end = strchr(id, ']')) == NULL)
-			goto invalid;
-
-		for (const char *c = id; c < end; c++)
-			if (*c != '.' && !isdigit(*c))	// Only numbers and '.' allowed
-				goto invalid;
+		case LINK_UNDEFINED:
+			fprintf(stderr,
+					"Link not defined: [%s]\n"
+					"Please define the link before using it\n",
+					strndup(id, strchr(id,']')-id));
+			break;
 	}
+	exit(EXIT_FAILURE);
+}
 
+static char *
+get_linkdef_(struct link *links, const char *id)
+{
 	int index;
 	char *end;
 	index = (int)strtol(id, &end, 10);
 
-	if (index == 0)
-	{
-		fputs("ID must not be zero.", stderr);
-		goto invalid;
-	}
-
 	if (links->maxindex < index)
-		exit((fputs("Link not defined\n", stderr), EXIT_FAILURE));
+		return (local_errno = LINK_UNDEFINED),
+			   NULL;
 
 	if (*end == ']')
 		return links->links[index]->link;
 	else /* (*end == '.') */
-		return get_linkdef(links->links[index], end + 1);
-
-invalid:
-	exit((fputs("Invalid link ID.\n", stderr), EXIT_FAILURE));
+		return get_linkdef_(links->links[index], end + 1);
 }
 
 static void
 free_linkdef(struct link *links, const char *id)
+{
+	if (!valid_linkid(id)) exit(EXIT_FAILURE);
+	return free_linkdef_(links, id);
+}
+
+static void
+free_linkdef_(struct link *links, const char *id)
 {
 	// TODO. Free linkdef. And free its parent structure if it becomes empty.
 }
@@ -111,12 +189,29 @@ free_linkdef(struct link *links, const char *id)
 static void
 set_linkdef(struct link *links, const char *id, char *href)
 {
+	if (!valid_linkid(id))
+		exit(EXIT_FAILURE);
+
+	switch (set_linkdef_(links, id, href))
+	{
+		case EXIT_SUCCESS:
+			return;
+
+		case LINK_DEFINED:
+			fprintf(stderr,
+					"Link already defined: [%s]\n"
+					"Please use it before defining it again.\n",
+					strndup(id, strchr(id,']')-id));
+			exit(EXIT_FAILURE);
+	}
+}
+
+static int
+set_linkdef_(struct link *links, const char *id, char *href)
+{
 	int index;
 	char *end;
 	index = (int)strtol(id, &end, 10);
-
-	if (index == 0)
-		exit((fputs("Invalid link ID. ID must not be zero.\n", stderr), EXIT_FAILURE));
 
 	if (links->maxindex == 0)
 	{
@@ -145,7 +240,7 @@ set_linkdef(struct link *links, const char *id, char *href)
 	if (*end == ']')
 	{
 		if (links->links[index] != NULL)
-			exit((fputs("link already defined. please use it before defining again.\n", stderr), EXIT_FAILURE));
+			return LINK_DEFINED;
 
 		/* Allocate */
 		if ((links->links[index] = malloc(sizeof(struct link))) == NULL)
@@ -157,7 +252,9 @@ set_linkdef(struct link *links, const char *id, char *href)
 		links->links[index]->link = href;
 	}
 	else /* (*end == '.') */
-		set_linkdef(links->links[index], end + 1, href);
+		return set_linkdef_(links->links[index], end + 1, href);
+
+	return EXIT_SUCCESS;
 }
 
 static void
@@ -212,12 +309,11 @@ get_next_line(struct data *data)
 	/*
 	 * Avoid the situation where we read more than we need.
 	 *
-	 * If we have already read "---\n", set new line to NULL and return.
 	 * If any of the previous lines is NULL (ie. we had reached EOF or "---\n")
 	 * then set new line to NULL and return.
 	 */
 	for (int i = READAHEAD_LINES-1; i>0; i--)
-		if (data->lines->readahead[i] == NULL || strneql(data->lines->readahead[i], "---\n", 4))
+		if (data->lines->readahead[i] == NULL)
 		{
 			data->lines->readahead[READAHEAD_LINES-1] = NULL;
 			goto success;
@@ -244,6 +340,14 @@ get_next_line(struct data *data)
 			 * errno. So, the errno must have been set by getline.
 			 */
 			exit((perror("getline error"), EXIT_FAILURE));
+	}
+
+	/* If we have read "---\n", set new line to NULL to indicate that */
+	if (strneql(data->lines->readahead[READAHEAD_LINES-1], "---\n", 4))
+	{
+		free(data->lines->readahead[READAHEAD_LINES-1]);
+		data->lines->readahead[READAHEAD_LINES-1] = NULL;
+		goto success;
 	}
 
 success:
@@ -304,20 +408,12 @@ _LINKDEF(struct data *data)
 
 	/* Validate id */
 	id = curline + 2;	// \t[
-	end = strchr(id, ']');
-	if (end[-1] == '.')	// [1.] is not allowed, only [1] or [1.1]
-		goto nope;
-	for (char *c = id; c < end; c++)
-		if (*c != '.' && !isdigit(*c))	// Only numbers and '.' allowed
-			goto nope;
+	if (!valid_linkid(id))
+		exit(EXIT_FAILURE);
 
 	/* Set */
 	set_linkdef(data->links, id, href);
 	return 1;
-
-nope:
-	free(href);
-	return 0;
 }
 #undef curline
 
@@ -465,10 +561,9 @@ htmlize(FILE *src, FILE *dest)
 		{
 			/*
 			 * We have reached the "---\n" that marks the end of our parsing.
-			 * Don't proceed further.
+			 * Mark the remaining lines as NULL. Don't proceed further.
 			 */
-			for (i++; i < READAHEAD_LINES; i++)
-				lines.readahead[i] = NULL;	// Mark the remaining lines as NULL
+			while (i < READAHEAD_LINES) lines.readahead[i++] = NULL;
 			break;
 		}
 	}
