@@ -25,9 +25,10 @@
 #define streql(s1, s2) (strcmp(s1, s2) == 0)
 #define strneql(s1, s2, n) (strncmp(s1, s2, n) == 0)
 
-#define LINK_DEFINED		11
-#define LINK_UNDEFINED		12
-static int local_errno;
+static enum {
+	LINK_DEFINED,
+	LINK_UNDEFINED,
+} local_errno;
 
 /* Struct definitions */
 struct config {
@@ -151,7 +152,8 @@ get_linkdef(struct link *links, const char *id)
 					"Link not defined: [%s]\n"
 					"Please define the link before using it\n",
 					strndup(id, strchr(id,']')-id));
-			break;
+			/* FALLTHROUGH */
+		default: break;
 	}
 	exit(EXIT_FAILURE);
 }
@@ -192,18 +194,18 @@ set_linkdef(struct link *links, const char *id, char *href)
 	if (!valid_linkid(id))
 		exit(EXIT_FAILURE);
 
-	switch (set_linkdef_(links, id, href))
-	{
-		case EXIT_SUCCESS:
-			return;
-
-		case LINK_DEFINED:
-			fprintf(stderr,
-					"Link already defined: [%s]\n"
-					"Please use it before defining it again.\n",
-					strndup(id, strchr(id,']')-id));
-			exit(EXIT_FAILURE);
-	}
+	if (set_linkdef_(links, id, href) != EXIT_SUCCESS)
+		switch (local_errno)
+		{
+			case LINK_DEFINED:
+				fprintf(stderr,
+						"Link already defined: [%s]\n"
+						"Please use it before defining it again.\n",
+						strndup(id, strchr(id,']')-id));
+				exit(EXIT_FAILURE);
+				/* FALLTHROUGH */
+			default: break;
+		}
 }
 
 static int
@@ -241,7 +243,8 @@ set_linkdef_(struct link *links, const char *id, char *href)
 	{
 		if (links->links[index] != NULL)
 			if (links->links[index]->link != NULL)
-				return LINK_DEFINED;
+				return (local_errno = LINK_DEFINED),
+					   EXIT_FAILURE;
 
 		/* Allocate if required */
 		if (links->links[index] == NULL)
