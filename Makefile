@@ -1,9 +1,9 @@
 .POSIX:
 .SUFFIXES:
 .SUFFIXES: .c .o
-.c.o: ; $(CC) -I. $(CFLAGS) -c $< -o $*.o
+.c.o: ; $(CC) $(CFLAGS) -c $< -o $*.o -I .
 
-CFLAGS	= -Wall
+# Strip executables by default
 LDFLAGS = -s
 
 all: index blogify htmlize
@@ -12,7 +12,7 @@ clean: clean_objects clean_executables
 debug: clean all_debug
 all_debug: index_debug blogify_debug htmlize_debug
 index_debug blogify_debug htmlize_debug:
-	@$(MAKE) $(@:_debug=) CFLAGS=-ggdb LDFLAGS=
+	@$(MAKE) $(@:_debug=) CFLAGS='-Wall -ggdb' LDFLAGS=
 
 clean_objects:		; rm -f src/*.o .htmlize.o
 clean_executables:	; rm -f index blogify htmlize
