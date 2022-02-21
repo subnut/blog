@@ -18,8 +18,8 @@ date_to_text(char *date_str)
 	output = final_str;
 
 	char *date  = date_str;
-	char *month = strchr(date,  '/');
-	char *year  = strchr(month, '/');
+	char *month = strchr(date,  '/') + 1;
+	char *year  = strchr(month, '/') + 1;
 
 	/* Date */
 	switch (atoi(date))
