@@ -32,31 +32,27 @@ index blogify htmlize:
 
 # Dependencies
 src/blogify.o:	constants.h
-src/blogify.o:	src/date_to_text.o	include/date_to_text.h
-src/blogify.o:	src/escape.o		include/escape.h
-src/blogify.o:	src/htmlize.o		include/htmlize.h
+src/blogify.o:	src/date_to_text.o
+src/blogify.o:	src/escape.o
+src/blogify.o:	src/htmlize.o
 blogify_deps	= src/date_to_text.o \
-		  src/escape.o \
-		  $(escape_deps) \
-		  src/htmlize.o \
-		  $(htmlize_deps)
+		  src/escape.o $(escape_deps) \
+		  src/htmlize.o $(htmlize_deps)
 
-src/escape.o:	src/charref.o		include/charref.h
+src/escape.o:	src/charref.o
 escape_deps	= src/charref.o
 
 src/index.o:	constants.h
-src/index.o:	src/date_to_text.o	include/date_to_text.h
-src/index.o:	src/escape.o		include/escape.h
-src/index.o:	src/urlencode.o		include/urlencode.h
+src/index.o:	src/date_to_text.o
+src/index.o:	src/escape.o
+src/index.o:	src/urlencode.o
 index_deps	= src/date_to_text.o \
-		  src/escape.o \
-		  $(escape_deps) \
+		  src/escape.o $(escape_deps) \
 		  src/urlencode.o
 
 src/htmlize.o:	constants.h
-src/htmlize.o:	src/escape.o		include/escape.h
-htmlize_deps	= src/escape.o \
-		  $(escape_deps)
+src/htmlize.o:	src/escape.o
+htmlize_deps	= src/escape.o $(escape_deps)
 
 
 # Header files
