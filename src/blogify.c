@@ -3,6 +3,7 @@
 #include "constants.h"
 #include "include/date_to_text.h"
 #include "include/escape.h"
+#include "include/perror.h"
 #include "include/htmlize.h"
 
 #include <dirent.h>

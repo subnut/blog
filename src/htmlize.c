@@ -3,6 +3,7 @@
 
 #include "constants.h"
 #include "include/escape.h"
+#include "include/perror.h"
 
 #include <ctype.h>
 #include <stdbool.h>
@@ -18,9 +19,6 @@
  * stdlib.h			- free, strtol, exit, EXIT_SUCCESS, EXIT_FAILURE
  * string.h			- strncmp, strchr, strrchr
  */
-
-#define perror(str) \
-	(fprintf(stderr,"%d:%s:%s(): ",__LINE__,__FILE__,__func__), perror(str))
 
 #define streql(s1, s2) (strcmp(s1, s2) == 0)
 #define strneql(s1, s2, n) (strncmp(s1, s2, n) == 0)
