@@ -17,12 +17,17 @@ date_to_text(char *date_str)
 	char final_str[15];
 	output = final_str;
 
-	char *date  = date_str;
-	char *month = strchr(date,  '/') + 1;
-	char *year  = strchr(month, '/') + 1;
+	int  date   = atoi(date_str);
+	char *month = strchr(date_str, '/') + 1;
+	char *year  = strchr(month,    '/') + 1;
 
 	/* Date */
-	switch (atoi(date))
+	if (date/10)
+	{
+		*output++ = '0' + (date/10);
+		date %= 10;
+	}
+	switch (date)
 	{
 		case 1:
 			memmove(output, "1st", 3);
@@ -36,24 +41,8 @@ date_to_text(char *date_str)
 			memmove(output, "3rd", 3);
 			output += 3;
 			break;
-
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-		case 8:
-		case 9:
-			if (date[0] != '0')	/* eg.  2/../.... */
-				*output++ = date[0];
-			else				/* eg. 02/../.... */
-				*output++ = date[1];
-			*output++ = 't';
-			*output++ = 'h';
-			break;
-
 		default:
-			*output++ = date[0];
-			*output++ = date[1];
+			*output++ = '0' + date;
 			*output++ = 't';
 			*output++ = 'h';
 			break;
