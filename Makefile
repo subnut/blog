@@ -61,7 +61,7 @@ htmlize_deps	= src/escape.o \
 
 # Header files
 src/charref.o:		include/charref.h
-src/date_to_text.0:	include/date_to_text.h
+src/date_to_text.o:	include/date_to_text.h
 src/escape.o:		include/escape.h
 src/htmlize.o:		include/htmlize.h
 src/urlencode.o:	include/urlencode.h
