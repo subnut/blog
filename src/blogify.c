@@ -13,13 +13,12 @@
 #include <unistd.h>
 
 /*
- * _POSIX_C_SOURCE - getline, strdup
- *
- * dirent.h	- opendir, readdir
- * stdio.h	- getline, perror, printf, fopen, fprintf, etc
- * stdlib.h	- free, exit, EXIT_FAILURE
- * string.h	- strrchr, strlen
- * unistd.h	- chdir
+ * _POSIX_C_SOURCE	- getline, strdup
+ * dirent.h			- opendir, readdir
+ * stdio.h			- getline, perror, printf, fopen, fprintf, etc
+ * stdlib.h			- free, exit, EXIT_FAILURE
+ * string.h			- strrchr, strlen
+ * unistd.h			- chdir
  */
 
 #define streql(s1, s2) (strcmp(s1, s2) == 0)
@@ -64,7 +63,6 @@ static const char FINAL_HTML[] = "\
 </html>\n\
 ";
 
-
 static void
 initial_html(FILE *in, FILE *out)
 {
@@ -92,14 +90,14 @@ initial_html(FILE *in, FILE *out)
 	fgets(BUFFER, 5, in);
 
 	fputs("<!--\n", out);
-	fprintf(out, "TITLE: %s", TITLE);
-	fprintf(out, "CREATED: %s", DATE_CREATED);
+	fprintf(out, "TITLE: %s",    TITLE);
+	fprintf(out, "CREATED: %s",  DATE_CREATED);
 	fprintf(out, "MODIFIED: %s", DATE_MODIFIED);
 	fputs("-->\n", out);
 
-	*(p = strrchr(TITLE,			'\n')) = '\0';
-	*(p = strrchr(DATE_CREATED,		'\n')) = '\0';
-	*(p = strrchr(DATE_MODIFIED,	'\n')) = '\0';
+	*(p = strrchr(TITLE,         '\n')) = '\0';
+	*(p = strrchr(DATE_CREATED,  '\n')) = '\0';
+	*(p = strrchr(DATE_MODIFIED, '\n')) = '\0';
 
 	fprintf(out, INITIAL_HTML_PRE_SUBTITLE, TITLE, FAVICON, TITLE);
 	htmlize(in, out);	// htmlize the subtitle text
@@ -114,7 +112,6 @@ initial_html(FILE *in, FILE *out)
 	free(DATE_MODIFIED);
 }
 
-
 static void
 process_file(FILE *src, FILE *dest)
 {
@@ -123,12 +120,11 @@ process_file(FILE *src, FILE *dest)
 	fprintf(dest, FINAL_HTML, FOOTER);
 }
 
-
 int
 main(int argc, const char **argv)
 {
 	DIR *dir;
-	FILE *sfp;		// (s)ource      (f)ile (p)ointer
+	FILE *sfp;		// (s)ource		 (f)ile (p)ointer
 	FILE *dfp;		// (d)estination (f)ile (p)ointer
 	struct dirent *dirent;
 
@@ -141,17 +137,15 @@ main(int argc, const char **argv)
 		char *name = dirent->d_name;
 		if (streql(strrchr(name, '.'), SOURCE_EXT))
 		{
-			/* Copy name to new_name */
-			char *new_name;
-			if ((new_name = strdup(name)) == NULL)
+			if ((name = strdup(name)) == NULL)
 				return perror("strdup error"),
 					   EXIT_FAILURE;
 
 			/* Ensure enough space available */
 			if (strlen(SOURCE_EXT) < strlen(".html"))
-				if ((new_name = realloc(new_name,
-								sizeof(new_name[0]) * (
-									strlen(new_name)
+				if ((name = realloc(name,
+								sizeof(name[0]) * (
+									  strlen(name)
 									- strlen(SOURCE_EXT)
 									+ strlen(".html")
 									)
@@ -161,14 +155,8 @@ main(int argc, const char **argv)
 						   EXIT_FAILURE;
 
 			/* Change extension to .html */
-			char *p = strrchr(new_name, '.');
+			char *p = strrchr(name, '.');
 			memmove(p, ".html", 6);		// 6, because ".html" has \0 at end
-
-
-#ifdef PRINT_FILENAMES
-			printf("%s -> %s\n", name, new_name);
-			fflush(stdout);
-#endif
 
 			/* Open source file */
 			cd(SOURCE_DIR);
@@ -177,16 +165,19 @@ main(int argc, const char **argv)
 
 			/* Open destination file */
 			cd(DEST_DIR);
-			dfp = fopen(new_name, "w");
+			dfp = fopen(name, "w");
 			cd("..");
 
 			/* Process file content and close files  */
 			process_file(sfp, dfp);
 			fclose(sfp);
 			fclose(dfp);
+
+			/* Free allocated memory */
+			free(name);
 		}
 	}
 	closedir(dir);
 }
 
-// vim:noet:ts=4:sts=0:sw=0:fdm=syntax
+/* vim: set noet nowrap fdm=syntax: */

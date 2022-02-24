@@ -13,13 +13,12 @@
 #include <unistd.h>
 
 /*
- * _POSIX_C_SOURCE - strdup, getline
- *
- * dirent.h - opendir, readdir
- * stdio.h  - fopen, fclose
- * string.h - memcmp, memchr, strdup, strlen
- * stdlib.h - free, EXIT_{SUCCESS,FAILURE}
- * unistd.h - chdir
+ * _POSIX_C_SOURCE	- strdup, getline
+ * dirent.h			- opendir, readdir
+ * stdio.h			- fopen, fclose
+ * string.h			- memcmp, memchr, strdup, strlen
+ * stdlib.h			- free, EXIT_{SUCCESS,FAILURE}
+ * unistd.h			- chdir
  */
 
 static const char INITIAL_TEXT[] = "\
@@ -185,4 +184,4 @@ main(int argc, const char **argv)
 	return EXIT_SUCCESS;
 }
 
-// vim:noet:ts=4:sts=0:sw=0:fdm=syntax:nowrap
+/* vim: set noet nowrap fdm=syntax: */

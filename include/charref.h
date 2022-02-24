@@ -4,6 +4,6 @@
 #include <stdio.h>	// for size_t
 
 int	is_named_charref(const char *);
-int	is_charref(const char *, size_t);
+int	is_charref(const char *);
 
 #endif /* HTML_CHARREF_H */

@@ -1,14 +1,11 @@
-#define _POSIX_C_SOURCE 200809L	// For strdup() in string.h
 #include "include/escape.h"
 
 #include "include/charref.h"
 
 #include <stdio.h>
-#include <string.h>
 
 /*
- * stdio.h	- FILE, fputs, fputc
- * string.h	- strndup, strlen
+ * stdio.h - FILE, fputs, fputc
  */
 
 void
@@ -31,25 +28,24 @@ fputs_escaped(const char *s, FILE *stream)
 }
 
 void
-fputs_escaped_allow_charrefs(const char *s, FILE *stream)
+fputs_escaped_allow_charrefs(const char *str, FILE *stream)
 {
-	for (int i=0; s[i] != '\0'; i++)
-		if (s[i] != '&')
-			fputc_escaped(s[i], stream);
+	for (int i = 0; str[i] != '\0'; i++)
+		if (str[i] != '&')
+			fputc_escaped(str[i], stream);
 		else
 		{
-			int j;
-			for (j = i+1; s[j] != ';' || s[j] != ' ' || s[j] != '\0'; j++);
-			if (s[j] == ';')
-			{
-				char *str = strndup(s+i, j-i+1);
-				if (is_charref(str, strlen(str)))
+			int j = i + 1;
+			while (str[j] != ';' || str[j] != ' ' || str[j] != '\0') j++;
+			if (str[j] == ';')
+				if (is_charref(str + i))
 				{
 					fputs(str, stream);
 					i = j;
 					continue;
 				}
-			}
-			fputc_escaped(s[i], stream);
+			fputc_escaped(str[i], stream);
 		}
 }
+
+/* vim: set noet nowrap fdm=syntax: */

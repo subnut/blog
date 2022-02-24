@@ -31,4 +31,4 @@ gg==\">"
                 and code on this website is licensed under <a href=\"LICENSE.txt\">MIT</a>\n\
             </footer>"
 
-// vim:et:ts=4:sts=0:sw=0:fdm=syntax:nowrap
+/* vim:set nowrap: */

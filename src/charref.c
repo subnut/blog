@@ -3,9 +3,12 @@
 #include <ctype.h>
 #include <string.h>
 
+#define streql(s1, s2) \
+	(strcmp(s1, s2) == 0)
+
 /*
- * ctype.h	- isalnum(), isalpha(), etc.
- * string.h	- str*(), mem*()
+ * ctype.h  - isalnum, isalpha
+ * string.h - strcmp, strchr
  */
 
 static const char *named_references[] =
@@ -30,35 +33,24 @@ is_named_charref(const char *given_str)
 /*
  * Note that this function only checks from the beginning of the string. It
  * does not match the whole string.
- *
- * i.e. this function in python would be -
- *	def is_named_charref(given_str):
- *		for i in range(0,len(named_references)):
- *			if given_str.startswith(named_references[i]):
- *				return True
- *		else:
- *			return False
  */
 {
-	for (int i=0; i < (sizeof(named_references)/sizeof(named_references[0])); i++)
-		if (!strncmp(given_str, named_references[i], strlen(named_references[i])))
+	static const int max = (int)(sizeof named_references / sizeof named_references[0]);
+	for (int i = 0; i < max; i++)
+		if (streql(given_str, named_references[i]))
 			return 0;
 	return 1;
 }
 
 int
-is_charref(const char *given_str, size_t n)
-/*
- * Checks if the first 'n' bytes of the string pointed to by *given_str
- * contains a valid HTML Character reference at the start of the string.
- */
+is_charref(const char *given_str)
 {
 	/* charrefs MUST start with ampersand */
 	if (given_str[0] != '&')
 		return 0;
 
 	char *end;
-	end = memchr(given_str, ';', n);
+	end = strchr(given_str, ';');
 	if (end == NULL)	// ie. ';' not found
 		return 0;
 
@@ -83,4 +75,4 @@ is_charref(const char *given_str, size_t n)
 	return 1;
 }
 
-// vim:fdm=syntax:sw=8:sts=8:ts=8:nowrap:
+/* vim: set noet nowrap fdm=syntax: */

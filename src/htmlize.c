@@ -16,7 +16,7 @@
  * ctype.h			- isdigit, isspace
  * stdbool.h		- bool, true, false
  * stdio.h			- getline, FILE
- * stdlib.h			- free, strtol, exit, EXIT_SUCCESS, EXIT_FAILURE
+ * stdlib.h			- free, strtol, exit, EXIT_{SUCCESS,FAILURE}
  * string.h			- strncmp, strchr, strrchr
  */
 
@@ -608,4 +608,4 @@ LINEWISE_FUNCTION_did_something:
  *	- If link not found in data->links, then search readahead for it?
  */
 
-/* vim:set noet nowrap ts=4 sts=4 sw=4 fdm=syntax: */
+/* vim: set noet nowrap fdm=syntax: */

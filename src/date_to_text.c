@@ -1,4 +1,5 @@
 #include "include/date_to_text.h"
+
 #include "include/perror.h"
 
 #include <string.h>
@@ -114,4 +115,4 @@ date_to_text(char *date_str)
 	return date_str;
 }
 
-// vim:noet:ts=4:sts=0:sw=0:fdm=syntax
+/* vim: set noet nowrap fdm=syntax: */
