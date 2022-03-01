@@ -3,6 +3,12 @@
 .SUFFIXES: .c .o
 .c.o: ; $(CC) $(CFLAGS) -c $< -o $*.o -I .
 
+# XXX: The line following this comment isn't POSIX-compliant.
+#      Most modern compilers either support or ignore these flags.
+#      If yours doesn't, then please comment out the following line.
+#      (It only exists for developer convenience)
+CFLAGS = -Wall -O2
+
 # Strip executables by default
 LDFLAGS = -s
 
