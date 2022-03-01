@@ -137,17 +137,20 @@ main(int argc, const char **argv)
 		char *name = dirent->d_name;
 		if (streql(strrchr(name, '.'), SOURCE_EXT))
 		{
-			if ((name = strdup(name)) == NULL)
+			/* Copy name to new_name */
+			char *new_name;
+			if ((new_name = strdup(name)) == NULL)
 				return perror("strdup error"),
 					   EXIT_FAILURE;
 
 			/* Ensure enough space available */
 			if (strlen(SOURCE_EXT) < strlen(".html"))
-				if ((name = realloc(name,
-								sizeof(name[0]) * (
-									  strlen(name)
+				if ((new_name = realloc(name,
+								sizeof(new_name[0]) * (
+									  strlen(new_name)
 									- strlen(SOURCE_EXT)
 									+ strlen(".html")
+									+ 1	// Trailing '\0'
 									)
 								)
 					) == NULL)
@@ -155,17 +158,21 @@ main(int argc, const char **argv)
 						   EXIT_FAILURE;
 
 			/* Change extension to .html */
-			char *p = strrchr(name, '.');
+			char *p = strrchr(new_name, '.');
 			memmove(p, ".html", 6);		// 6, because ".html" has \0 at end
+
+#define fileopen(fp, name, mode)	\
+			if ((fp = fopen(name, mode)) == NULL) \
+				return perror("fopen failed"), EXIT_FAILURE;
 
 			/* Open source file */
 			cd(SOURCE_DIR);
-			sfp = fopen(name, "r");
+			fileopen(sfp, name, "r");
 			cd("..");
 
 			/* Open destination file */
 			cd(DEST_DIR);
-			dfp = fopen(name, "w");
+			fileopen(dfp, new_name, "w");
 			cd("..");
 
 			/* Process file content and close files  */
@@ -174,7 +181,7 @@ main(int argc, const char **argv)
 			fclose(dfp);
 
 			/* Free allocated memory */
-			free(name);
+			free(new_name);
 		}
 	}
 	closedir(dir);
