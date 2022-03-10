@@ -330,7 +330,7 @@ get_next_line(struct data *data)
 		}
 
 	/* Read next line */
-	static size_t _ = 0;
+	size_t _ = 0;
 	data->lines->readahead[READAHEAD_LINES-1] = NULL;
 	if (getline(&data->lines->readahead[READAHEAD_LINES-1], &_, data->files->in) == -1)
 	{
@@ -434,7 +434,11 @@ _PREFORMATTED(struct data *data)
 	curline += 3;	// For "```"
 	fputs("<pre>", data->files->out);
 
-	static enum {
+	/*
+	 * XXX: NOT `static enum`
+	 * static means something different within functions
+	 */
+	enum {
 		NONE,
 		SAMP,
 		CODE
@@ -545,7 +549,7 @@ htmlize(FILE *src, FILE *dest)
 	data.links = &links;
 
 	/* Populate lines.readahead[] */
-	static size_t _;
+	size_t _;
 	for (int i = 0; i < READAHEAD_LINES; i++)
 	{
 		_ = 0;

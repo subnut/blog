@@ -35,7 +35,11 @@ is_named_charref(const char *given_str)
  * does not match the whole string.
  */
 {
-	static const int max = (int)(sizeof named_references / sizeof named_references[0]);
+	/*
+	 * XXX: DO NOT DECLARE `max` AS `static const int max`
+	 * `static` means something else within functions
+	 */
+	const int max = (int)(sizeof named_references / sizeof named_references[0]);
 	for (int i = 0; i < max; i++)
 		if (streql(given_str, named_references[i]))
 			return 0;
