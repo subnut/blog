@@ -108,7 +108,7 @@ date_to_text(char *date_str)
 	output += 4;
 	*output++ = '\0';
 
-	if ((date_str = realloc(date_str, 15 * sizeof(char))) == NULL)
+	if ((date_str = realloc(date_str, 15 * sizeof(date_str)/sizeof(date_str[0]))) == NULL)
 		exit((perror("realloc error"), EXIT_FAILURE));
 
 	memmove(date_str, final_str, 15);
