@@ -1,13 +1,10 @@
 /* Extension for blog source files */
 #define SOURCE_EXT ".blog"
 
+
 /* Directories to convert from and to */
 #define SOURCE_DIR "raw"
 #define DEST_DIR   "docs"
-
-/* Configuration for htmlize() */
-#define READAHEAD_LINES 30
-#define HISTORY_LINES   5
 
 
 #define FAVICON "<link rel=icon href=\"data:image/png;base64,\n\

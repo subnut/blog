@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include "include/htmlize.h"
 
-#include "constants.h"
 #include "include/escape.h"
 #include "include/perror.h"
 
@@ -16,417 +15,101 @@
  * ctype.h			- isdigit, isspace
  * stdbool.h		- bool, true, false
  * stdio.h			- getline, FILE
- * stdlib.h			- free, strtol, exit, EXIT_{SUCCESS,FAILURE}
- * string.h			- strncmp, strchr, strrchr
+ * stdlib.h			- size_t, malloc, free, exit, EXIT_{SUCCESS,FAILURE}
+ * string.h			- strcmp, strncmp
  */
+
+#define HISTORY 2
+#define READAHEAD 10
+#define DATATYPE struct data *
+
+#define BOLD_TAG	"strong"
+#define ITALIC_TAG	"em"
 
 #define streql(s1, s2) (strcmp(s1, s2) == 0)
 #define strneql(s1, s2, n) (strncmp(s1, s2, n) == 0)
 
-static enum {
-	LINK_DEFINED,
-	LINK_UNDEFINED,
-} local_errno;
+#define TOGGLE(boolean)	\
+	boolean = boolean ? false : true;
 
-/* Struct definitions */
 struct config {
+	bool eof;
 	bool bolded;
 	bool italicized;
+	bool monospaced;
 };
 struct lines {
-	char *curline;	// Should be set at readahead[0] before every pass
-	char *history	[HISTORY_LINES];
-	char *readahead	[READAHEAD_LINES];
+	char *curline;	// readahead[0]
+	char *history[HISTORY];
+	char *readahead[READAHEAD];
 };
 struct files {
 	FILE *in;
 	FILE *out;
 };
+struct link {
+	char *href;
+	int sublinks;
+	char **sublink;
+};
 struct data {
 	struct config *config;
 	struct lines  *lines;
 	struct files  *files;
-	struct link   *links;
+	struct link   **link;
+	int	   links;
 };
-struct link {
-	int maxindex;
-	char *link;
-	struct link **links;
-};
-
-/* Function prototypes */
-static int  valid_linkid			(const char *);
-static char *get_linkdef			(struct link *, const char *);
-static char *get_linkdef_			(struct link *, const char *);
-static void free_linkdef			(struct link *, const char *);
-static void free_linkdef_			(struct link *, const char *);
-static void set_linkdef				(struct link *, const char *, char *);
-static int  set_linkdef_			(struct link *, const char *, char *);
-static void free_links_recursively	(struct link *);
-static void get_next_line			(struct data *);
-static int _LINKDEF					(struct data *);
-static int _PREFORMATTED			(struct data *);
-static int _CODE					(struct data *);
-
-static int (*LINEWISE_FUNCTIONS[])(struct data *) = {
-	&_PREFORMATTED,
-	&_LINKDEF,
-};
-static int (*CHARWISE_FUNCTIONS[])(struct data *) = {
-	&_CODE,
-};
-
-static int
-valid_linkid(const char *id)
-#define failprintf(...) { fprintf(__VA_ARGS__); return 0; }
-{
-	char *end;
-	end = strchr(id, ']');
-
-	/* If no terminating ']', it's not an ID */
-	if (end == NULL)
-		failprintf(stderr, "Not a link id: %s\n", id);
-
-
-	/* ID can consist of digits and '.' only */
-	for (const char *c = id; c < end; c++)
-		if (*c != '.' && !isdigit(*c))	// Only numbers and '.' allowed
-			failprintf(stderr,
-					"Invalid link id: [%s]\n"
-					"Only digits and dot (.) allowed\n",
-					strndup(id, end-id));
-
-
-	/* Check all sub-indexes */
-	const char *ptr;
-	ptr = id;
-
-	int index;
-	index = (int)strtol(ptr, &end, 10);
-	while (*end != ']' && index > 0 && end != ptr)
-	{
-		ptr = end + 1;
-		index = (int)strtol(ptr, &end, 10);
-	}
-
-	if (end == ptr)	// [X..Y] or [.X.Y] or [X.Y.]
-		failprintf(stderr,
-				"Invalid link id: [%s]\n"
-				"Please ensure all indexes are specified\n",
-				strndup(id, strchr(id,']')-id));
-
-	if (index < 0)
-		failprintf(stderr,
-				"Invalid link id: [%s]\n"
-				"Please ensure all indexes are positive\n",
-				strndup(id, strchr(id,']')-id));
-
-	if (index == 0) // [X.0.Y] or [0] or [0.Y]
-		failprintf(stderr,
-				"Invalid link id: [%s]\n"
-				"Please ensure all indexes are non-zero\n",
-				strndup(id, strchr(id,']')-id));
-
-	/* ID is valid */
-	return 1;
-}
-#undef failprintf
-
-static char *
-get_linkdef(struct link *links, const char *id)
-{
-	if (!valid_linkid(id))
-		exit(EXIT_FAILURE);
-
-	char *retval;
-	retval = get_linkdef_(links, id);
-	if (retval != NULL)
-		return retval;
-
-	switch (local_errno)
-	{
-		case LINK_UNDEFINED:
-			fprintf(stderr,
-					"Link not defined: [%s]\n"
-					"Please define the link before using it\n",
-					strndup(id, strchr(id,']')-id));
-			/* FALLTHROUGH */
-		default: break;
-	}
-	exit(EXIT_FAILURE);
-}
-
-static char *
-get_linkdef_(struct link *links, const char *id)
-{
-	int index;
-	char *end;
-	index = (int)strtol(id, &end, 10);
-
-	if (links->maxindex < index)
-		return (local_errno = LINK_UNDEFINED),
-			   NULL;
-
-	if (*end == ']')
-		return links->links[index]->link;
-	else /* (*end == '.') */
-		return get_linkdef_(links->links[index], end + 1);
-}
-
-static void
-free_linkdef(struct link *links, const char *id)
-{
-	if (!valid_linkid(id)) exit(EXIT_FAILURE);
-	return free_linkdef_(links, id);
-}
-
-static void
-free_linkdef_(struct link *links, const char *id)
-{
-	// TODO. Free linkdef. And free its parent structure if it becomes empty.
-}
-
-static void
-set_linkdef(struct link *links, const char *id, char *href)
-{
-	if (!valid_linkid(id))
-		exit(EXIT_FAILURE);
-
-	if (set_linkdef_(links, id, href) != EXIT_SUCCESS)
-		switch (local_errno)
-		{
-			case LINK_DEFINED:
-				fprintf(stderr,
-						"Link already defined: [%s]\n"
-						"Please use it before defining it again.\n",
-						strndup(id, strchr(id,']')-id));
-				exit(EXIT_FAILURE);
-				/* FALLTHROUGH */
-			default: break;
-		}
-}
-
-static int
-set_linkdef_(struct link *links, const char *id, char *href)
-{
-	int index;
-	char *end;
-	index = (int)strtol(id, &end, 10);
-
-	if (links->maxindex == 0)
-	{
-		/* Allocate */
-		if ((links->links = calloc(index + 1, sizeof(struct link *))) == NULL)
-			exit((perror("calloc failed"), EXIT_FAILURE));
-
-		/* Initialize */
-		links->link = NULL;
-		links->maxindex = index;
-		for (int i = 0; i <= index; i++)
-			links->links[i] = NULL;
-	}
-	else if (links->maxindex < index)
-	{
-		/* Allocate new indices */
-		if ((links->links = realloc(links->links, (index + 1) * sizeof(struct link *))) == NULL)
-			exit((perror("realloc failed"), EXIT_FAILURE));
-
-		/* Initialize new indices */
-		for (int i = links->maxindex + 1; i <= index; i++)
-			links->links[i] = NULL;
-		links->maxindex = index;
-	}
-
-	if (*end == ']')
-	{
-		if (links->links[index] != NULL)
-			if (links->links[index]->link != NULL)
-				return (local_errno = LINK_DEFINED),
-					   EXIT_FAILURE;
-
-		/* Allocate if required */
-		if (links->links[index] == NULL)
-			if ((links->links[index] = malloc(sizeof(struct link))) == NULL)
-				exit((perror("malloc failed"), EXIT_FAILURE));
-
-		/* Initialize */
-		links->links[index]->maxindex = 0;
-		links->links[index]->links = NULL;
-		links->links[index]->link = href;
-	}
-	else /* (*end == '.') */
-	{
-		/* Allocate if required */
-		if (links->links[index] == NULL)
-			if ((links->links[index] = malloc(sizeof(struct link))) == NULL)
-				exit((perror("malloc failed"), EXIT_FAILURE));
-
-		return set_linkdef_(links->links[index], end + 1, href);
-	}
-
-	return EXIT_SUCCESS;
-}
-
-static void
-free_links_recursively(struct link *links)
-#define free(ptr) { free(ptr); ptr = NULL; }
-{
-	if (links->link != NULL)
-		free(links->link);
-
-	if (links->maxindex == 0)
-		return;
-
-	for (int index = 0; index <= links->maxindex; index++)
-	{
-		if (links->links[index] == NULL) continue;
-		else
-		{
-			free_links_recursively(links->links[index]);
-			free(links->links[index]);
-		}
-	}
-}
-#undef free
-
-static void
-get_next_line(struct data *data)
-{
-	/* Structure of data -
-	 * 	readahead[READAHEAD_LINES-1]	<-- input
-	 * 	readahead[READAHEAD_LINES-2]
-	 * 	readahead[READAHEAD_LINES-3]
-	 * 	...
-	 * 	readahead[1]
-	 * 	readahead[0]
-	 * 	history[0]
-	 * 	history[1]
-	 * 	history[2]
-	 * 	...
-	 * 	history[HISTORY_LINES-2]
-	 * 	history[HISTORY_LINES-1]	--> free at next iteration
-	 */
-
-	/* Shift lines */
-	free(data->lines->history[HISTORY_LINES-1]);
-	for (int i = HISTORY_LINES-1; i>0; i--)
-		data->lines->history[i] = data->lines->history[i-1];
-
-	data->lines->history[0] = data->lines->readahead[0];
-	for (int i=1; i < READAHEAD_LINES; i++)
-		data->lines->readahead[i-1] = data->lines->readahead[i];
-
-	/*
-	 * Avoid the situation where we read more than we need.
-	 *
-	 * If any of the previous lines is NULL (ie. we had reached EOF or "---\n")
-	 * then set new line to NULL and return.
-	 */
-	for (int i = READAHEAD_LINES-1; i>0; i--)
-		if (data->lines->readahead[i] == NULL)
-		{
-			data->lines->readahead[READAHEAD_LINES-1] = NULL;
-			goto success;
-		}
-
-	/* Read next line */
-	size_t _ = 0;
-	data->lines->readahead[READAHEAD_LINES-1] = NULL;
-	if (getline(&data->lines->readahead[READAHEAD_LINES-1], &_, data->files->in) == -1)
-	{
-		if (fgetc(data->files->in) == EOF)
-			/*
-			 * We have reached EOF. Set new line to NULL to indicate this fact
-			 * to future invocations
-			 */
-			data->lines->readahead[READAHEAD_LINES-1] = NULL;
-		else
-			/*
-			 * We haven't reached EOF. So, getline errored out due to a
-			 * different (possibly dangerous) reason. Use perror to inform the
-			 * user about this error, and exit(EXIT_FAILURE)
-			 *
-			 * NOTE: It is OK to use perror here, because fgetc doesn't clobber
-			 * errno. So, the errno must have been set by getline.
-			 */
-			exit((perror("getline error"), EXIT_FAILURE));
-	}
-
-	/* If we have read "---\n", set new line to NULL to indicate that */
-	if (strneql(data->lines->readahead[READAHEAD_LINES-1], "---\n", 4))
-	{
-		free(data->lines->readahead[READAHEAD_LINES-1]);
-		data->lines->readahead[READAHEAD_LINES-1] = NULL;
-		goto success;
-	}
-
-success:
-	/* Reset lines.curline to lines.readahead[0] */
-	data->lines->curline = data->lines->readahead[0];
-}
 
 /*
- * Functions shall be of the form -
- * 	static int _name(struct data *)
- *
- * Functions shall return 0 if it did nothing, and 1 if it did something.
- * So,
- * 	for (i=0;something;i++)
- * 		if ((functions[i])(&data))
- * 			continue;
+ * Utility functions.
+ * Return 1 if everything is OK.
  */
+static void shift_lines		(DATATYPE);
+static int _get_next_line	(DATATYPE);	// Doesn't shift_lines
+static int get_next_line	(DATATYPE);
+static int process_curline	(DATATYPE);
+
+/*
+ * Line-wise functions.
+ * Return 1 if the function changed something.
+ */
+static int _PREFORMATTED	(DATATYPE);
+
+/*
+ * Character-wise functions.
+ * Return 1 if the function changed something.
+ */
+static int _ESCAPED_BACKSLASH	(DATATYPE);
+static int _CODE				(DATATYPE);
+static int _BOLD				(DATATYPE);
+static int _ITALIC				(DATATYPE);
+
+static int (*LINEWISE_FUNCTIONS[])(DATATYPE) = {
+	&_PREFORMATTED,
+};
+static int (*CHARWISE_FUNCTIONS[])(DATATYPE) = {
+	&_ESCAPED_BACKSLASH,
+	&_CODE,
+	&_BOLD,
+	&_ITALIC,
+};
+
+#define curline  data->lines->curline
+#define curchar  (curline[0])
+#define prevchar (curline == data->lines->readahead[0] ? '\0' : curline[-1])
+#define nextchar (curline[0] == '\0' || curline[0] == '\n' ? '\0' : curline[1])
 
 static int
-_LINKDEF(struct data *data)
-#define curline data->lines->curline
-{
-	/*
-	 * Linkdefs shall be of the form:
-	 *
-	 * |
-	 * |	[1]:   some-link
-	 * |	[2.1]: some-other-link
-	 * |	[2.2]:    mis-aligned-link
-	 * |	[2.10]:hey-im-a-link
-	 * |
-	 *
-	 * A link defined once can be used only once. After that, it is undefined.
-	 * A link already defined cannot be redefined without using it first.
-	 */
-
-	char *id;
-	char *end;
-	char *href;
-
-	if (curline[0] != '\t')						return 0;
-	if (curline[1] != '[')						return 0;
-	if ((href = strchr(curline, ':')) == NULL)	return 0;
-
-	while (isspace(href[0])) href++;	// ltrim
-	if (href[0] == '\0') return 0;	// EOL reached! ie. No link given, only id!
-	end = strrchr(curline, '\0');
-	while (end > href && isspace(end[-1])) end--;	// rtrim
-	if ((href = strndup(href, end - href)) == NULL)
-		exit((perror("strndup failed"), EXIT_FAILURE));
-
-	id = curline + 2;	// \t[
-	if (!valid_linkid(id))
-		exit(EXIT_FAILURE);
-
-	set_linkdef(data->links, id, href);
-	return 1;
-}
-#undef curline
-
-static int
-_PREFORMATTED(struct data *data)
-#define curline data->lines->curline
+_PREFORMATTED(DATATYPE data)
 {
 	/*
 	 * ```			=> <pre> ... </pre>
-	 * ```samp		=> <pre><samp> ... </code><samp>
+	 * ```samp		=> <pre><samp> ... </samp></pre>
 	 * ```code html	=> <pre><code class="language-html"> ... </code><pre>
 	 */
+
+	if (curline != data->lines->readahead[0])
+		return 0;
 
 	if (!strneql(curline, "```", 3))
 		return 0;
@@ -444,38 +127,34 @@ _PREFORMATTED(struct data *data)
 		CODE
 	} modifier = NONE;
 
-	if (!isspace(*curline))
-	{
-		if (streql(curline, "samp\n"))
-		{
-			fputs("<samp>", data->files->out);
-			modifier = SAMP;
-		}
-		else if (strneql(curline, "code", 4))
-		{
-			curline += 4;	// For "code"
-			modifier = CODE;
-			if (*curline != '\n')
-			{
-				/* Skip over all whitespaces */
-				while (isspace(*curline))
-					curline++;
-
-				char *p;
-				*(p = strchr(curline, '\n')) = '\0';
-				fprintf(data->files->out, "<code class=\"lanugage-%s\">", curline);
-				*p = '\n';
-			}
-			else
-				fputs("<code>", data->files->out);
+	if (isspace(curchar))
+		;
+	else if (streql(curline, "samp\n")) {
+		fputs("<samp>", data->files->out);
+		modifier = SAMP;
+	}
+	else if (strneql(curline, "code", 4)) {
+		curline += 4;	// For "code"
+		modifier = CODE;
+		while (curchar != '\n' && isspace(curchar)) // Skip spaces
+			curline++;
+		if (curchar == '\n')
+			fputs("<code>", data->files->out);
+		else {
+			char *p;
+			*(p = strchr(curline, '\n')) = '\0';
+			fprintf(data->files->out, "<code class=\"lanugage-%s\">", curline);
+			*p = '\n';
 		}
 	}
 
-	while (get_next_line(data), curline != NULL && !streql(curline, "```\n"))
+	while (get_next_line(data), curline != NULL && !streql(curline, "```\n")) {
+		if (streql(curline, "\\```\n"))
+			curline++;
 		fputs_escaped(curline, data->files->out);
+	}
 
-	switch (modifier)
-	{
+	switch (modifier) {
 		case CODE:
 			fputs("</code>", data->files->out);
 			break;
@@ -487,129 +166,226 @@ _PREFORMATTED(struct data *data)
 	}
 	fputs("</pre>\n", data->files->out);
 
-	if (streql(curline, "```\n"))
-		get_next_line(data);
-
 	return 1;
 }
-#undef curline
 
 static int
-_CODE(struct data *data)
-#define curline data->lines->curline
+_ESCAPED_BACKSLASH(DATATYPE data)
 {
-	if (*curline != '`')
+	if (curchar == '\\' && nextchar == '\\') {
+		fputc_escaped(curchar, data->files->out);
+		curline += 2;
+		return 1;
+	}
+	return 0;
+}
+
+static int
+_CODE(DATATYPE data)
+{
+	if (curchar == '\\' && nextchar == '`') {
+		curline++;
+		fputc_escaped(curchar, data->files->out);
+		curline++;
+		return 1;
+	}
+
+	if (curchar != '`') {
+		if (!data->config->monospaced)
+			return 0;
+		fputc_escaped(curchar, data->files->out);
+		curline++;
+		return 1;
+	}
+
+	fprintf(data->files->out, "<%scode>",  data->config->monospaced ? "/" : "");
+	TOGGLE(data->config->monospaced);
+	curline++;
+	return 1;
+}
+
+static int
+_BOLD(DATATYPE data)
+{
+	if (curchar == '\\' && nextchar == '*') {
+		curline++;
+		fputc_escaped(curchar, data->files->out);
+		curline++;
+		return 1;
+	}
+
+	if (curchar != '*')
 		return 0;
 
-	fputs("<code>", data->files->out);
-	for (curline++; *curline != '`'; curline++)
-	{
-		if (*curline == '\0') get_next_line(data);
-		if (curline == NULL) break;
-		fputc_escaped(*curline, data->files->out);
+	fprintf(data->files->out, "<%s"BOLD_TAG">",  data->config->bolded ? "/" : "");
+	TOGGLE(data->config->bolded);
+	curline++;
+	return 1;
+}
+
+static int
+_ITALIC(DATATYPE data)
+{
+	if (curchar == '\\' && nextchar == '_') {
+		curline++;
+		fputc_escaped(curchar, data->files->out);
+		curline++;
+		return 1;
 	}
-	fputs("</code>", data->files->out);
-	if (*curline == '`') curline++;
+
+	if (curchar != '_')
+		return 0;
+
+	fprintf(data->files->out, "<%s"ITALIC_TAG">",  data->config->italicized ? "/" : "");
+	TOGGLE(data->config->italicized);
+	curline++;
+	return 1;
+}
+
+#undef curline
+#undef curchar
+#undef nextchar
+#undef prevchar
+
+static void
+shift_lines(DATATYPE data)
+{
+	/* Structure of data -
+	 * 	readahead[READAHEAD-1]	<-- input
+	 * 	readahead[READAHEAD-2]
+	 * 	readahead[READAHEAD-3]
+	 * 	...
+	 * 	readahead[1]
+	 * 	readahead[0]
+	 * 	history[0]
+	 * 	history[1]
+	 * 	history[2]
+	 * 	...
+	 * 	history[HISTORY-2]
+	 * 	history[HISTORY-1]	--> free at next iteration
+	 */
+
+	/* Shift history lines */
+	free(data->lines->history[HISTORY-1]);
+	for (int i = HISTORY-1; i > 0; i--) {
+		if (data->lines->history[i] == NULL)
+			continue;
+		data->lines->history[i] = data->lines->history[i-1];
+	}
+
+	/* Shift current line to history */
+	data->lines->history[0] = data->lines->readahead[0];
+
+	/* Shift readahead lines */
+	for (int i = 0; i < READAHEAD; i++) {
+		data->lines->readahead[i] = data->lines->readahead[i+1];
+		if (data->lines->readahead[i] == NULL)
+			break;
+	}
+}
+
+static int
+_get_next_line(DATATYPE data)
+{
+	int RC = 0;
+
+	/* If we've already reached EOF, there's nothing left to read */
+	if (data->config->eof == true)
+		goto end;
+
+	/* Find an empty slot to read the new line in */
+	int index = READAHEAD - 1;
+	if (data->lines->readahead[index] != NULL) {
+		/* No empty slot */
+		RC = 1; goto end;
+	}
+	while (index > 0 && data->lines->readahead[index-1] == NULL)
+		index--;
+
+	/* Read next line */
+	size_t _;
+	if (getline(&data->lines->readahead[index], &_, data->files->in) == -1) {
+		if (fgetc(data->files->in) == EOF) {
+			data->config->eof = true;
+			goto end;
+		}
+		else
+			/*
+			 * NOTE: It is OK to use perror here, because fgetc doesn't clobber
+			 * errno. So, the errno must have been set by getline.
+			 */
+			exit((perror("getline error"), EXIT_FAILURE));
+	}
+
+end:
+	/* Reset data->lines->curline */
+	data->lines->curline = data->lines->readahead[0];
+	return RC;
+}
+
+static int
+get_next_line(DATATYPE data)
+{
+	shift_lines(data);
+	return _get_next_line(data);
+}
+
+static int
+process_curline(DATATYPE data)
+{
+	if (data->lines->curline == NULL)
+		return 0;
+
+	for (int i = 0; i < (sizeof(LINEWISE_FUNCTIONS)/sizeof(LINEWISE_FUNCTIONS[0])); i++)
+		if ((LINEWISE_FUNCTIONS[i])(data))
+			return 1;
+
+	while (data->lines->curline[0] != '\0') {
+		bool nobody_cares = true;
+		for (int i = 0; i < (sizeof(CHARWISE_FUNCTIONS)/sizeof(CHARWISE_FUNCTIONS[0])); i++)
+			if ((CHARWISE_FUNCTIONS[i])(data)) {
+				/*
+				 * No need to data->lines->curline++, as it has already been
+				 * done by the function which cares.
+				 */
+				nobody_cares = false;
+				break;
+			}
+		if (nobody_cares) {
+			fputc_escaped(data->lines->curline[0], data->files->out);
+			data->lines->curline++;
+		}
+	}
 
 	return 1;
 }
-#undef curline
 
 int
 htmlize(FILE *src, FILE *dest)
 {
-	/* Initialize structs */
-	struct config config;
-	struct lines lines;
-	struct files files;
-	struct link links;
-	struct data data;
+	struct config config = { false };
+	struct lines lines = { NULL };
+	struct files files = {
+		.in  = src,
+		.out = dest,
+	};
+	struct data data = {
+		.config = &config,
+		.files  = &files,
+		.lines  = &lines,
+		.links  = 0,
+	};
 
-	/* Populate links */
-	links.link = NULL;
-	links.maxindex = 0;
-	links.links = NULL;
-
-	/* Populate config */
-	config.bolded = false;
-	config.italicized = false;
-
-	/* Populate lines */
-	for (int i = 0; i < HISTORY_LINES; i++) lines.history[i] = NULL;
-	for (int i = 0; i < READAHEAD_LINES; i++) lines.readahead[i] = NULL;
-
-	/* Populate files */
-	files.out = dest;
-	files.in = src;
-
-	/* Populate data */
-	data.config = &config;
-	data.lines = &lines;
-	data.files = &files;
-	data.links = &links;
-
-	/* Populate lines.readahead[] */
-	size_t _;
-	for (int i = 0; i < READAHEAD_LINES; i++)
-	{
-		_ = 0;
-		if (getline(&lines.readahead[i], &_, files.in) == -1)
-		{
-			if (fgetc(files.in) != EOF)
-				return perror("getline error"),
-					   EXIT_FAILURE;
-			else
-				/* We've reached EOF, so break. */
-				break;
-		}
-		if (strneql(lines.readahead[i], "---\n", 4))
-		{
-			/*
-			 * We have reached the "---\n" that marks the end of our parsing.
-			 * Mark the remaining lines as NULL. Don't proceed further.
-			 */
-			while (i < READAHEAD_LINES) lines.readahead[i++] = NULL;
-			break;
-		}
-	}
-	lines.curline = lines.readahead[0];
-
-	/* Iterate over the lines */
-	for (; lines.curline != NULL; get_next_line(&data))
-	{
-		for (int i = 0; i < (sizeof(LINEWISE_FUNCTIONS)/sizeof(LINEWISE_FUNCTIONS[0])); i++)
-			if ((LINEWISE_FUNCTIONS[i])(&data))
-				goto LINEWISE_FUNCTION_did_something;
-
-		while (*lines.curline != '\0')
-		{
-			/* Check if somebody cares */
-			for (int i = 0; i < (sizeof(CHARWISE_FUNCTIONS)/sizeof(CHARWISE_FUNCTIONS[0])); i++)
-				if ((CHARWISE_FUNCTIONS[i])(&data))
-					goto CHARWISE_FUNCTION_did_something;
-
-			/* Nobody cares */
-			fputc_escaped(*lines.curline, files.out);
-			lines.curline++;
-
-CHARWISE_FUNCTION_did_something:
-			/* No need to lines.curline++, as it has already been done by the
-			 * CHARWISE_FUNCTION who did something */
-			continue;
-		}
-
-LINEWISE_FUNCTION_did_something:
-		/* Skip everything else and proceed to next line */
-		continue;
+	for (int i = 0; i < READAHEAD; i++) {
+		while (_get_next_line(&data));
 	}
 
-	free_links_recursively(data.links);
+	while (lines.readahead[0] != NULL) {
+		process_curline(&data);
+		get_next_line(&data);
+	}
+
 	return EXIT_SUCCESS;
 }
-
-/*
- * IDEAS:
- *	- If link not found in data->links, then search readahead for it?
- */
 
 /* vim: set noet nowrap fdm=syntax: */
