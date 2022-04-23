@@ -3,6 +3,7 @@
 #include "constants.h"
 #include "include/date_to_text.h"
 #include "include/escape.h"
+#include "include/free.h"
 #include "include/perror.h"
 #include "include/urlencode.h"
 
@@ -17,7 +18,7 @@
  * dirent.h			- opendir, readdir
  * stdio.h			- fopen, fclose
  * string.h			- memcmp, memchr, strdup, strlen
- * stdlib.h			- free, EXIT_{SUCCESS,FAILURE}
+ * stdlib.h			- EXIT_{SUCCESS,FAILURE}
  * unistd.h			- chdir
  */
 
@@ -157,7 +158,6 @@ main(int argc, const char **argv)
 		url = malloc(strlen(filenames.names[i])*3 + 1); // +1 for trailing '\0'
 		urlencode_s(filenames.names[i], url, strlen(filenames.names[i])*3+1);
 		free(filenames.names[i]);
-		filenames.names[i] = NULL;
 
 		fprintf(outfile,
 				"<tr>\n"

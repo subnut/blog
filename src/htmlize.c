@@ -2,7 +2,10 @@
 #include "include/htmlize.h"
 
 #include "include/escape.h"
+#include "include/free.h"
+#include "include/ifnull.h"
 #include "include/perror.h"
+#include "include/streql.h"
 
 #include <ctype.h>
 #include <stdbool.h>
@@ -15,7 +18,7 @@
  * ctype.h			- isdigit, isspace
  * stdbool.h		- bool, true, false
  * stdio.h			- getline, FILE
- * stdlib.h			- size_t, malloc, free, exit, EXIT_{SUCCESS,FAILURE}
+ * stdlib.h			- size_t, malloc, exit, EXIT_{SUCCESS,FAILURE}
  * string.h			- strcmp, strncmp
  */
 
@@ -25,13 +28,6 @@
 
 #define BOLD_TAG	"strong"
 #define ITALIC_TAG	"em"
-
-#define free(ptr)			{ free(ptr); ptr = NULL; }
-#define ifnull(ptr, val)	(ptr == NULL ? val : ptr)
-#define strifnull(str)		(ifnull(str, "NULL"))
-
-#define streql(s1, s2)		(strcmp (strifnull(s1), strifnull(s2)   ) == 0)
-#define strneql(s1, s2, n)	(strncmp(strifnull(s1), strifnull(s2), n) == 0)
 
 #define TOGGLE(boolean)	\
 	boolean = boolean ? false : true;

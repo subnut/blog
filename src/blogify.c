@@ -3,6 +3,7 @@
 #include "constants.h"
 #include "include/date_to_text.h"
 #include "include/escape.h"
+#include "include/free.h"
 #include "include/perror.h"
 #include "include/htmlize.h"
 
@@ -16,7 +17,7 @@
  * _POSIX_C_SOURCE	- getline, strdup
  * dirent.h			- opendir, readdir
  * stdio.h			- getline, perror, printf, fopen, fprintf, etc
- * stdlib.h			- free, exit, EXIT_FAILURE
+ * stdlib.h			- exit, EXIT_FAILURE
  * string.h			- strrchr, strlen
  * unistd.h			- chdir
  */
