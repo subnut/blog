@@ -1,11 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
-#include "include/htmlize.h"
+#include "include/proto/htmlize.h"
 
-#include "include/escape.h"
-#include "include/free.h"
-#include "include/ifnull.h"
-#include "include/perror.h"
-#include "include/streql.h"
+#include "include/proto/escape.h"
+#include "include/proto/charref.h"
 
 #include <ctype.h>
 #include <stdbool.h>
@@ -21,6 +18,11 @@
  * stdlib.h			- size_t, malloc, exit, EXIT_{SUCCESS,FAILURE}
  * string.h			- strcmp, strncmp
  */
+
+#include "include/defs/free.h"
+#include "include/defs/ifnull.h"
+#include "include/defs/perror.h"
+#include "include/defs/streql.h"
 
 #define HISTORY 2
 #define READAHEAD 10

@@ -1,11 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "constants.h"
-#include "include/date_to_text.h"
-#include "include/escape.h"
-#include "include/free.h"
-#include "include/perror.h"
-#include "include/htmlize.h"
+#include "include/proto/date_to_text.h"
+#include "include/proto/escape.h"
+#include "include/proto/htmlize.h"
 
 #include <dirent.h>
 #include <stdio.h>
@@ -22,7 +20,10 @@
  * unistd.h			- chdir
  */
 
-#define streql(s1, s2) (strcmp(s1, s2) == 0)
+#include "include/defs/free.h"
+#include "include/defs/perror.h"
+#include "include/defs/streql.h"
+
 #define cd(dir) \
 	if (chdir(dir)) \
 	return perror("chdir error"), \

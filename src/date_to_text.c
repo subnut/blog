@@ -1,9 +1,9 @@
-#include "include/date_to_text.h"
-
-#include "include/perror.h"
+#include "include/proto/date_to_text.h"
 
 #include <string.h>
 #include <stdlib.h>
+
+#include "include/defs/perror.h"
 
 /*
  * string.h - strchr

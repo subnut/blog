@@ -62,10 +62,10 @@ htmlize_deps	= src/escape.o $(escape_deps)
 
 
 # Header files
-src/charref.o:		include/charref.h
-src/date_to_text.o:	include/date_to_text.h
-src/escape.o:		include/escape.h
-src/htmlize.o:		include/htmlize.h
-src/urlencode.o:	include/urlencode.h
+src/charref.o:		include/proto/charref.h
+src/date_to_text.o:	include/proto/date_to_text.h
+src/escape.o:		include/proto/escape.h
+src/htmlize.o:		include/proto/htmlize.h
+src/urlencode.o:	include/proto/urlencode.h
 
 # vim: noet ts=8 sts=8 sw=8

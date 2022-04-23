@@ -1,10 +1,9 @@
-#include "include/charref.h"
+#include "include/proto/charref.h"
 
 #include <ctype.h>
 #include <string.h>
 
-#define streql(s1, s2) \
-	(strcmp(s1, s2) == 0)
+#include "include/defs/streql.h"
 
 /*
  * ctype.h  - isalnum, isalpha

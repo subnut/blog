@@ -1,6 +1,6 @@
-#include "include/escape.h"
+#include "include/proto/escape.h"
 
-#include "include/charref.h"
+#include "include/proto/charref.h"
 
 #include <stdio.h>
 
