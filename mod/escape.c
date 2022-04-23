@@ -1,11 +1,11 @@
-#include "include/proto/escape.h"
+#include "escape.h"
 
-#include "include/proto/charref.h"
-
+#include "charref.h"
 #include <stdio.h>
 
 /*
- * stdio.h - FILE, fputs, fputc
+ * charref.h	- is_charref
+ * stdio.h		- FILE, fputs, fputc
  */
 
 void

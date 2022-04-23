@@ -1,9 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "constants.h"
-#include "include/proto/date_to_text.h"
-#include "include/proto/escape.h"
-#include "include/proto/urlencode.h"
+#include "mod/date_to_text.h"
+#include "mod/escape.h"
+#include "mod/urlencode.h"
 
 #include <dirent.h>
 #include <stdio.h>
@@ -22,9 +22,9 @@
  * unistd.h			- chdir
  */
 
-#include "include/defs/free.h"
-#include "include/defs/perror.h"
-#include "include/defs/stringify.h"
+#include "def/free.h"
+#include "def/perror.h"
+#include "def/stringify.h"
 
 static const char INITIAL_TEXT[] = "\
 <html>\n\

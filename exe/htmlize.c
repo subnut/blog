@@ -1,3 +1,3 @@
 #include <stdio.h>
-#include "include/proto/htmlize.h"
+#include "mod/htmlize.h"
 int main(void) { return htmlize(stdin, stdout); }

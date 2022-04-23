@@ -1,4 +1,4 @@
-#include "include/proto/urlencode.h"
+#include "urlencode.h"
 
 #include <ctype.h>
 #include <stdio.h>

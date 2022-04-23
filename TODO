@@ -1,13 +1,13 @@
-- Use include/defs/ifnull.h and include/defs/streql.h as much as possible to
+- Use def/ifnull.h and def/streql.h as much as possible to
   eliminate dereferencing of NULL pointer.
 
-src/blogify.c
+exe/blogify.c
 - Implement make-like change detection using ctime of source (blog) and
   destination (HTML) files. Only update the files changed since last run, or
   changed since last change (ctime) of the executable itself. Also, add a CLI
   flag (-f) to force updation of ALL files, regardless of ctime.
 
-src/htmlize.c
+mod/htmlize.c
 - standardize when/how to put `<br/>`
 - implement links
 - implement footnotes

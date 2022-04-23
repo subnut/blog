@@ -1,8 +1,13 @@
 #define _POSIX_C_SOURCE 200809L
-#include "include/proto/htmlize.h"
+#include "htmlize.h"
 
-#include "include/proto/escape.h"
-#include "include/proto/charref.h"
+#include "charref.h"
+#include "escape.h"
+
+/*
+ * charref.h	- is_charref
+ * escape.h		- fput{c,s}_escaped
+ */
 
 #include <ctype.h>
 #include <stdbool.h>
@@ -21,10 +26,10 @@
  * string.h			- strcmp, strncmp
  */
 
-#include "include/defs/free.h"
-#include "include/defs/ifnull.h"
-#include "include/defs/perror.h"
-#include "include/defs/streql.h"
+#include "def/free.h"
+#include "def/ifnull.h"
+#include "def/perror.h"
+#include "def/streql.h"
 
 #define HISTORY 2
 #define READAHEAD 10

@@ -9,7 +9,7 @@ indent_style = tab
 indent_size = tab
 tab_width = 8
 
-[src/*]
+[*.c]
 tab_width = 4
 
 [constants.h]
@@ -19,3 +19,6 @@ indent_style = space
 [*.css]
 tab_width = 2
 indent_style = space
+
+[configure]
+tab_width = 4

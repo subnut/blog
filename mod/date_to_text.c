@@ -1,16 +1,16 @@
-#include "include/proto/date_to_text.h"
+#include "date_to_text.h"
 
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
-
-#include "include/defs/perror.h"
 
 /*
  * string.h - strchr
  * stddef.h - NULL
  * stdlib.h - atoi
  */
+
+#include "def/perror.h"
 
 char *
 date_to_text(char *date_str)

@@ -1,4 +1,4 @@
-#include "include/proto/charref.h"
+#include "charref.h"
 #include "named_charrefs.h"
 
 #include <ctype.h>
@@ -10,7 +10,7 @@
  * stddef.h - NULL
  */
 
-#include "include/defs/streql.h"
+#include "def/streql.h"
 
 bool
 is_named_charref(const char *given_str)
