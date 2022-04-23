@@ -28,6 +28,7 @@
 
 #define HISTORY 2
 #define READAHEAD 10
+#define END_MARKER "---\n"
 #define DATATYPE struct data *
 
 #define BOLD_TAG	"strong"
@@ -379,6 +380,12 @@ _get_next_line(DATATYPE data)
 			 * errno. So, the errno must have been set by getline.
 			 */
 			exit((perror("getline error"), EXIT_FAILURE));
+	}
+
+	/* Check if we've reached end marker */
+	if (streql(data->lines->readahead[index], END_MARKER)) {
+		data->config->eof = true;
+		goto success;
 	}
 
 success:
