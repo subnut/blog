@@ -1,0 +1,40 @@
+- Use include/defs/ifnull.h and include/defs/streql.h as much as possible to
+  eliminate dereferencing of NULL pointer.
+
+src/blogify.c
+- Implement make-like change detection using ctime of source (blog) and
+  destination (HTML) files. Only update the files changed since last run, or
+  changed since last change (ctime) of the executable itself. Also, add a CLI
+  flag (-f) to force updation of ALL files, regardless of ctime.
+
+src/htmlize.c
+- standardize when/how to put `<br/>`
+- implement links
+- implement footnotes
+- implement tables
+- implement HTML tags, so that `<br/>` stays `<br/>` and not `&lt;br/&gt;`
+- implement (custom) emoji :smirk:
+- Implement lists
+  ```code
+- hi there
+  Looks like you're enjoying this :smirk:
+  - This is a nested item, it seems
+    Not everything is actually what it looks like
+- Next item
+  1. nested ol!
+  2. With many items
+     With indented items
+- let's see...
+  a. character lists?
+  b. do those work?
+- what about roman?
+  i. no?
+  ii. _sigh_
+- arbitrary start, at least?
+  3. is it working
+  4. yesss!!!
+  5. wait what?????
+  6. it works in the editor
+  7. but not in the renderer!!!!
+  8. Hahahahahahahahahah
+```
