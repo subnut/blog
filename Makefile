@@ -1,15 +1,22 @@
 .POSIX:
 .SUFFIXES:
 .SUFFIXES: .c .o
-.c.o: ; $(CC) $(CFLAGS) -c $< -o $*.o -I .
+.c.o: ; $(CC) $(_CFLAGS:  = ) -c $< -o $*.o -I .
+# The (:  = ) trims multiple spaces to a single space
 
-# XXX: The line following this comment isn't POSIX-compliant.
-#      Most modern compilers either support or ignore these flags.
-#      If yours doesn't, then please comment out the following line.
-#      (It only exists for developer convenience)
-CFLAGS = -Wall -O2
+BLOG_EXT	= .blog
+BLOG_SRCDIR	=  raw
+HTML_DESTDIR	=  docs
 
-# Strip executables by default
+_CFLAGS	= $(CFLAGS) \
+	  -D BLOG_EXT=$(BLOG_EXT) \
+	  -D BLOG_SRCDIR=$(BLOG_SRCDIR) \
+	  -D HTML_DESTDIR=$(HTML_DESTDIR)
+
+# XXX:	These CFLAGS aren't POSIX-compliant.
+#	Most modern compilers either support or ignore these flags.
+#	If yours doesn't, then please comment out the following line.
+CFLAGS	= -Wall -O2
 LDFLAGS = -s
 
 all: index blogify htmlize

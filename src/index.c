@@ -24,6 +24,7 @@
 
 #include "include/defs/free.h"
 #include "include/defs/perror.h"
+#include "include/defs/stringify.h"
 
 static const char INITIAL_TEXT[] = "\
 <html>\n\
@@ -73,7 +74,7 @@ main(int argc, const char **argv)
 	filenames.maxindex = 0;
 	filenames.names[0] = NULL;
 
-	if (chdir(DEST_DIR))
+	if (chdir(STRINGIFY(HTML_DESTDIR)))
 		return perror("chdir error"),
 			   EXIT_FAILURE;
 

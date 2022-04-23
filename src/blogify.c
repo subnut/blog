@@ -25,6 +25,7 @@
 #include "include/defs/free.h"
 #include "include/defs/perror.h"
 #include "include/defs/streql.h"
+#include "include/defs/stringify.h"
 
 #define cd(dir) \
 	if (chdir(dir)) \
@@ -132,14 +133,14 @@ main(int argc, const char **argv)
 	FILE *dfp;		// (d)estination (f)ile (p)ointer
 	struct dirent *dirent;
 
-	if ((dir = opendir(SOURCE_DIR)) == NULL)
+	if ((dir = opendir(STRINGIFY(BLOG_SRCDIR))) == NULL)
 		return perror("opendir error"),
 			   EXIT_FAILURE;
 
 	while ((dirent = readdir(dir)) != NULL)
 	{
 		char *name = dirent->d_name;
-		if (streql(strrchr(name, '.'), SOURCE_EXT))
+		if (streql(strrchr(name, '.'), STRINGIFY(BLOG_EXT)))
 		{
 			/* Copy name to new_name */
 			char *new_name;
@@ -148,11 +149,11 @@ main(int argc, const char **argv)
 					   EXIT_FAILURE;
 
 			/* Ensure enough space available */
-			if (strlen(SOURCE_EXT) < strlen(".html"))
+			if (strlen(STRINGIFY(BLOG_EXT)) < strlen(".html"))
 				if ((new_name = realloc(name,
 								sizeof(new_name[0]) * (
 									  strlen(new_name)
-									- strlen(SOURCE_EXT)
+									- strlen(STRINGIFY(BLOG_EXT))
 									+ strlen(".html")
 									+ 1	// Trailing '\0'
 									)
@@ -170,12 +171,12 @@ main(int argc, const char **argv)
 				return perror("fopen failed"), EXIT_FAILURE;
 
 			/* Open source file */
-			cd(SOURCE_DIR);
+			cd(STRINGIFY(BLOG_SRCDIR));
 			fileopen(sfp, name, "r");
 			cd("..");
 
 			/* Open destination file */
-			cd(DEST_DIR);
+			cd(STRINGIFY(HTML_DESTDIR));
 			fileopen(dfp, new_name, "w");
 			cd("..");
 
