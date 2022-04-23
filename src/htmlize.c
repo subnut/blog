@@ -26,8 +26,12 @@
 #define BOLD_TAG	"strong"
 #define ITALIC_TAG	"em"
 
-#define streql(s1, s2) (strcmp(s1, s2) == 0)
-#define strneql(s1, s2, n) (strncmp(s1, s2, n) == 0)
+#define free(ptr)			{ free(ptr); ptr = NULL; }
+#define ifnull(ptr, val)	(ptr == NULL ? val : ptr)
+#define strifnull(str)		(ifnull(str, "NULL"))
+
+#define streql(s1, s2)		(strcmp (strifnull(s1), strifnull(s2)   ) == 0)
+#define strneql(s1, s2, n)	(strncmp(strifnull(s1), strifnull(s2), n) == 0)
 
 #define TOGGLE(boolean)	\
 	boolean = boolean ? false : true;
@@ -72,12 +76,14 @@ static int process_curline	(DATATYPE);
 /*
  * Line-wise functions.
  * Return 1 if the function changed something.
+ * Should NOT get_next_line after it's done processing the current line.
  */
 static int _PREFORMATTED	(DATATYPE);
 
 /*
  * Character-wise functions.
  * Return 1 if the function changed something.
+ * Should curline++ after it's done processing the current character.
  */
 static int _ESCAPED_BACKSLASH	(DATATYPE);
 static int _CODE				(DATATYPE);
