@@ -41,6 +41,7 @@ struct config {
 	bool bolded;
 	bool italicized;
 	bool monospaced;
+	int	 h_level;
 };
 struct lines {
 	char *curline;	// readahead[0]
@@ -86,6 +87,7 @@ static int _PREFORMATTED	(DATATYPE);
  * Should curline++ after it's done processing the current character.
  */
 static int _ESCAPED_BACKSLASH	(DATATYPE);
+static int _HEADINGS			(DATATYPE);
 static int _CODE				(DATATYPE);
 static int _BOLD				(DATATYPE);
 static int _ITALIC				(DATATYPE);
@@ -95,6 +97,7 @@ static int (*LINEWISE_FUNCTIONS[])(DATATYPE) = {
 };
 static int (*CHARWISE_FUNCTIONS[])(DATATYPE) = {
 	&_ESCAPED_BACKSLASH,
+	&_HEADINGS,
 	&_CODE,
 	&_BOLD,
 	&_ITALIC,
@@ -172,6 +175,38 @@ _PREFORMATTED(DATATYPE data)
 	}
 	fputs("</pre>\n", data->files->out);
 
+	return 1;
+}
+
+static int
+_HEADINGS(DATATYPE data)
+{
+	if (data->config->h_level != 0 && curchar == '\n') {
+		fprintf(data->files->out, "</h%i>\n", data->config->h_level);
+		data->config->h_level = 0;
+		curline++;
+		return 1;
+	}
+
+	if (curline != data->lines->readahead[0])
+		return 0;
+
+	if (curchar == '\\' && nextchar == '#') {
+		for (; curchar == '#'; curline++)
+			fputc_escaped(curchar, data->files->out);
+		return 1;
+	}
+
+	if (curchar != '#')
+		return 0;
+
+	int level = 1;	// "" => <h1>, "#" => <h2>, "##" => <h3>, ...
+	while (*curline++ == '#') level++;
+	while (*curline	  == ' ') curline++;
+	fprintf(data->files->out, "<h%i>", level);
+	data->config->h_level = level;
+
+	curline++;
 	return 1;
 }
 
@@ -369,7 +404,7 @@ process_curline(DATATYPE data)
 int
 htmlize(FILE *src, FILE *dest)
 {
-	struct config config = { false };
+	struct config config = { 0 };
 	struct lines lines = { NULL };
 	struct files files = {
 		.in  = src,
