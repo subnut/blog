@@ -7,6 +7,7 @@
 
 #include <dirent.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -15,6 +16,7 @@
  * _POSIX_C_SOURCE	- getline, strdup
  * dirent.h			- opendir, readdir
  * stdio.h			- getline, perror, printf, fopen, fprintf, etc
+ * stddef.h			- NULL
  * stdlib.h			- exit, EXIT_FAILURE
  * string.h			- strrchr, strlen
  * unistd.h			- chdir

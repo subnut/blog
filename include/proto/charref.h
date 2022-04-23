@@ -1,9 +1,9 @@
-#ifndef HTML_CHARREF_H
-#define HTML_CHARREF_H
+#ifndef CHARREF_H
+#define CHARREF_H
 
-#include <stdio.h>	// for size_t
+#include <stdbool.h>
 
-int	is_named_charref(const char *);
-int	is_charref(const char *);
+bool	is_named_charref(const char *);
+bool	is_charref(const char *);
 
-#endif /* HTML_CHARREF_H */
+#endif /* CHARREF_H */

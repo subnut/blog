@@ -7,6 +7,7 @@
 
 #include <dirent.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -16,6 +17,7 @@
  * dirent.h			- opendir, readdir
  * stdio.h			- fopen, fclose
  * string.h			- memcmp, memchr, strdup, strlen
+ * stddef.h			- NULL
  * stdlib.h			- EXIT_{SUCCESS,FAILURE}
  * unistd.h			- chdir
  */

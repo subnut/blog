@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,6 +16,7 @@
  * ctype.h			- isdigit, isspace
  * stdbool.h		- bool, true, false
  * stdio.h			- getline, FILE
+ * stddef.h			- NULL
  * stdlib.h			- size_t, malloc, exit, EXIT_{SUCCESS,FAILURE}
  * string.h			- strcmp, strncmp
  */
@@ -93,6 +95,7 @@ static int _PREFORMATTED	(DATATYPE);
  */
 static int _ESCAPED_BACKSLASH	(DATATYPE);
 static int _HEADINGS			(DATATYPE);
+static int _CHARREF				(DATATYPE);
 static int _CODE				(DATATYPE);
 static int _BOLD				(DATATYPE);
 static int _ITALIC				(DATATYPE);
@@ -103,6 +106,7 @@ static int (*LINEWISE_FUNCTIONS[])(DATATYPE) = {
 static int (*CHARWISE_FUNCTIONS[])(DATATYPE) = {
 	&_ESCAPED_BACKSLASH,
 	&_HEADINGS,
+	&_CHARREF,
 	&_CODE,
 	&_BOLD,
 	&_ITALIC,
@@ -184,6 +188,17 @@ _PREFORMATTED(DATATYPE data)
 }
 
 static int
+_ESCAPED_BACKSLASH(DATATYPE data)
+{
+	if (curchar == '\\' && nextchar == '\\') {
+		fputc_escaped(curchar, data->files->out);
+		curline += 2;
+		return 1;
+	}
+	return 0;
+}
+
+static int
 _HEADINGS(DATATYPE data)
 {
 	if (data->config->h_level != 0 && curchar == '\n') {
@@ -216,14 +231,19 @@ _HEADINGS(DATATYPE data)
 }
 
 static int
-_ESCAPED_BACKSLASH(DATATYPE data)
+_CHARREF(DATATYPE data)
 {
-	if (curchar == '\\' && nextchar == '\\') {
-		fputc_escaped(curchar, data->files->out);
-		curline += 2;
-		return 1;
-	}
-	return 0;
+	if (!is_charref(curline))
+		return 0;
+
+	char storage;
+	char *end = strchr(curline, ';') + 1;
+	storage = end[0];
+	end[0] = '\0';
+	fputs(curline, data->files->out);
+	end[0] = storage;
+	curline = end;
+	return 1;
 }
 
 static int
