@@ -1,12 +1,11 @@
 /* Extension for blog source files */
 #define SOURCE_EXT ".blog"
 
-
 /* Directories to convert from and to */
 #define SOURCE_DIR "raw"
 #define DEST_DIR   "docs"
 
-
+/* Favicon for the website */
 #define FAVICON "<link rel=icon href=\"data:image/png;base64,\n\
 iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAnXAAAJ1wGxbhe3AAAA\n\
 GXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAchJREFUWIXF1j1oFFEUxfHfrF+J\n\
@@ -20,7 +19,7 @@ lvaXA3DNduyOrEzHypf/kmWCfdjWEUDVkNbj/Vbwvj3A0q6dwkhH4e0VbT+NEZwsMZwsDyDTX1o4\n\
 P23yMA/gLhZLArjjovl2i43NEgzjLLYmCq7jhS0mnPM90T3T6zemFFVQZGM2gAAAAABJRU5ErkJg\n\
 gg==\">"
 
-
+/* Footer with license information */
 #define FOOTER  "<footer>\n\
                 <hr>\n\
                 Unless specified otherwise, text on this website is licensed under\n\
