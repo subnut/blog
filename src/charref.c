@@ -62,4 +62,4 @@ is_charref(const char *given_str)
 	return 0;
 }
 
-/* vim: set noet nowrap fdm=syntax: */
+/* vim:set nowrap fdm=syntax: */

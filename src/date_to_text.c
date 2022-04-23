@@ -117,4 +117,4 @@ date_to_text(char *date_str)
 	return date_str;
 }
 
-/* vim: set noet nowrap fdm=syntax: */
+/* vim:set nowrap fdm=syntax: */

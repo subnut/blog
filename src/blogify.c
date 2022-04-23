@@ -192,4 +192,4 @@ main(int argc, const char **argv)
 	closedir(dir);
 }
 
-/* vim: set noet nowrap fdm=syntax: */
+/* vim:set nowrap fdm=syntax: */

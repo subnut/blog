@@ -5,14 +5,17 @@ charset = utf-8
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
-tab_width = 8
-indent_size = tab
 indent_style = tab
+indent_size = tab
+tab_width = 8
 
 [src/*]
 tab_width = 4
 
 [constants.h]
-indent_style = space
-indent_size = tab
 tab_width = 4
+indent_style = space
+
+[*.css]
+tab_width = 2
+indent_style = space

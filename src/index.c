@@ -188,4 +188,4 @@ main(int argc, const char **argv)
 	return EXIT_SUCCESS;
 }
 
-/* vim: set noet nowrap fdm=syntax: */
+/* vim:set nowrap fdm=syntax: */

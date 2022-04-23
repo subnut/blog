@@ -71,4 +71,4 @@ urlencode_s(const char *str, char *storage, size_t len)
 	return storage;
 }
 
-/* vim: set noet nowrap fdm=syntax: */
+/* vim:set nowrap fdm=syntax: */

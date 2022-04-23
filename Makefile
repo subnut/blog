@@ -78,4 +78,4 @@ src/escape.o:		include/proto/escape.h
 src/htmlize.o:		include/proto/htmlize.h
 src/urlencode.o:	include/proto/urlencode.h
 
-# vim: noet ts=8 sts=8 sw=8
+# vim: nowrap

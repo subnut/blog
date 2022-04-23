@@ -22,4 +22,4 @@ a.self-link:hover { font-weight: inherit; transition: none;                  }
   unicode-range: U+0020-007F,U+00A9,U+2190-2193,U+2018,U+2019,U+201C,U+201D,U+2022;
 }
 
-/* vim:set et ts=2 sw=2 nowrap: */
+/* vim:set nowrap: */

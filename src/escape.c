@@ -48,4 +48,4 @@ fputs_escaped_allow_charrefs(const char *str, FILE *stream)
 		}
 }
 
-/* vim: set noet nowrap fdm=syntax: */
+/* vim:set nowrap fdm=syntax: */
