@@ -1,4 +1,5 @@
 #include "include/proto/charref.h"
+#include "named_charrefs.h"
 
 #include <ctype.h>
 #include <stddef.h>
@@ -10,24 +11,6 @@
  */
 
 #include "include/defs/streql.h"
-
-static const char *named_references[] =
-/*
- * Named Character References that will be recognized by htmlize()
- * Visit https://dev.w3.org/html5/html-author/charref for more.
- *
- * Say a named Character Reference is "&abcd;", but hasn't been included in
- * this array. htmlize() will turn it to "&nbsp;abcd;". So, the browser shall
- * show "&abcd;" literally instead of the character that was originally
- * referenced by &abcd;
- */
-{
-	"amp"  ,
-	"nbsp" ,
-	"reg"  , "REG"  ,
-	"copy" , "COPY" ,
-	"mdash", "ndash",
-};
 
 bool
 is_named_charref(const char *given_str)
@@ -41,8 +24,8 @@ is_named_charref(const char *given_str)
 		return 0;
 
 	const char *start = given_str + 1;
-	for (int i = 0; i < (sizeof named_references / sizeof named_references[0]); i++)
-		if (strneql(start, named_references[i], end - start))
+	for (int i = 0; i < (sizeof named_charrefs / sizeof named_charrefs[0]); i++)
+		if (strneql(start, named_charrefs[i], end - start))
 			return 1;
 
 	return 0;

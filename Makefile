@@ -45,8 +45,11 @@ blogify_deps	= src/date_to_text.o \
 		  src/escape.o $(escape_deps) \
 		  src/htmlize.o $(htmlize_deps)
 
+src/charref.o:	named_charrefs.h
+charref_deps	= named_charrefs.h
+
 src/escape.o:	src/charref.o
-escape_deps	= src/charref.o
+escape_deps	= src/charref.o $(charref_deps)
 
 src/index.o:	constants.h
 src/index.o:	src/date_to_text.o
