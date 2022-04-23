@@ -78,6 +78,10 @@ static int process_curline	(DATATYPE);
  * Line-wise functions.
  * Return 1 if the function changed something.
  * Should NOT get_next_line after it's done processing the current line.
+ *
+ * RATIONALE: This whole line is mine. I'm gonna do whatever I want with it,
+ * and then peacefully retire without having to worry about somebody else
+ * trying to read this line.
  */
 static int _PREFORMATTED	(DATATYPE);
 
@@ -85,6 +89,9 @@ static int _PREFORMATTED	(DATATYPE);
  * Character-wise functions.
  * Return 1 if the function changed something.
  * Should curline++ after it's done processing the current character.
+ *
+ * RATIONALE: I'm gonna consume all the characters that are important to me, so
+ * that nobody else tries to use those characters for themselves.
  */
 static int _ESCAPED_BACKSLASH	(DATATYPE);
 static int _HEADINGS			(DATATYPE);
