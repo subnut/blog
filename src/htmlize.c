@@ -332,14 +332,12 @@ _get_next_line(DATATYPE data)
 
 	/* If we've already reached EOF, there's nothing left to read */
 	if (data->config->eof == true)
-		goto end;
+		goto failure;
 
 	/* Find an empty slot to read the new line in */
 	int index = READAHEAD - 1;
-	if (data->lines->readahead[index] != NULL) {
-		/* No empty slot */
-		RC = 1; goto end;
-	}
+	if (data->lines->readahead[index] != NULL)
+		goto failure; /* No empty slot */
 	while (index > 0 && data->lines->readahead[index-1] == NULL)
 		index--;
 
@@ -348,7 +346,7 @@ _get_next_line(DATATYPE data)
 	if (getline(&data->lines->readahead[index], &_, data->files->in) == -1) {
 		if (fgetc(data->files->in) == EOF) {
 			data->config->eof = true;
-			goto end;
+			goto success;
 		}
 		else
 			/*
@@ -358,7 +356,10 @@ _get_next_line(DATATYPE data)
 			exit((perror("getline error"), EXIT_FAILURE));
 	}
 
-end:
+success:
+	RC = 1;
+
+failure:
 	/* Reset data->lines->curline */
 	data->lines->curline = data->lines->readahead[0];
 	return RC;
