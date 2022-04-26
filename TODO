@@ -14,6 +14,9 @@ mod/htmlize.c
 - implement tables
 - implement HTML tags, so that `<br/>` stays `<br/>` and not `&lt;br/&gt;`
 - implement (custom) emoji :smirk:
+- easy way to add <abbr> all over the place, without having to type out the
+  expanded form in every document.   Keep a standard list, perhaps? Like the
+  HTML charref list, or, more appropriately, the emoji list.
 - Implement lists
   ```code
 - hi there
