@@ -1,5 +1,5 @@
 MAKEFLAGS	+= --no-print-directory
-OG_MAKEFILE	= Makefile
+OG_MAKEFILE	= makefile
 .DEFAULT_GOAL	= all
 
 ifneq (,$(findstring clean,$(MAKECMDGOALS)))

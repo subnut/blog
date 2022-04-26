@@ -1,10 +1,11 @@
 #!/bin/sh
 . .lib.configure
-
 if [ "$DIR" = '.' ]; then
 	err This script is not intended to be executed directly
 	exit 1
 fi
+
+echo "makefile: $0 # I participated, too!"
 
 EXECUTABLES=
 DEBUG_EXECUTABLES=
@@ -17,7 +18,8 @@ DEBUG_EXECUTABLES="${DEBUG_EXECUTABLES## }"
 
 sed -e "s|@@EXECUTABLES@@|$EXECUTABLES|g" \
 	-e "s|@@DEBUG_EXECUTABLES@@|$DEBUG_EXECUTABLES|g" \
-	"${DIR}"/Makefile.in
+	-e "s|@@EXE_MAKEFILE@@|${DIR}/makefile.in|g" \
+	"${DIR}/makefile.in"
 
 for file in "${DIR}"/*.c; do
 	printf '%s =' "$(basename "${file%.c}")_src"

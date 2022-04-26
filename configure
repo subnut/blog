@@ -1,6 +1,7 @@
 #!/bin/sh
-exec > Makefile
-cat .Makefile.in
+exec > makefile
+cat Makefile
+echo "makefile: $0 # I participated, too!"
 
 . .lib.configure
 
