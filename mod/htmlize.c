@@ -73,43 +73,43 @@ struct data {
 
 /*
  * Utility functions.
- * Return 1 if everything is OK.
+ * Return true if everything is OK.
  */
 static void shift_lines		(DATATYPE);
-static int _get_next_line	(DATATYPE);	// Doesn't shift_lines
-static int get_next_line	(DATATYPE);
-static int process_curline	(DATATYPE);
+static bool _get_next_line	(DATATYPE);	// Doesn't shift_lines
+static bool get_next_line	(DATATYPE);	// Shift lines, then _get_next_line
+static bool process_curline	(DATATYPE);
 
 /*
  * Line-wise functions.
- * Return 1 if the function changed something.
+ * Return true if the function changed something.
  * Should NOT get_next_line after it's done processing the current line.
  *
  * RATIONALE: This whole line is mine. I'm gonna do whatever I want with it,
  * and then peacefully retire without having to worry about somebody else
  * trying to read this line.
  */
-static int _PREFORMATTED	(DATATYPE);
+static bool _PREFORMATTED	(DATATYPE);
 
 /*
  * Character-wise functions.
- * Return 1 if the function changed something.
+ * Return true if the function changed something.
  * Should curline++ after it's done processing the current character.
  *
  * RATIONALE: I'm gonna consume all the characters that are important to me, so
  * that nobody else tries to use those characters for themselves.
  */
-static int _ESCAPED_BACKSLASH	(DATATYPE);
-static int _HEADINGS			(DATATYPE);
-static int _CHARREF				(DATATYPE);
-static int _CODE				(DATATYPE);
-static int _BOLD				(DATATYPE);
-static int _ITALIC				(DATATYPE);
+static bool _ESCAPED_BACKSLASH	(DATATYPE);
+static bool _HEADINGS			(DATATYPE);
+static bool _CHARREF			(DATATYPE);
+static bool _CODE				(DATATYPE);
+static bool _BOLD				(DATATYPE);
+static bool _ITALIC				(DATATYPE);
 
-static int (*LINEWISE_FUNCTIONS[])(DATATYPE) = {
+static bool (*LINEWISE_FUNCTIONS[])(DATATYPE) = {
 	&_PREFORMATTED,
 };
-static int (*CHARWISE_FUNCTIONS[])(DATATYPE) = {
+static bool (*CHARWISE_FUNCTIONS[])(DATATYPE) = {
 	&_ESCAPED_BACKSLASH,
 	&_HEADINGS,
 	&_CHARREF,
@@ -123,7 +123,7 @@ static int (*CHARWISE_FUNCTIONS[])(DATATYPE) = {
 #define prevchar (curline == data->lines->readahead[0] ? '\0' : curline[-1])
 #define nextchar (curline[0] == '\0' || curline[0] == '\n' ? '\0' : curline[1])
 
-static int
+static bool
 _PREFORMATTED(DATATYPE data)
 {
 	/*
@@ -133,10 +133,10 @@ _PREFORMATTED(DATATYPE data)
 	 */
 
 	if (curline != data->lines->readahead[0])
-		return 0;
+		return false;
 
 	if (!strneql(curline, "```", 3))
-		return 0;
+		return false;
 
 	curline += 3;	// For "```"
 	fputs("<pre>", data->files->out);
@@ -190,41 +190,41 @@ _PREFORMATTED(DATATYPE data)
 	}
 	fputs("</pre>\n", data->files->out);
 
-	return 1;
+	return true;
 }
 
-static int
+static bool
 _ESCAPED_BACKSLASH(DATATYPE data)
 {
 	if (curchar == '\\' && nextchar == '\\') {
 		fputc_escaped(curchar, data->files->out);
 		curline += 2;
-		return 1;
+		return true;
 	}
-	return 0;
+	return false;
 }
 
-static int
+static bool
 _HEADINGS(DATATYPE data)
 {
 	if (data->config->h_level != 0 && curchar == '\n') {
 		fprintf(data->files->out, "</h%i>\n", data->config->h_level);
 		data->config->h_level = 0;
 		curline++;
-		return 1;
+		return true;
 	}
 
 	if (curline != data->lines->readahead[0])
-		return 0;
+		return false;
 
 	if (curchar == '\\' && nextchar == '#') {
 		for (; curchar == '#'; curline++)
 			fputc_escaped(curchar, data->files->out);
-		return 1;
+		return true;
 	}
 
 	if (curchar != '#')
-		return 0;
+		return false;
 
 	int level = 1;	// "" => <h1>, "#" => <h2>, "##" => <h3>, ...
 	while (*curline++ == '#') level++;
@@ -233,14 +233,14 @@ _HEADINGS(DATATYPE data)
 	data->config->h_level = level;
 
 	curline++;
-	return 1;
+	return true;
 }
 
-static int
+static bool
 _CHARREF(DATATYPE data)
 {
 	if (!is_charref(curline))
-		return 0;
+		return false;
 
 	char storage;
 	char *end = strchr(curline, ';') + 1;
@@ -249,69 +249,69 @@ _CHARREF(DATATYPE data)
 	fputs(curline, data->files->out);
 	end[0] = storage;
 	curline = end;
-	return 1;
+	return true;
 }
 
-static int
+static bool
 _CODE(DATATYPE data)
 {
 	if (curchar == '\\' && nextchar == '`') {
 		curline++;
 		fputc_escaped(curchar, data->files->out);
 		curline++;
-		return 1;
+		return true;
 	}
 
 	if (curchar != '`') {
 		if (!data->config->monospaced)
-			return 0;
+			return false;
 		fputc_escaped(curchar, data->files->out);
 		curline++;
-		return 1;
+		return true;
 	}
 
 	fprintf(data->files->out, "<%scode>",  data->config->monospaced ? "/" : "");
 	TOGGLE(data->config->monospaced);
 	curline++;
-	return 1;
+	return true;
 }
 
-static int
+static bool
 _BOLD(DATATYPE data)
 {
 	if (curchar == '\\' && nextchar == '*') {
 		curline++;
 		fputc_escaped(curchar, data->files->out);
 		curline++;
-		return 1;
+		return true;
 	}
 
 	if (curchar != '*')
-		return 0;
+		return false;
 
 	fprintf(data->files->out, "<%s"BOLD_TAG">",  data->config->bolded ? "/" : "");
 	TOGGLE(data->config->bolded);
 	curline++;
-	return 1;
+	return true;
 }
 
-static int
+static bool
 _ITALIC(DATATYPE data)
 {
 	if (curchar == '\\' && nextchar == '_') {
 		curline++;
 		fputc_escaped(curchar, data->files->out);
 		curline++;
-		return 1;
+		return true;
 	}
 
 	if (curchar != '_')
-		return 0;
+		return false;
 
 	fprintf(data->files->out, "<%s"ITALIC_TAG">",  data->config->italicized ? "/" : "");
 	TOGGLE(data->config->italicized);
 	curline++;
-	return 1;
+	return true;
 }
 
 #undef curline
@@ -356,7 +356,7 @@ shift_lines(DATATYPE data)
 	}
 }
 
-static int
+static bool
 _get_next_line(DATATYPE data)
 {
 	int RC = 0;
@@ -402,22 +402,22 @@ failure:
 	return RC;
 }
 
-static int
+static bool
 get_next_line(DATATYPE data)
 {
 	shift_lines(data);
 	return _get_next_line(data);
 }
 
-static int
+static bool
 process_curline(DATATYPE data)
 {
 	if (data->lines->curline == NULL)
-		return 0;
+		return false;
 
 	for (int i = 0; i < (sizeof(LINEWISE_FUNCTIONS)/sizeof(LINEWISE_FUNCTIONS[0])); i++)
 		if ((LINEWISE_FUNCTIONS[i])(data))
-			return 1;
+			return true;
 
 	while (data->lines->curline[0] != '\0') {
 		bool nobody_cares = true;
@@ -436,7 +436,7 @@ process_curline(DATATYPE data)
 		}
 	}
 
-	return 1;
+	return true;
 }
 
 int
