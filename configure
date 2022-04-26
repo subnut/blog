@@ -1,0 +1,19 @@
+#!/bin/sh
+exec > Makefile
+cat .Makefile.in
+
+. .lib.configure
+
+for file in */configure; do
+	"$file"
+done
+
+for file in */*.c */*.h; do
+	for header in $(recurse_headers "$file" | sort | uniq); do
+		if [ "${file%.c}.c" = "${file}" ]; then
+			echo "${file%.c}.o: ${header}"
+		else
+			echo "${file}: ${header}"
+		fi
+	done
+done

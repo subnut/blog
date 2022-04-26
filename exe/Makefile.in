@@ -1,0 +1,10 @@
+debug_executables: @@DEBUG_EXECUTABLES@@
+@@DEBUG_EXECUTABLES@@:
+	@$(MAKE) $(@:_debug=) CFLAGS='-Wall -ggdb' LDFLAGS=
+
+executables: @@EXECUTABLES@@
+clean_executables: ; rm -f @@EXECUTABLES@@
+@@EXECUTABLES@@:
+	@echo $(CC) $(LDFLAGS) -o $@ $$(echo $($@_src:  = ) | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
+	@     $(CC) $(LDFLAGS) -o $@ $$(echo $($@_src:  = ) | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
+

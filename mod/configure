@@ -1,0 +1,26 @@
+#!/bin/sh
+. .lib.configure
+
+if [ "$DIR" = '.' ]; then
+	err This script is not intended to be executed directly
+	exit 1
+fi
+
+EC=
+for file in "$DIR"/*.c; do
+	if [ ! -f "${file%.c}.h" ]; then
+		err "File $file is missing header ${file%.c}.h"
+		EC=1
+	fi
+	recurse_headers "$file" | grep -qF "${file%.c}.h" ||
+		err "File $file doesn't #include ${file%.c}.h"
+done
+for file in "$DIR"/*.h; do
+	if [ ! -f "${file%.h}.c" ]; then
+		err "File $file is missing header ${file%.h}.c"
+		EC=1
+	fi
+done
+if [ "$EC" ]; then
+	exit "$EC"
+fi
