@@ -1,5 +1,6 @@
 # vim: ft=sh
 DIR="$(basename "$(dirname "$0")")"
+echo "makefile: $0 # I participated, too!"
 
 echo() { printf '%s\n' "$*"; }
 alias err='echo >&2'

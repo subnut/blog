@@ -1,5 +1,5 @@
+MAKEFLAGS	+= --jobs
 MAKEFLAGS	+= --no-print-directory
-OG_MAKEFILE	= makefile
 .DEFAULT_GOAL	= all
 
 ifneq (,$(findstring clean,$(MAKECMDGOALS)))
@@ -8,5 +8,13 @@ ifneq (,$(findstring all,$(MAKECMDGOALS)))
 endif
 endif
 
+ifneq (,$(findstring debug,$(MAKECMDGOALS)))
+MAKEFLAGS	+= --jobs 1
+endif
+
+ifeq (,$(wildcard makefile))
+include Makefile
+endif
+
 .DEFAULT:
-	@$(MAKE) $(MAKEFLAGS) -f $(OG_MAKEFILE) $@
+	@$(MAKE) -f makefile $(MAKEFLAGS) $@

@@ -30,10 +30,9 @@ _CFLAGS	= $(CFLAGS) \
 # The                 (:  = ) trims multiple spaces into a single space
 
 makefile:
-	./configure
+	sh configure
 	@echo makefile has been updated.
 	@echo please run make again.
 	@sh -c 'exit 11'
 
-# Dependencies for makefile
 makefile: Makefile # makefile is generated from Makefile

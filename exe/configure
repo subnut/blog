@@ -5,15 +5,16 @@ if [ "$DIR" = '.' ]; then
 	exit 1
 fi
 
-echo "makefile: $0 # I participated, too!"
-
 EXECUTABLES=
-DEBUG_EXECUTABLES=
 for file in "${DIR}"/*.c; do
-	export EXECUTABLES="${EXECUTABLES} $(basename "${file%.c}")"
-	export DEBUG_EXECUTABLES="${DEBUG_EXECUTABLES} debug_$(basename "${file%.c}")"
+	export EXECUTABLES="$(basename "${file%.c}") ${EXECUTABLES}"
 done
 EXECUTABLES="${EXECUTABLES## }"
+
+DEBUG_EXECUTABLES=
+for executable in $EXECUTABLES; do
+	export DEBUG_EXECUTABLES="${executable}_debug ${DEBUG_EXECUTABLES}"
+done
 DEBUG_EXECUTABLES="${DEBUG_EXECUTABLES## }"
 
 sed -e "s|@@EXECUTABLES@@|$EXECUTABLES|g" \

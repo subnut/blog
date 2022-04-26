@@ -8,6 +8,5 @@ clean: clean_executables
 clean_executables: ; rm -f @@EXECUTABLES@@
 executables: @@EXECUTABLES@@
 @@EXECUTABLES@@:
-	@echo $(CC) $(LDFLAGS) -o $@ $$(echo $($@_src:  = ) | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
-	@     $(CC) $(LDFLAGS) -o $@ $$(echo $($@_src:  = ) | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
+	$(CC) $(LDFLAGS) -o $@ $($@_src:  = )
 
