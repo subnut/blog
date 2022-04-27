@@ -14,6 +14,7 @@ endif
 
 ifeq (,$(wildcard makefile))
 include Makefile
+.NOTPARALLEL:
 endif
 
 .DEFAULT:
