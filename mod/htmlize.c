@@ -349,11 +349,12 @@ shift_lines(DATATYPE data)
 	data->lines->history[0] = data->lines->readahead[0];
 
 	/* Shift readahead lines */
-	for (int i = 0; i < READAHEAD; i++) {
-		data->lines->readahead[i] = data->lines->readahead[i+1];
+	for (int i = 1; i < READAHEAD; i++) {
+		data->lines->readahead[i-1] = data->lines->readahead[i];
 		if (data->lines->readahead[i] == NULL)
 			break;
 	}
+	data->lines->readahead[READAHEAD-1] = NULL;
 }
 
 static bool
