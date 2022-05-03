@@ -231,8 +231,6 @@ _HEADINGS(DATATYPE data)
 	while (*curline	  == ' ') curline++;
 	fprintf(data->files->out, "<h%i>", level);
 	data->config->h_level = level;
-
-	curline++;
 	return true;
 }
 
