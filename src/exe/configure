@@ -5,17 +5,18 @@ if [ "$DIR" = '.' ]; then
 	exit 1
 fi
 
-EXECUTABLES=
+unset -v EXECUTABLES
+unset -v DEBUG_EXECUTABLES
 for file in "${DIR}"/*.c; do
-	export EXECUTABLES="$(basename "${file%.c}") ${EXECUTABLES}"
+	EXECUTABLES="$(basename "${file%.c}") ${EXECUTABLES}"
 done
 EXECUTABLES="${EXECUTABLES## }"
-
-DEBUG_EXECUTABLES=
+EXECUTABLES="${EXECUTABLES%% }"
 for executable in $EXECUTABLES; do
-	export DEBUG_EXECUTABLES="${executable}_debug ${DEBUG_EXECUTABLES}"
+	DEBUG_EXECUTABLES="${executable}_debug ${DEBUG_EXECUTABLES}"
 done
 DEBUG_EXECUTABLES="${DEBUG_EXECUTABLES## }"
+DEBUG_EXECUTABLES="${DEBUG_EXECUTABLES%% }"
 
 sed -e "s|@@EXECUTABLES@@|$EXECUTABLES|g" \
 	-e "s|@@DEBUG_EXECUTABLES@@|$DEBUG_EXECUTABLES|g" \
@@ -23,22 +24,15 @@ sed -e "s|@@EXECUTABLES@@|$EXECUTABLES|g" \
 	"${DIR}/makefile.in"
 
 for file in "${DIR}"/*.c; do
-	printf '%s =' "$(basename "${file%.c}")_src"
-	printf ' %s' "${file%.c}.o"
+	unset -f deps
+	deps="${file%.c}.o"
 	for header in $(recurse_headers "$file"); do
-		if echo "$header" | grep -q '^mod/'; then
-			printf ' %s' "${header%.h}.o"
+		if echo "$header" | grep -q "^${srcdir}/mod/"; then
+			deps="$deps ${header%.h}.o"
 		fi
 	done
-	echo
-	printf '%s:' "$(basename "${file%.c}")"
-	printf ' %s' "${file%.c}.o"
-	for header in $(recurse_headers "$file"); do
-		if echo "$header" | grep -q '^mod/'; then
-			printf ' %s' "${header%.h}.o"
-		fi
-	done
-	echo
+	echo "$(basename "${file%.c}")_src = $deps"
+	echo "$(basename "${file%.c}"):      $deps"
 done
 
 # vim: nowrap

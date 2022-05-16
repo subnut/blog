@@ -1,8 +1,13 @@
-DIR="$(basename "$(dirname "$0")")"
+DIR="$(dirname "$0")"
 echo "makefile: $0 # I participated, too!"
 
 echo() { printf '%s\n' "$*"; }
 alias err='echo >&2'
+
+[ -z "$srcdir" ] && {
+	err "$0: \$srcdir not defined"
+	exit 1
+}
 
 recurse_headers() {
 	_recurse_headers "$1" | sort | uniq
@@ -14,8 +19,15 @@ _recurse_headers() {
 	for header in $(grep '^#include[[:space:]]*"' "$1" |
 		sed 's_.*"\(.*\)".*_\1_' | tr '\n' ' ');
 	do
-		if [ "$(dirname "$header")" = '.' ] && [ -f "$(dirname "$1")/${header}" ]; then
-			export header="$(dirname "$1")/${header}"
+		if [ "$(dirname "$header")" = '.' ] && [ -f "$(dirname "$1")/${header}" ]
+		then export header="$(dirname "$1")/${header}"
+		elif [ -f "${srcdir}/${header}" ]
+		then export header="${srcdir}/${header}"
+		elif [ -f "${header}" ]
+		then :
+		else
+			err "${header}: header not found (wanted by $1)"
+			continue
 		fi
 		echo "${header}"
 		_recurse_headers "${header%.?}.h"

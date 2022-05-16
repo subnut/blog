@@ -4,7 +4,6 @@ debug_executables: @@DEBUG_EXECUTABLES@@
 @@DEBUG_EXECUTABLES@@:
 	@$(MAKE) $(@:_debug=) CFLAGS='-Wall -ggdb' LDFLAGS=
 
-clean: clean_executables
 clean_executables: ; rm -f @@EXECUTABLES@@
 executables: @@EXECUTABLES@@
 @@EXECUTABLES@@:

@@ -4,13 +4,13 @@ cat Makefile
 
 . .lib.configure
 
-for file in */configure; do
+for file in $srcdir/*/configure; do
 	"$file"
 done
 
 echo
 echo '# Dependencies'
-for file in */*.c */*.h; do
+for file in $srcdir/*/*.c $srcdir/*/*.h; do
 	for header in $(recurse_headers "$file" | sort | uniq); do
 		if [ "${file%.c}.c" = "${file}" ]; then
 			echo "${file%.c}.o: ${header}"
