@@ -4,7 +4,7 @@ cat Makefile
 
 . .lib.configure
 
-for file in $srcdir/*/configure; do
+for file in $srcdir/*/.configure; do
 	"$file"
 done
 
