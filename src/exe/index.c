@@ -116,12 +116,18 @@ main(int argc, const char **argv)
 	size_t _;
 	char *TITLE;
 	char *CREATED;
+	char *url;
 	FILE *file;
 	for (int i=1; i <= filenames.maxindex; i++)
 	{
 		/* Skip if NULL */
 		if (filenames.names[i] == NULL)
 			continue;
+
+		TITLE = NULL;
+		CREATED = NULL;
+		url = NULL;
+		file = NULL;
 
 		/* Open file for reading */
 		if ((file = fopen(filenames.names[i], "r")) == NULL)
@@ -134,31 +140,26 @@ main(int argc, const char **argv)
 			return fprintf(stderr, "Error while reading from file %s\n", filenames.names[i]),
 				   EXIT_FAILURE;
 
-		/* TITLE */
-		_ = 0; TITLE = NULL;
-		if (getline(&TITLE, &_, file) == -1)
-			return perror("getline error"),
-				   EXIT_FAILURE;
-		memmove(TITLE, TITLE + 6, strlen(TITLE) - 6);	// Remove "TITLE:"
-		while (*TITLE == ' ')
-			memmove(TITLE, TITLE + 1, strlen(TITLE) - 1);
-		*(strrchr(TITLE, '\n')) = '\0';
+#define get(buf, prefix)							\
+		if (getline(&buf, (_=0, &_), file) == -1)	\
+			return perror("getline error"),			\
+				EXIT_FAILURE;						\
+		*(strrchr(buf, '\n')) = '\0';				\
+		memmove(buf,								\
+				buf + strlen(prefix),				\
+				strlen(buf) - strlen(prefix) + 1);	\
+		while (*buf == ' ')							\
+			memmove(buf, buf + 1, strlen(buf));		/* strlen(buf) -1 +1 == strlen(buf) */
 
-		/* Date created */
-		_ = 0; CREATED = NULL;
-		if (getline(&CREATED, &_, file) == -1)
-			return perror("getline error"),
-				   EXIT_FAILURE;
-		memmove(CREATED, CREATED + 9, strlen(CREATED) - 9);	// Remove "CREATED:"
-		while (*CREATED == ' ')
-			memmove(CREATED, CREATED + 1, strlen(CREATED) - 1);
-		*(strrchr(CREATED, '\n')) = '\0';
+		get (TITLE, "TITLE:");
+		get (CREATED, "CREATED:");
+
+#undef get
 
 		/* Done reading from file */
 		fclose(file);
 
 		/* Make filename from URL */
-		char *url;
 		url = malloc(strlen(filenames.names[i])*3 + 1); // +1 for trailing '\0'
 		urlencode_s(filenames.names[i], url, strlen(filenames.names[i])*3+1);
 		free(filenames.names[i]);

@@ -388,6 +388,10 @@ _get_next_line(DATATYPE data)
 
 	/* Check if we've reached end marker */
 	if (streql(data->lines->readahead[index], END_MARKER)) {
+		/* Delete this line so that it doesn't appear in the output */
+		free(data->lines->readahead[index]);
+		data->lines->readahead[index] = NULL;
+		/* Act as if we've reached EOF */
 		data->config->eof = true;
 		goto success;
 	}
