@@ -268,7 +268,7 @@ _CODE(DATATYPE data)
 		return true;
 	}
 
-	fprintf(data->files->out, "<%scode>",  data->config->monospaced ? "/" : "");
+	fprintf(data->files->out, "<%scode>", data->config->monospaced ? "/" : "");
 	TOGGLE(data->config->monospaced);
 	curline++;
 	return true;
@@ -287,7 +287,7 @@ _BOLD(DATATYPE data)
 	if (curchar != '*')
 		return false;
 
-	fprintf(data->files->out, "<%s"BOLD_TAG">",  data->config->bolded ? "/" : "");
+	fprintf(data->files->out, "<%s"BOLD_TAG">", data->config->bolded ? "/" : "");
 	TOGGLE(data->config->bolded);
 	curline++;
 	return true;
@@ -306,7 +306,7 @@ _ITALIC(DATATYPE data)
 	if (curchar != '_')
 		return false;
 
-	fprintf(data->files->out, "<%s"ITALIC_TAG">",  data->config->italicized ? "/" : "");
+	fprintf(data->files->out, "<%s"ITALIC_TAG">", data->config->italicized ? "/" : "");
 	TOGGLE(data->config->italicized);
 	curline++;
 	return true;
